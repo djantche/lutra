@@ -10,6 +10,7 @@ mod hyprland;
 mod installer;
 mod prefixes;
 mod rpc;
+mod runners;
 mod session;
 mod steam;
 mod steamgriddb;
@@ -233,8 +234,88 @@ async fn set_favorite(
 
 /// Wine and Proton installs found on this machine.
 // @rpc
-async fn list_runners() -> Result<Vec<Runner>, String> {
-    Ok(wine::detect_runners(&steam::steam_roots(&home_dir()?)))
+async fn list_runners(app: AppHandle) -> Result<Vec<Runner>, String> {
+    Ok(wine::detect_runners(
+        &steam::steam_roots(&home_dir()?),
+        Some(&app.data_dir()),
+    ))
+}
+
+/// A runner Lutra downloaded, with how many games use it.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ManagedRunner {
+    #[serde(flatten)]
+    runner: runners::Installed,
+    games: usize,
+}
+
+/// Runners downloaded by Lutra (in its data folder).
+// @rpc
+async fn installed_runners(
+    app: AppHandle,
+    library: State<'_, Library>,
+) -> Result<Vec<ManagedRunner>, String> {
+    let data = app.data_dir();
+    let found = host::async_runtime::spawn_blocking(move || runners::installed(&data))
+        .await
+        .map_err(|e| e.to_string())?;
+    let db = library.lock()?;
+    Ok(found
+        .into_iter()
+        .map(|runner| {
+            let games = db
+                .games_using_runner(&runner.path.to_string_lossy())
+                .unwrap_or(0);
+            ManagedRunner { runner, games }
+        })
+        .collect())
+}
+
+/// Recent releases of a runner source (GE-Proton, Wine, Wine Staging), read from GitHub.
+// @rpc
+async fn available_runners(
+    app: AppHandle,
+    source: runners::Source,
+) -> Result<Vec<runners::Available>, String> {
+    let data = app.data_dir();
+    host::async_runtime::spawn_blocking(move || runners::available(&data, source))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Starts downloading and installing a runner; progress arrives as `runner-install` events.
+// @rpc
+async fn install_runner(
+    app: AppHandle,
+    source: runners::Source,
+    tag: String,
+) -> Result<(), String> {
+    runners::install(&app, app.data_dir(), source, tag)
+}
+
+/// Stops an install in progress, whatever stage it is in.
+// @rpc
+async fn cancel_runner_install(name: String) -> Result<(), String> {
+    runners::cancel(&name);
+    Ok(())
+}
+
+/// Names of the runner installs running right now (the page may open in the middle of one).
+// @rpc
+async fn running_runner_installs() -> Result<Vec<String>, String> {
+    Ok(runners::running())
+}
+
+/// Deletes a runner Lutra downloaded.
+// @rpc
+async fn remove_runner(app: AppHandle, name: String) -> Result<(), String> {
+    let data = app.data_dir();
+    host::async_runtime::spawn_blocking(move || runners::remove(&data, &name))
+        .await
+        .map_err(|e| e.to_string())??;
+    let _ = app.emit("runners-changed", ());
+    Ok(())
 }
 
 /// Helper programs (Wine, umu, winetricks, gamemode, mangohud) and their versions.

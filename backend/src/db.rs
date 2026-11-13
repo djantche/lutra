@@ -625,6 +625,17 @@ impl Db {
         Ok(())
     }
 
+    /// How many games are set to run with this runner (a `proton` script or a `wine` binary).
+    pub fn games_using_runner(&self, path: &str) -> rusqlite::Result<usize> {
+        self.conn
+            .query_row(
+                "SELECT COUNT(*) FROM games WHERE runner_path = ?1",
+                [path],
+                |row| row.get::<_, i64>(0),
+            )
+            .map(|count| count as usize)
+    }
+
     pub fn setting(&self, key: &str) -> rusqlite::Result<Option<String>> {
         self.conn
             .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {

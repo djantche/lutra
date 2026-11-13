@@ -13,6 +13,7 @@ import {
   type DetailsForm,
 } from "../../components/GameDetailsFields/details";
 import { GameMatches } from "../../components/GameMatches/GameMatches";
+import { InstallLatest } from "../../components/RunnerInstall/InstallLatest";
 import { InstallStep, type InstallChoice } from "./InstallStep";
 import { NEW_PREFIX, PrefixPicker } from "../../components/PrefixPicker/PrefixPicker";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
@@ -29,6 +30,7 @@ import {
   type GameHit,
   type Runner,
 } from "../../lib/backend";
+import { onRunnersChanged } from "../../lib/runners";
 import { useLibraryStore } from "../../state/library";
 import styles from "./AddGameDialog.module.scss";
 
@@ -65,13 +67,20 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
   const [choice, setChoice] = useState<InstallChoice | null>(null);
 
   useEffect(() => {
-    Promise.all([listRunners(), defaultRunner()])
-      .then(([found, preferred]) => {
-        setRunners(found);
-        // The runner chosen in settings, when it is still installed; otherwise the first one found.
-        setRunnerPath(found.find((runner) => runner.path === preferred)?.path ?? found[0]?.path ?? "");
-      })
-      .catch(() => setRunners([]));
+    const load = () =>
+      Promise.all([listRunners(), defaultRunner()])
+        .then(([found, preferred]) => {
+          setRunners(found);
+          // The runner chosen in settings, when it is still installed; otherwise the first one found.
+          setRunnerPath((current) =>
+            found.find((runner) => runner.path === (current || preferred))?.path ?? found[0]?.path ?? "",
+          );
+        })
+        .catch(() => setRunners([]));
+    void load();
+    // A runner installed from this window (or elsewhere) shows up without reopening it.
+    const stop = onRunnersChanged(() => void load());
+    return () => void stop.then((unlisten) => unlisten());
   }, []);
 
   // GameDB is searched by what the user calls the game: the name field, or the file name until they edit it.
@@ -268,7 +277,10 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
         <>
           <FormField label={t("addGame.runner")}>
             {runners !== null && runners.length === 0 ? (
-              <p className={styles.warning}>{t("addGame.noRunner")}</p>
+              <>
+                <p className={styles.warning}>{t("addGame.noRunner")}</p>
+                <InstallLatest />
+              </>
             ) : (
               <Select
                 value={runnerPath}

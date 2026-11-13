@@ -12,6 +12,7 @@ import {
   type Runner,
   type Tools,
 } from "../../lib/backend";
+import { onRunnersChanged } from "../../lib/runners";
 import { reportError } from "../../state/toasts";
 import styles from "./WindowsSection.module.scss";
 import { ToolsStatus } from "./ToolsStatus";
@@ -25,15 +26,20 @@ export function WindowsSection() {
   const [tools, setTools] = useState<Tools | null>(null);
 
   useEffect(() => {
-    listRunners()
-      .then(setRunners)
-      .catch(() => setRunners([]));
+    const load = () =>
+      listRunners()
+        .then(setRunners)
+        .catch(() => setRunners([]));
+    void load();
+    // Installing or removing a runner (Runners tab) updates this list.
+    const stop = onRunnersChanged(() => void load());
     defaultRunner()
       .then((path) => setChosen(path ?? AUTOMATIC))
       .catch(() => setChosen(AUTOMATIC));
     wineTools()
       .then(setTools)
       .catch(() => setTools(null));
+    return () => void stop.then((unlisten) => unlisten());
   }, []);
 
   const choose = (path: string) => {

@@ -138,7 +138,8 @@
       "logs": "Journaux",
       "about": "À propos",
       "audio": "Audio",
-      "accessibility": "Accessibilité"
+      "accessibility": "Accessibilité",
+      "runners": "Runners"
     },
     "tabsHint": {
       "general": "Langue, mode d'affichage et rendu de l'application.",
@@ -147,7 +148,8 @@
       "logs": "Ce que Lutra a fait, pour comprendre ce qui n'a pas marché.",
       "about": "Lutra, sa version et sa licence.",
       "audio": "Volume et périphériques des haut-parleurs et du micro, et sons de l'interface.",
-      "accessibility": "Taille de l'interface, contraste et animations."
+      "accessibility": "Taille de l'interface, contraste et animations.",
+      "runners": "Téléchargez et gérez les versions de Wine et de Proton qui lancent vos jeux Windows."
     },
     "groupTray": "Zone de notification",
     "trayClose": "Fermer la fenêtre garde Lutra ouvert",
@@ -185,7 +187,7 @@
     "name": "Nom",
     "namePlaceholder": "Nom du jeu",
     "runner": "Lancer avec",
-    "noRunner": "Aucun Wine ni Proton trouvé. Installe Wine, ou Proton depuis Steam, puis rouvre cette fenêtre.",
+    "noRunner": "Aucun Wine ni Proton trouvé sur cette machine.",
     "cancel": "Annuler",
     "add": "Ajouter à la bibliothèque",
     "adding": "Ajout…",
@@ -644,5 +646,69 @@
     "space": "Espace",
     "search": "Chercher",
     "hide": "Masquer le clavier"
+  },
+  "runners": {
+    "progress": "Installation",
+    "installedTitle": "Téléchargés par Lutra",
+    "installTitle": "Installer une version",
+    "loading": "Lecture de ce qui est installé…",
+    "noneTitle": "Rien de téléchargé pour l'instant",
+    "noneHint": "Choisissez une version ci-dessous et Lutra la télécharge pour vous. Les Wine et Proton déjà présents sur votre système (Steam, votre distribution) sont aussi utilisés, et ne sont pas listés ici.",
+    "kind": {
+      "proton": "Proton",
+      "wine": "Wine"
+    },
+    "usedBy_one": "utilisé par {{count}} jeu",
+    "usedBy_other": "utilisé par {{count}} jeux",
+    "unused": "utilisé par aucun jeu",
+    "remove": "Supprimer",
+    "removeTitle": "Supprimer {{name}} ?",
+    "removeHint": "Cela libère {{size}}. Vos jeux et leurs préfixes ne sont pas touchés.",
+    "removeUsed_one": "{{count}} jeu est réglé pour l'utiliser : il aura besoin d'un autre runner. Vos jeux et leurs préfixes ne sont pas touchés.",
+    "removeUsed_other": "{{count}} jeux sont réglés pour l'utiliser : ils auront besoin d'un autre runner. Vos jeux et leurs préfixes ne sont pas touchés.",
+    "source": "Source",
+    "sources": {
+      "proton-ge": "GE-Proton",
+      "wine": "Wine",
+      "wine-staging": "Wine Staging"
+    },
+    "sourceHint": {
+      "proton-ge": "Proton avec des correctifs supplémentaires pour les jeux, par GloriousEggroll. Le meilleur choix pour la plupart des jeux.",
+      "wine": "Des builds de Wine simple par Kron4ek, sans les ajouts de Proton.",
+      "wine-staging": "Wine avec des correctifs expérimentaux, qui font parfois tourner des jeux que Wine simple ne lance pas."
+    },
+    "refresh": "Actualiser la liste",
+    "fetching": "Recherche des versions sur GitHub…",
+    "offlineTitle": "GitHub est inaccessible",
+    "offlineHint": "Vérifiez votre connexion et réessayez.",
+    "retry": "Réessayer",
+    "latest": "Dernière",
+    "install": "Installer",
+    "installing": "Installation",
+    "alreadyInstalled": "Installé",
+    "installed": "{{name}} est installé. Il est maintenant disponible pour vos jeux.",
+    "failed": "Impossible d'installer {{name}} : {{reason}}",
+    "listError": "Impossible de lire les runners téléchargés.",
+    "startError": "Impossible de lancer l'installation.",
+    "cancelError": "Impossible d'annuler l'installation.",
+    "removeError": "Impossible de supprimer le runner.",
+    "cancel": "Annuler",
+    "dismiss": "Fermer",
+    "log": "Journal",
+    "eta": "{{time}} restantes",
+    "files": "{{done}} fichiers sur {{total}}",
+    "stage": {
+      "prepare": "Préparation",
+      "download": "Téléchargement",
+      "verify": "Vérification du téléchargement",
+      "extract": "Extraction",
+      "done": "Installé",
+      "failed": "Échec",
+      "cancelled": "Annulé"
+    },
+    "installLatest": "Installer GE-Proton",
+    "installLatestHint": "Lutra télécharge la dernière version de GE-Proton, une version de Proton pensée pour les jeux.",
+    "installingNow": "Installation de {{name}}…",
+    "noRelease": "Aucune version disponible à installer."
   }
 }

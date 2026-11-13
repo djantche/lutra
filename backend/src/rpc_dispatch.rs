@@ -31,7 +31,35 @@ pub(crate) fn dispatch(
             host::async_runtime::block_on(set_favorite(app.state::<Library>(), id, favorite))
                 .and_then(rpc::to_value)
         }
-        "list_runners" => host::async_runtime::block_on(list_runners()).and_then(rpc::to_value),
+        "list_runners" => {
+            host::async_runtime::block_on(list_runners(app.clone())).and_then(rpc::to_value)
+        }
+        "installed_runners" => {
+            host::async_runtime::block_on(installed_runners(app.clone(), app.state::<Library>()))
+                .and_then(rpc::to_value)
+        }
+        "available_runners" => {
+            let source: runners::Source = rpc::arg(args, "source")?;
+            host::async_runtime::block_on(available_runners(app.clone(), source))
+                .and_then(rpc::to_value)
+        }
+        "install_runner" => {
+            let source: runners::Source = rpc::arg(args, "source")?;
+            let tag: String = rpc::arg(args, "tag")?;
+            host::async_runtime::block_on(install_runner(app.clone(), source, tag))
+                .and_then(rpc::to_value)
+        }
+        "cancel_runner_install" => {
+            let name: String = rpc::arg(args, "name")?;
+            host::async_runtime::block_on(cancel_runner_install(name)).and_then(rpc::to_value)
+        }
+        "running_runner_installs" => {
+            host::async_runtime::block_on(running_runner_installs()).and_then(rpc::to_value)
+        }
+        "remove_runner" => {
+            let name: String = rpc::arg(args, "name")?;
+            host::async_runtime::block_on(remove_runner(app.clone(), name)).and_then(rpc::to_value)
+        }
         "wine_tools" => host::async_runtime::block_on(wine_tools()).and_then(rpc::to_value),
         "default_runner" => host::async_runtime::block_on(default_runner(app.state::<Library>()))
             .and_then(rpc::to_value),

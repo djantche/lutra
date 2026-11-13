@@ -1,0 +1,66 @@
+// Sized in em so each shell can scale it.
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9em;
+  padding: 1.1em 1.3em;
+  border-radius: 0.55em;
+  background: var(--color-surface);
+  box-shadow: inset 0 0 0 1px var(--color-accent-soft);
+}
+
+.failed {
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.3em 1.5em;
+}
+
+.name {
+  font-size: 1.05em;
+  font-weight: 600;
+}
+
+.status {
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.percent {
+  min-width: 3em;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.log {
+  max-height: 12em;
+  margin: 0;
+  padding: 0.8em 1em;
+  overflow: auto;
+  border-radius: 0.55em;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.82em;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

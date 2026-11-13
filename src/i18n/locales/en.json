@@ -138,7 +138,8 @@
       "logs": "Logs",
       "about": "About",
       "audio": "Audio",
-      "accessibility": "Accessibility"
+      "accessibility": "Accessibility",
+      "runners": "Runners"
     },
     "tabsHint": {
       "general": "Language, display mode and rendering of the app.",
@@ -147,7 +148,8 @@
       "logs": "What Lutra did, to understand what went wrong.",
       "about": "Lutra, its version and its licence.",
       "audio": "Volume and devices of the speakers and the microphone, and the interface sounds.",
-      "accessibility": "Size of the interface, contrast and animations."
+      "accessibility": "Size of the interface, contrast and animations.",
+      "runners": "Download and manage the Wine and Proton versions that run your Windows games."
     },
     "groupTray": "Notification area",
     "trayClose": "Closing the window keeps Lutra running",
@@ -185,7 +187,7 @@
     "name": "Name",
     "namePlaceholder": "Game name",
     "runner": "Run with",
-    "noRunner": "No Wine or Proton found. Install Wine, or Proton from Steam, then reopen this window.",
+    "noRunner": "No Wine or Proton found on this machine.",
     "cancel": "Cancel",
     "add": "Add to library",
     "adding": "Adding…",
@@ -644,5 +646,69 @@
     "space": "Space",
     "search": "Search",
     "hide": "Hide the keyboard"
+  },
+  "runners": {
+    "progress": "Installing",
+    "installedTitle": "Downloaded by Lutra",
+    "installTitle": "Install a version",
+    "loading": "Reading what is installed…",
+    "noneTitle": "Nothing downloaded yet",
+    "noneHint": "Pick a version below and Lutra downloads it for you. Wine and Proton found on your system (Steam, your distribution) are used too, and are not listed here.",
+    "kind": {
+      "proton": "Proton",
+      "wine": "Wine"
+    },
+    "usedBy_one": "used by {{count}} game",
+    "usedBy_other": "used by {{count}} games",
+    "unused": "not used by any game",
+    "remove": "Remove",
+    "removeTitle": "Remove {{name}}?",
+    "removeHint": "This frees {{size}}. Your games and their prefixes are not touched.",
+    "removeUsed_one": "{{count}} game is set to run with it: it will need another runner. Your games and their prefixes are not touched.",
+    "removeUsed_other": "{{count}} games are set to run with it: they will need another runner. Your games and their prefixes are not touched.",
+    "source": "Source",
+    "sources": {
+      "proton-ge": "GE-Proton",
+      "wine": "Wine",
+      "wine-staging": "Wine Staging"
+    },
+    "sourceHint": {
+      "proton-ge": "Proton with extra fixes for games, by GloriousEggroll. The best choice for most games.",
+      "wine": "Plain Wine builds by Kron4ek, without Proton's additions.",
+      "wine-staging": "Wine with experimental patches, which sometimes fix games plain Wine cannot run."
+    },
+    "refresh": "Refresh the list",
+    "fetching": "Looking for releases on GitHub…",
+    "offlineTitle": "Cannot reach GitHub",
+    "offlineHint": "Check your connection and try again.",
+    "retry": "Try again",
+    "latest": "Latest",
+    "install": "Install",
+    "installing": "Installing",
+    "alreadyInstalled": "Installed",
+    "installed": "{{name}} is installed. It is now available for your games.",
+    "failed": "Could not install {{name}}: {{reason}}",
+    "listError": "Could not read the downloaded runners.",
+    "startError": "Could not start the installation.",
+    "cancelError": "Could not cancel the installation.",
+    "removeError": "Could not remove the runner.",
+    "cancel": "Cancel",
+    "dismiss": "Close",
+    "log": "Log",
+    "eta": "{{time}} left",
+    "files": "{{done}} of {{total}} files",
+    "stage": {
+      "prepare": "Preparing",
+      "download": "Downloading",
+      "verify": "Verifying the download",
+      "extract": "Extracting",
+      "done": "Installed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "installLatest": "Install GE-Proton",
+    "installLatestHint": "Lutra downloads the latest GE-Proton, a version of Proton made for games.",
+    "installingNow": "Installing {{name}}…",
+    "noRelease": "No release available to install."
   }
 }

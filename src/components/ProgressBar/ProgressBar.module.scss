@@ -1,0 +1,37 @@
+// Sized in em so each shell can scale it.
+.track {
+  position: relative;
+  flex: 1;
+  min-width: 8em;
+  height: 0.55em;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-active);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 160ms linear;
+}
+
+.indeterminate .fill {
+  width: 38%;
+  transform: translateX(-100%);
+  transition: none;
+  animation: slide 1.3s ease-in-out infinite;
+}
+
+.failed .fill {
+  background: var(--color-danger);
+}
+
+@keyframes slide {
+  to {
+    transform: translateX(263%);
+  }
+}

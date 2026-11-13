@@ -7,6 +7,7 @@ import { onControllerAction } from "./lib/controllers";
 import { useKeyboardInput } from "./input/useKeyboardInput";
 import { BigPictureShell } from "./shells/bigpicture/BigPictureShell";
 import { ClassicShell } from "./shells/classic/ClassicShell";
+import { RunnerInstallEffects } from "./state/RunnerInstallEffects";
 import { BatteryAlerts } from "./state/BatteryAlerts";
 import { LibraryEffects } from "./state/LibraryEffects";
 import { useToastStore } from "./state/toasts";
@@ -60,6 +61,7 @@ function App() {
     <UiProvider>
       <LibraryEffects />
       <BatteryAlerts />
+      <RunnerInstallEffects />
       <Shell />
     </UiProvider>
   );

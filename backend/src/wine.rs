@@ -285,8 +285,9 @@ fn proton_in(dir: &Path, seen: &mut HashSet<PathBuf>, out: &mut Vec<Runner>) {
     }
 }
 
-/// Proton builds from Steam and from `compatibilitytools.d` (GE-Proton and friends), then system Wine.
-pub fn detect_runners(steam_roots: &[PathBuf]) -> Vec<Runner> {
+/// Proton builds from Steam and from `compatibilitytools.d` (GE-Proton and friends), the builds
+/// Lutra downloaded itself (`managed` is its data folder, see `runners.rs`), then system Wine.
+pub fn detect_runners(steam_roots: &[PathBuf], managed: Option<&Path>) -> Vec<Runner> {
     let mut seen = HashSet::new();
     let mut protons = Vec::new();
 
@@ -294,9 +295,22 @@ pub fn detect_runners(steam_roots: &[PathBuf]) -> Vec<Runner> {
         proton_in(&root.join("steamapps/common"), &mut seen, &mut protons);
         proton_in(&root.join("compatibilitytools.d"), &mut seen, &mut protons);
     }
+    let mut wines = Vec::new();
+    for build in managed.map(crate::runners::installed).unwrap_or_default() {
+        let runner = Runner {
+            kind: build.kind,
+            label: build.name,
+            path: build.path,
+        };
+        match build.kind {
+            RunnerKind::Wine => wines.push(runner),
+            _ => protons.push(runner),
+        }
+    }
     protons.sort_by_key(|runner| std::cmp::Reverse(runner.label.to_lowercase()));
 
     let mut runners = protons;
+    runners.extend(wines);
     if let Some(wine) = find_in_path("wine") {
         runners.push(Runner {
             kind: RunnerKind::Wine,
@@ -1058,6 +1072,32 @@ mod tests {
     }
 
     #[test]
+    fn lists_the_builds_lutra_downloaded_itself() {
+        let data = tempfile::tempdir().unwrap();
+        let runners_dir = data.path().join("runners");
+        fs::create_dir_all(runners_dir.join("GE-Proton11-1")).unwrap();
+        fs::write(runners_dir.join("GE-Proton11-1/proton"), "").unwrap();
+        fs::create_dir_all(runners_dir.join("wine-11.0-amd64-wow64/bin")).unwrap();
+        fs::write(runners_dir.join("wine-11.0-amd64-wow64/bin/wine"), "").unwrap();
+        // An install in progress is never listed.
+        fs::create_dir_all(runners_dir.join(".wine-12.work/bin")).unwrap();
+
+        let runners = detect_runners(&[], Some(data.path()));
+        let found: Vec<(RunnerKind, &str)> = runners
+            .iter()
+            .map(|runner| (runner.kind, runner.label.as_str()))
+            .filter(|(_, label)| *label != "Wine")
+            .collect();
+        assert_eq!(
+            found,
+            [
+                (RunnerKind::Proton, "GE-Proton11-1"),
+                (RunnerKind::Wine, "wine-11.0-amd64-wow64"),
+            ]
+        );
+    }
+
+    #[test]
     fn detects_proton_builds_and_ignores_folders_without_a_proton_script() {
         let steam = tempfile::tempdir().unwrap();
         for dir in [
@@ -1070,7 +1110,7 @@ mod tests {
         }
         fs::create_dir_all(steam.path().join("steamapps/common/Some Game")).unwrap();
 
-        let runners = detect_runners(&[steam.path().to_path_buf()]);
+        let runners = detect_runners(&[steam.path().to_path_buf()], None);
         let labels: Vec<&str> = runners
             .iter()
             .filter(|runner| runner.kind == RunnerKind::Proton)
