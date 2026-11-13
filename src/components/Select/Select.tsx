@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { useInputAction } from "../../input/useInputAction";
 import { cx } from "../../lib/cx";
 import { Icon } from "../Icon/Icon";
@@ -38,6 +39,8 @@ export function Select<T extends string>({
   const root = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [place, setPlace] = useState<CSSProperties>({});
+  const trigger = useRef<HTMLButtonElement>(null);
 
   const selected = options.findIndex((option) => option.value === value);
   const optionId = (index: number) => `${id}-${index}`;
@@ -62,19 +65,39 @@ export function Select<T extends string>({
     setOpen(false);
   };
 
-  useEffect(() => {
+  // The list is drawn in a layer of its own, above everything, so no parent can cut it. It is
+  // placed from the trigger's position: below it, or above when there is more room there, and it
+  // follows the trigger while the page scrolls or resizes.
+  useLayoutEffect(() => {
     if (!open) return;
-    const close = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    const margin = 8;
+    const update = () => {
+      const box = trigger.current?.getBoundingClientRect();
+      if (!box) return;
+      const below = window.innerHeight - box.bottom - margin;
+      const above = box.top - margin;
+      const goesAbove = below < 200 && above > below;
+      const width = Math.min(Math.max(box.width, 180), window.innerWidth - margin * 2);
+      const left = Math.min(Math.max(box.left, margin), window.innerWidth - width - margin);
+      setPlace({
+        left,
+        width,
+        // The layer is outside the page's own sizes: it takes the trigger's.
+        fontSize: trigger.current ? getComputedStyle(trigger.current).fontSize : undefined,
+        maxHeight: Math.max(120, Math.min(360, (goesAbove ? above : below) - 6)),
+        ...(goesAbove
+          ? { bottom: window.innerHeight - box.top + 6, transformOrigin: "bottom" }
+          : { top: box.bottom + 6, transformOrigin: "top" }),
+      });
     };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
   }, [open]);
-
-  // Inside a scrolling form the list can open below the visible part: bring all of it into view.
-  useEffect(() => {
-    if (open) document.getElementById(`${id}-list`)?.scrollIntoView({ block: "nearest" });
-  }, [open, id]);
 
   useEffect(() => {
     if (open) document.getElementById(optionId(active))?.scrollIntoView({ block: "nearest" });
@@ -140,6 +163,7 @@ export function Select<T extends string>({
   return (
     <div ref={root} className={styles.root}>
       <button
+        ref={trigger}
         type="button"
         role="combobox"
         data-focusable
@@ -160,8 +184,23 @@ export function Select<T extends string>({
         <Icon name="chevronDown" size={16} />
       </button>
 
-      {open && (
-        <ul id={`${id}-list`} role="listbox" className={styles.list}>
+      {open &&
+        createPortal(
+          <>
+            {/* Takes the click that closes the list, so it never reaches what is underneath. */}
+            <div
+              className={styles.backdrop}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setOpen(false);
+              }}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setOpen(false);
+              }}
+            />
+        <ul id={`${id}-list`} role="listbox" className={styles.list} style={place}>
           {options.map((option, index) => (
             <li
               key={option.value}
@@ -187,7 +226,9 @@ export function Select<T extends string>({
             </li>
           ))}
         </ul>
-      )}
+          </>,
+          document.querySelector("[data-overlay-root]") ?? document.body,
+        )}
     </div>
   );
 }

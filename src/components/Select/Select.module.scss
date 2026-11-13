@@ -58,13 +58,18 @@
   color: var(--color-text-subtle);
 }
 
+// A full-screen layer under the list: a click outside only closes the list.
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+}
+
+// Placed from the trigger's position (see `Select.tsx`), above every window and menu.
 .list {
-  position: absolute;
-  top: calc(100% + 0.4em);
-  right: 0;
-  left: 0;
-  z-index: 30;
-  max-height: 16em;
+  position: fixed;
+  z-index: 9001;
+  font-size: 15px;
   margin: 0;
   padding: 0.35em;
   overflow-y: auto;

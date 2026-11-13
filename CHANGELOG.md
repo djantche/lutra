@@ -6,6 +6,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ### Changed
 
+- Dropdown lists open in a layer above everything, so no window or scrolling area can cut them. They open above the field when there is more room there, follow it while the page scrolls, and a click outside only closes the list instead of also pressing what is underneath.
 - The PlayStation controller is now a line drawing of a DualShock 4 (supplied as an SVG) instead of a photo. Pressing a button fills that button on the drawing (the face buttons in their PlayStation colors), the sticks move with the analogue values, and L2 / R2 fill with how far they are pulled.
 
 ### Added
