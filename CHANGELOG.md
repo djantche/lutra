@@ -4,6 +4,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-13
+
 ### Changed
 
 - Dropdown lists open in a layer above everything, so no window or scrolling area can cut them. They open above the field when there is more room there, follow it while the page scrolls, and a click outside only closes the list instead of also pressing what is underneath.
