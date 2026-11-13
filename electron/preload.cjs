@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld("lutra", {
     return () => ipcRenderer.removeListener(channel, listener);
   },
 
-  /** Window controls: `minimize`, `toggleMaximize`, `close`, `setFullscreen` (with a boolean). */
+  /** Window controls: `minimize`, `toggleMaximize`, `close`, `setFullscreen` (with a boolean), `toTray`, `quit`. */
   window: (operation, value) => ipcRenderer.invoke("window", operation, value),
 
   /** Native file or folder picker. Resolves to the chosen path, or null. */

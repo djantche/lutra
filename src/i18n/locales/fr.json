@@ -159,7 +159,9 @@
   },
   "bigPicture": {
     "exit": "Mode bureau",
-    "menu": "Menu"
+    "menu": "Menu",
+    "minimize": "Réduire",
+    "quit": "Quitter Lutra"
   },
   "empty": {
     "title": "Aucun jeu pour l'instant",

@@ -96,6 +96,11 @@
 
 .exit {
   border-top: 1px solid var(--color-border);
-  border-radius: 0 0 18px 18px;
+  border-radius: 0;
   padding-top: 22px;
+}
+
+// The last line of the panel follows its rounded corner.
+.last {
+  border-radius: 0 0 18px 18px;
 }

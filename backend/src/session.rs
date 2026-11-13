@@ -2,6 +2,7 @@
 //! yet (the launch is then over), and whether a Steam game is up. Nothing here guesses: a
 //! stage is reported as done only when the system shows it is.
 
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -39,6 +40,7 @@ pub enum LaunchState {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Proc {
     pub pid: u32,
+    pub ppid: u32,
     pub pgid: u32,
     /// Kernel name, 15 characters at most.
     pub comm: String,
@@ -50,7 +52,9 @@ fn read_proc(dir: &Path) -> Option<Proc> {
     let stat = fs::read_to_string(dir.join("stat")).ok()?;
     // `pid (comm) state ppid pgrp ...`: comm may contain spaces and parentheses.
     let after = &stat[stat.rfind(')')? + 1..];
-    let pgid = after.split_whitespace().nth(2)?.parse().ok()?;
+    let mut fields = after.split_whitespace().skip(1);
+    let ppid = fields.next()?.parse().ok()?;
+    let pgid = fields.next()?.parse().ok()?;
     let comm = fs::read_to_string(dir.join("comm"))
         .unwrap_or_default()
         .trim_end()
@@ -66,6 +70,7 @@ fn read_proc(dir: &Path) -> Option<Proc> {
         .unwrap_or_default();
     Some(Proc {
         pid,
+        ppid,
         pgid,
         comm,
         args,
@@ -91,15 +96,46 @@ pub fn comm_of(exe: &str) -> String {
     name.chars().take(15).collect::<String>().to_lowercase()
 }
 
-/// Is the game's own process running inside the launch's process group?
+/// The processes of a launch: the launcher's process group, and everything started from one of
+/// its processes. A container (Proton through `umu-run`) or a `setsid` takes a child out of the
+/// group, but not out of the family.
+pub fn launch_family(procs: &[Proc], pgid: u32) -> HashSet<u32> {
+    let mut family: HashSet<u32> = procs
+        .iter()
+        .filter(|proc| proc.pgid == pgid)
+        .map(|proc| proc.pid)
+        .collect();
+    loop {
+        let known = family.len();
+        for proc in procs {
+            if family.contains(&proc.ppid) {
+                family.insert(proc.pid);
+            }
+        }
+        if family.len() == known {
+            return family;
+        }
+    }
+}
+
+/// Is the game's own process running as part of the launch?
 ///
 /// The launcher (`umu-run`, `proton`, `wine`) also has the executable in its arguments, so the
 /// arguments prove nothing: the process name does.
 pub fn game_running(procs: &[Proc], pgid: u32, exe: &str) -> bool {
     let wanted = comm_of(exe);
+    let family = launch_family(procs, pgid);
     procs
         .iter()
-        .any(|proc| proc.pgid == pgid && proc.comm.to_lowercase() == wanted)
+        .any(|proc| family.contains(&proc.pid) && proc.comm.to_lowercase() == wanted)
+}
+
+/// Is a process of that name running anywhere? Only a last resort, once a launch has had time
+/// to start its game: a launcher that detaches the game from its own family would otherwise never
+/// be seen.
+pub fn game_running_anywhere(procs: &[Proc], exe: &str) -> bool {
+    let wanted = comm_of(exe);
+    procs.iter().any(|proc| proc.comm.to_lowercase() == wanted)
 }
 
 /// Is the process group still alive at all?
@@ -143,11 +179,15 @@ mod tests {
     use super::*;
 
     fn fake(root: &Path, pid: u32, pgid: u32, comm: &str, args: &[&str]) {
+        fake_under(root, pid, 1, pgid, comm, args);
+    }
+
+    fn fake_under(root: &Path, pid: u32, ppid: u32, pgid: u32, comm: &str, args: &[&str]) {
         let dir = root.join(pid.to_string());
         fs::create_dir_all(&dir).unwrap();
         fs::write(
             dir.join("stat"),
-            format!("{pid} ({comm}) S 1 {pgid} {pgid} 0 -1 4194560"),
+            format!("{pid} ({comm}) S {ppid} {pgid} {pgid} 0 -1 4194560"),
         )
         .unwrap();
         fs::write(dir.join("comm"), format!("{comm}\n")).unwrap();
@@ -183,6 +223,30 @@ mod tests {
         let procs = processes(root.path());
         assert!(game_running(&procs, 100, "/games/FIFA 19/FIFA19.exe"));
         assert!(!game_running(&procs, 300, "/games/FIFA 19/FIFA19.exe"));
+    }
+
+    #[test]
+    fn a_game_that_left_the_launchers_group_is_still_found_through_its_parents() {
+        let root = tempfile::tempdir().unwrap();
+        // umu-run (group 100) starts a container, which puts the game in groups of its own.
+        fake(
+            root.path(),
+            100,
+            100,
+            "umu-run",
+            &["umu-run", "/g/Game.exe"],
+        );
+        fake_under(root.path(), 110, 100, 110, "bwrap", &[]);
+        fake_under(root.path(), 120, 110, 120, "wineserver", &[]);
+        fake_under(root.path(), 130, 120, 130, "Game.exe", &[]);
+        // The same name started by something unrelated is not ours.
+        fake_under(root.path(), 900, 1, 900, "Game.exe", &[]);
+        let procs = processes(root.path());
+        assert!(game_running(&procs, 100, "/g/Game.exe"));
+        assert!(!game_running(&procs, 777, "/g/Game.exe"));
+        // Only the last resort sees a process that is related to nothing.
+        assert!(game_running_anywhere(&procs, "/g/Game.exe"));
+        assert!(!game_running_anywhere(&procs, "/g/Other.exe"));
     }
 
     #[test]

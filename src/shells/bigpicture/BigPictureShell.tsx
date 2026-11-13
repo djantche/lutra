@@ -5,6 +5,7 @@ import { GameArt } from "../../components/GameArt/GameArt";
 import { useIdleCursor } from "../../input/useIdleCursor";
 import { useInputAction } from "../../input/useInputAction";
 import { cx } from "../../lib/cx";
+import { currentWindow, isHosted } from "../../lib/host";
 import { useLibrary } from "../../state/library";
 import { useUi } from "../../state/ui";
 import type { Game } from "../../types/game";
@@ -117,6 +118,13 @@ export function BigPictureShell() {
           onTab={setTab}
           onClose={() => setMenuOpen(false)}
           onExit={() => setMode("classic")}
+          onMinimize={() => {
+            setMenuOpen(false);
+            if (isHosted()) void currentWindow().hideToTray();
+          }}
+          onQuit={() => {
+            if (isHosted()) void currentWindow().quit();
+          }}
         />
       )}
       {hub && <GameHub game={hub} onBack={() => setHubId(null)} onSettings={() => setSettingsId(hub.id)} />}

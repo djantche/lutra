@@ -159,7 +159,9 @@
   },
   "bigPicture": {
     "exit": "Desktop mode",
-    "menu": "Menu"
+    "menu": "Menu",
+    "minimize": "Minimize",
+    "quit": "Quit Lutra"
   },
   "empty": {
     "title": "No games yet",

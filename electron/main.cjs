@@ -119,6 +119,13 @@ function onEvent(event, payload) {
 /** Controller actions go to the overlay when it is open, else to Lutra when it is in use. */
 function routeAction(action) {
   if (overlayWindow) return overlayWindow.webContents.send("ev:ui-action", action);
+  // The Guide button while Lutra is out of sight (in the notification area, or minimized) and no
+  // game runs: Lutra comes back, in Big Picture. (During a game the backend opens the overlay.)
+  if (action === "menu" && mainWindow && (!mainWindow.isVisible() || mainWindow.isMinimized())) {
+    showMain();
+    mainWindow.webContents.send("ev:tray-big-picture", null);
+    return;
+  }
   // Powering the controller off acts whatever window is in use.
   if (mainWindow && (action === "powerOff" || mainWindow.isFocused())) {
     mainWindow.webContents.send("ev:ui-action", action);
@@ -270,6 +277,13 @@ ipcMain.handle("window", (event, operation, value) => {
       return window.close();
     case "setFullscreen":
       return window.setFullScreen(Boolean(value));
+    case "toTray":
+      // Out of sight, in the notification area when there is one (the Guide button brings it
+      // back), otherwise minimized.
+      return trayInfo.available ? window.hide() : window.minimize();
+    case "quit":
+      quitting = true;
+      return app.quit();
   }
 });
 

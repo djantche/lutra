@@ -10,7 +10,10 @@ interface PickOptions {
 interface LutraBridge {
   invoke(command: string, args?: Record<string, unknown>): Promise<unknown>;
   on(event: string, callback: (payload: unknown) => void): () => void;
-  window(operation: "minimize" | "toggleMaximize" | "close" | "setFullscreen", value?: boolean): Promise<void>;
+  window(
+    operation: "minimize" | "toggleMaximize" | "close" | "setFullscreen" | "toTray" | "quit",
+    value?: boolean,
+  ): Promise<void>;
   pick(options: PickOptions): Promise<string | null>;
   version(): Promise<string>;
 }
@@ -52,6 +55,10 @@ export const currentWindow = () => ({
   toggleMaximize: () => bridge().window("toggleMaximize"),
   close: () => bridge().window("close"),
   setFullscreen: (on: boolean) => bridge().window("setFullscreen", on),
+  /** Out of sight in the notification area (minimized when there is none). */
+  hideToTray: () => bridge().window("toTray"),
+  /** Quits Lutra. */
+  quit: () => bridge().window("quit"),
 });
 
 /** Native file or folder picker. Resolves to the chosen path, or null when cancelled. */

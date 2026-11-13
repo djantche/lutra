@@ -7,6 +7,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 ### Added
 
 - The charge of each controller is also shown next to the clock at the top of Big Picture.
+- "Minimize" and "Quit Lutra" in the Big Picture menu: Minimize puts Lutra out of sight in the notification area (or minimizes it when there is none).
+- While Lutra is in the notification area (or minimized) and no game runs, the Guide button (PlayStation button and equivalents) brings it back, in Big Picture. During a game it still opens the overlay.
+
+### Fixed
+
+- The window did not go to the notification area after a Windows game started: Lutra looked for the game's process only in the launcher's process group, which a Proton container leaves. It now follows everything started by the launch, and after ten seconds accepts a process of the game's name anywhere.
 
 ## [0.3.0] - 2026-11-13
 

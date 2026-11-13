@@ -902,6 +902,10 @@ fn watch_launch(app: AppHandle, watch: LaunchWatch) {
                         && session::group_alive(&procs, watch.pgid)
                 } else {
                     session::game_running(&procs, watch.pgid, &watch.exe)
+                        // A launcher that detached its game from its own family: once the launch
+                        // has had a moment, a process of that name anywhere is the game.
+                        || (started.elapsed() > Duration::from_secs(10)
+                            && session::game_running_anywhere(&procs, &watch.exe))
                 };
                 if up || started.elapsed() > READY_TIMEOUT {
                     emit_progress(

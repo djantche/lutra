@@ -25,13 +25,16 @@ interface BigPictureMenuProps {
   onTab: (tab: Tab) => void;
   onClose: () => void;
   onExit: () => void;
+  /** Hides Lutra in the notification area. */
+  onMinimize: () => void;
+  onQuit: () => void;
 }
 
 /**
  * The side menu of Big Picture, opened with the controller's menu button: where you go (home,
  * library) and the settings (controllers, general), plus the way back to the desktop.
  */
-export function BigPictureMenu({ tab, onTab, onClose, onExit }: BigPictureMenuProps) {
+export function BigPictureMenu({ tab, onTab, onClose, onExit, onMinimize, onQuit }: BigPictureMenuProps) {
   const { t } = useTranslation();
   const ref = useAutofocus<HTMLDivElement>();
 
@@ -84,6 +87,14 @@ export function BigPictureMenu({ tab, onTab, onClose, onExit }: BigPictureMenuPr
         <button type="button" data-focusable className={cx(styles.item, styles.exit)} onClick={onExit} {...hoverFocus}>
           <Icon name="monitor" size={26} />
           {t("bigPicture.exit")}
+        </button>
+        <button type="button" data-focusable className={styles.item} onClick={onMinimize} {...hoverFocus}>
+          <Icon name="minimize" size={26} />
+          {t("bigPicture.minimize")}
+        </button>
+        <button type="button" data-focusable className={cx(styles.item, styles.last)} onClick={onQuit} {...hoverFocus}>
+          <Icon name="power" size={26} />
+          {t("bigPicture.quit")}
         </button>
       </nav>
     </div>
