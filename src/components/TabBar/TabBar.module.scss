@@ -1,0 +1,81 @@
+// Sized in em so each shell can scale it through its own font-size.
+.bar {
+  display: flex;
+  flex: none;
+  gap: 0.3em;
+  // Room for the focus ring, which the horizontal scroll would otherwise cut.
+  margin: -4px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.6em;
+  height: 2.6em;
+  padding: 0 1em;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+}
+
+.active,
+.active:hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+  font-weight: 600;
+
+  svg {
+    color: var(--color-accent);
+  }
+}
+
+.badge {
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+// Big Picture: bigger, and the focused tab is a white pill like everything else there.
+.large {
+  gap: 0.5em;
+
+  .tab {
+    height: 2.8em;
+    padding: 0 1.3em;
+    color: rgb(255 255 255 / 0.65);
+    font-size: 1.15rem;
+    font-weight: 600;
+
+    &:focus {
+      outline: none;
+      background: #fff;
+      color: #05060a;
+      box-shadow: none;
+
+      svg {
+        color: inherit;
+      }
+    }
+  }
+
+  .active:not(:focus) {
+    background: rgb(255 255 255 / 0.12);
+    color: #fff;
+  }
+}

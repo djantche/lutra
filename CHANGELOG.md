@@ -2,6 +2,16 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- Sections of the settings and of a game's settings are now a row of tabs instead of a side list, easier to cross with a keyboard or a gamepad (also in Big Picture).
+
+### Fixed
+
+- Two Lutra instances running at the same time took each other's virtual Xbox 360 pads for real controllers and kept creating more (over a hundred, listed as "Xbox controller" in the Controllers screen). Virtual `uinput` controllers are now recognised system-wide and never driven.
+
 ## [0.1.2] - 2026-11-13
 
 ### Fixed

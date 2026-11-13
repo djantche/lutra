@@ -1,7 +1,7 @@
 import { useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import type { IconName } from "../components/Icon/Icon";
-import { SideNav } from "../components/SideNav/SideNav";
+import { TabBar } from "../components/TabBar/TabBar";
 import { AboutSection } from "./settings/AboutSection";
 import { ArtworkSection } from "./settings/ArtworkSection";
 import { GeneralSection } from "./settings/GeneralSection";
@@ -38,15 +38,15 @@ export function SettingsView({ section: initial = "general" }: { section?: Setti
 
   return (
     <div className={styles.settings}>
-      <aside className={styles.nav}>
+      <header className={styles.top}>
         <h1 className={styles.title}>{t("settings.title")}</h1>
-        <SideNav
+        <TabBar
           ariaLabel={t("settings.title")}
           items={SECTIONS.map((item) => ({ ...item, label: t(`settings.tabs.${item.value}`) }))}
           value={section}
           onChange={setSection}
         />
-      </aside>
+      </header>
 
       <section key={section} className={styles.panel}>
         <header className={styles.panelHeader}>

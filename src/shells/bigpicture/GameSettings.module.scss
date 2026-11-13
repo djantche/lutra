@@ -2,8 +2,8 @@
   position: absolute;
   inset: 0;
   z-index: 15;
-  display: grid;
-  grid-template-columns: minmax(300px, 28vw) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   isolation: isolate;
   background: var(--color-bg);
   animation: in 320ms var(--ease-out) both;
@@ -30,19 +30,23 @@
   }
 }
 
-.side {
+.head {
   display: flex;
-  flex-direction: column;
+  flex: none;
+  align-items: center;
   gap: var(--space-6);
-  padding: 36px 24px 32px var(--gutter);
-  border-right: 1px solid var(--color-border);
-  background: rgb(8 9 14 / 0.6);
+  padding: 28px var(--gutter) 8px;
+}
+
+.tabs {
+  flex: none;
+  padding: 8px var(--gutter) 4px;
 }
 
 .back {
   display: grid;
+  flex: none;
   place-items: center;
-  align-self: flex-start;
   width: 52px;
   height: 52px;
   border: 0;
@@ -63,52 +67,13 @@
 }
 
 .logo {
-  --logo-width: min(18rem, 100%);
-  --logo-height: clamp(3.5rem, 7vh, 5rem);
+  --logo-width: min(18rem, 40vw);
+  --logo-height: clamp(3rem, 6vh, 4.2rem);
   font-size: clamp(1.8rem, 3vw, 2.6rem);
 }
 
-.sections {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding-right: var(--space-3);
-  overflow: hidden auto;
-}
-
-.section {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  width: 100%;
-  padding: 14px 18px;
-  border: 0;
-  border-radius: 16px;
-  background: transparent;
-  color: rgb(255 255 255 / 0.65);
-  font-size: 1.15rem;
-  font-weight: 600;
-  text-align: left;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out),
-    transform var(--duration-base) var(--ease-spring);
-
-  &:focus {
-    outline: none;
-    background: #fff;
-    color: #05060a;
-    transform: translateX(6px);
-  }
-}
-
-.current:not(:focus) {
-  background: rgb(255 255 255 / 0.1);
-  color: #fff;
-}
-
 .state {
+  margin-left: auto;
   color: var(--color-text-subtle);
   font-size: 0.9rem;
 }
@@ -118,8 +83,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  flex: 1;
+  min-height: 0;
   min-width: 0;
-  padding: 40px var(--gutter) 40px var(--space-8);
+  padding: 24px var(--gutter) 40px;
   overflow-y: auto;
   font-size: 1.15rem;
 

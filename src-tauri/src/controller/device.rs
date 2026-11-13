@@ -41,9 +41,34 @@ pub fn is_lutra_hid(path: &Path) -> bool {
     })
 }
 
-/// A controller Lutra should drive: a gamepad that is not one of Lutra's own virtual ones.
+/// Whether `sysfs_path` (the resolved `/sys/class/input/<node>`) belongs to a `uinput` device.
+/// The kernel puts those under `/devices/virtual/input/`, unlike USB or Bluetooth controllers
+/// (a Bluetooth DualShock goes through `uhid`, under `/devices/virtual/misc/uhid/`).
+fn is_uinput_path(sysfs_path: &Path) -> bool {
+    sysfs_path
+        .to_string_lossy()
+        .contains("/devices/virtual/input/")
+}
+
+/// A virtual controller made with `uinput`, by this Lutra or another one (a second instance, or a
+/// previous one that is still closing). The registry of `virtual_pad` only knows this process's:
+/// without this, two instances take each other's virtual pads for real ones and keep making more.
+/// Other programs' `uinput` pads (remappers, other virtual pads) are left alone too, since
+/// driving them would only echo their output.
+pub fn is_uinput_virtual(path: &Path) -> bool {
+    let Some(name) = path.file_name() else {
+        return false;
+    };
+    std::fs::canonicalize(Path::new("/sys/class/input").join(name))
+        .is_ok_and(|resolved| is_uinput_path(&resolved))
+}
+
+/// A controller Lutra should drive: a gamepad that is not a virtual one (Lutra's or anyone's).
 pub fn is_gamepad(path: &Path, device: &Device) -> bool {
-    !super::virtual_pad::is_own(path) && !is_lutra_hid(path) && is_pad(device)
+    !super::virtual_pad::is_own(path)
+        && !is_lutra_hid(path)
+        && !is_uinput_virtual(path)
+        && is_pad(device)
 }
 
 /// Any gamepad (Lutra's virtual ones included) but Steam's: a face button and a stick.
@@ -112,4 +137,25 @@ pub fn companions(controller: &ControllerInfo) -> Vec<Device> {
         })
         .map(|(_, device)| device)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_uinput_device_is_told_from_a_real_or_uhid_controller() {
+        // Lutra's virtual Xbox 360 pad, or anyone's.
+        assert!(is_uinput_path(Path::new(
+            "/sys/devices/virtual/input/input52/event30"
+        )));
+        // A Bluetooth DualShock goes through uhid: a real controller.
+        assert!(!is_uinput_path(Path::new(
+            "/sys/devices/virtual/misc/uhid/0005:054C:09CC.0008/input/input35/event27"
+        )));
+        // A USB pad.
+        assert!(!is_uinput_path(Path::new(
+            "/sys/devices/pci0000:00/0000:00:14.0/usb1/1-2/1-2:1.0/input/input20/event12"
+        )));
+    }
 }

@@ -4,11 +4,11 @@ import { GameLogo } from "../../components/GameLogo/GameLogo";
 import { GameArt } from "../../components/GameArt/GameArt";
 import { Icon, type IconName } from "../../components/Icon/Icon";
 import { Spinner } from "../../components/Spinner/Spinner";
+import { TabBar } from "../../components/TabBar/TabBar";
 import { useGameSettings } from "../../hooks/useGameSettings";
 import { hoverFocus } from "../../input/hoverFocus";
 import { useAutofocus } from "../../input/useAutofocus";
 import { useInputAction } from "../../input/useInputAction";
-import { cx } from "../../lib/cx";
 import type { Game } from "../../types/game";
 import { ArtworkTab } from "../classic/config/artwork/ArtworkTab";
 import { ControllerTab } from "../classic/config/ControllerTab";
@@ -113,32 +113,25 @@ export function GameSettings({ game, onClose }: { game: Game; onClose: () => voi
         <GameArt game={game} kind="hero" />
       </div>
 
-      <aside className={styles.side}>
+      <header className={styles.head}>
         <button type="button" data-focusable className={styles.back} aria-label={t("common.back")} onClick={leave} {...hoverFocus}>
           <Icon name="arrowLeft" size={24} />
         </button>
         <GameLogo game={game} className={styles.logo} />
-        <nav className={styles.sections} aria-label={t("config.sections")}>
-          {sections.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              data-focusable
-              data-autofocus={item.value === section ? "" : undefined}
-              className={cx(styles.section, item.value === section && styles.current)}
-              aria-current={item.value === section ? "page" : undefined}
-              onClick={() => setSection(item.value)}
-              {...hoverFocus}
-            >
-              <Icon name={item.icon} size={24} />
-              {label(item.value)}
-            </button>
-          ))}
-        </nav>
         <p className={styles.state} aria-live="polite">
           {pending ? t("config.saving") : t("config.saved")}
         </p>
-      </aside>
+      </header>
+
+      <div className={styles.tabs}>
+        <TabBar
+          large
+          ariaLabel={t("config.sections")}
+          items={sections.map((item) => ({ ...item, label: label(item.value) }))}
+          value={section}
+          onChange={setSection}
+        />
+      </div>
 
       <main className={styles.content}>
         {isManual && !settings ? <Spinner /> : null}

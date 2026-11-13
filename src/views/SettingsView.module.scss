@@ -1,23 +1,17 @@
 // Sized in em so each shell can scale the whole page through its own font-size.
 .settings {
-  display: grid;
-  grid-template-columns: 15em minmax(0, 50em);
-  gap: 2.4em;
-  align-items: start;
-  width: 100%;
-
-  @media (max-width: 900px) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.4em;
-  }
-}
-
-.nav {
-  position: sticky;
-  top: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.2em;
+  gap: 1.8em;
+  width: 100%;
+  max-width: 56em;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1em;
+  min-width: 0;
 }
 
 .title {

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../../../components/Button/Button";
 import { Dialog } from "../../../components/Dialog/Dialog";
 import { GameArt } from "../../../components/GameArt/GameArt";
-import { SideNav, type SideNavItem } from "../../../components/SideNav/SideNav";
+import { TabBar, type TabBarItem } from "../../../components/TabBar/TabBar";
 import { Spinner } from "../../../components/Spinner/Spinner";
 import { useGameSettings } from "../../../hooks/useGameSettings";
 import { useLibraryStore } from "../../../state/library";
@@ -45,8 +45,8 @@ export function GameConfigDialog({ gameId, onClose }: { gameId: string; onClose:
 
   if (!game) return null;
 
-  const artwork: SideNavItem<Section> = { value: "artwork", label: t("config.tabArtwork"), icon: "image" };
-  const sections: SideNavItem<Section>[] = isManual
+  const artwork: TabBarItem<Section> = { value: "artwork", label: t("config.tabArtwork"), icon: "image" };
+  const sections: TabBarItem<Section>[] = isManual
     ? [
         { value: "general", label: t("config.tabGeneral"), icon: "info" },
         { value: "details", label: t("config.tabDetails"), icon: "info" },
@@ -96,7 +96,7 @@ export function GameConfigDialog({ gameId, onClose }: { gameId: string; onClose:
       }
     >
       <div className={styles.layout}>
-        <SideNav ariaLabel={t("config.sections")} items={items} value={section} onChange={setSection} />
+        <TabBar ariaLabel={t("config.sections")} items={items} value={section} onChange={setSection} />
 
         <div className={styles.content}>
           {showsForm && !settings && <Spinner />}
