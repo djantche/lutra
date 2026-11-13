@@ -732,13 +732,22 @@ fn emit_running(app: &AppHandle, id: &str, running: bool) {
             running,
         },
     );
-    // Installers do not count: the user follows them from Lutra's window.
-    let games_running = app
-        .state::<Running>()
-        .0
-        .lock()
-        .is_ok_and(|running| running.keys().any(|key| !key.starts_with("install:")));
-    tray::on_game(app, games_running);
+    // The window goes to the notification area once a game is really up (see `hide_for_game`),
+    // not when its process is created: the launch is followed from the window until then.
+    if !running {
+        // Installers do not count: the user follows them from Lutra's window.
+        let games_running = app
+            .state::<Running>()
+            .0
+            .lock()
+            .is_ok_and(|running| running.keys().any(|key| !key.starts_with("install:")));
+        tray::on_game(app, games_running);
+    }
+}
+
+/// Called when a launch reaches "ready": the game is up, so the window can step aside.
+fn hide_for_game(app: &AppHandle) {
+    tray::on_game(app, true);
 }
 
 fn emit_progress(
@@ -923,6 +932,9 @@ fn watch_launch(app: AppHandle, watch: LaunchWatch) {
                         LaunchState::Ready,
                         None,
                     );
+                    if !watch.exit.done.load(Ordering::SeqCst) {
+                        hide_for_game(&app);
+                    }
                     return;
                 }
             }
@@ -968,6 +980,7 @@ fn watch_steam(app: AppHandle, id: String, app_id: String) {
             .insert(id.clone(), pid);
         emit_progress(&app, &id, "wait", 2, 2, LaunchState::Ready, None);
         emit_running(&app, &id, true);
+        hide_for_game(&app);
 
         while Path::new(&format!("/proc/{pid}")).exists() {
             std::thread::sleep(Duration::from_secs(2));

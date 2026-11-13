@@ -2,6 +2,12 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [0.1.2] - 2026-11-13
+
+### Fixed
+
+- With "minimize during games" on, the window went to the notification area the moment a Windows game was launched, hiding the launch progress. It now waits until the game is really running (and stays visible if the launch fails).
+
 ## [0.1.1] - 2026-11-13
 
 ### Changed
