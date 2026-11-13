@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { buttonLabel } from "../../lib/buttonLabels";
 import type { ControllerButton, ControllerFamily, PadSnapshot } from "../../lib/controllers";
 import { cx } from "../../lib/cx";
-import { ControllerPhoto } from "./ControllerPhoto";
+import { ControllerSvg } from "./ControllerSvg";
 import styles from "./GamepadVisual.module.scss";
 
 const STICK_TRAVEL = 11;
@@ -14,10 +14,10 @@ interface GamepadVisualProps {
 
 /**
  * The controller drawn live: what is pressed lights up, sticks and triggers move.
- * PlayStation controllers get a real render; others a schematic until they have one too.
+ * PlayStation controllers get a line drawing of a DualShock 4; others a schematic until they have one too.
  */
 export function GamepadVisual({ state, family }: GamepadVisualProps) {
-  if (family === "playstation") return <ControllerPhoto state={state} />;
+  if (family === "playstation") return <ControllerSvg state={state} />;
   return <SchematicPad state={state} family={family} />;
 }
 

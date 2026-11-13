@@ -1,0 +1,56 @@
+.pad {
+  display: block;
+  width: 100%;
+  max-width: 760px;
+  height: auto;
+  // The drawing is line art: its color follows the text, so it reads on any background.
+  color: var(--pad-line, var(--color-text-muted));
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dots {
+  fill: currentColor;
+  stroke: none;
+}
+
+// A button: transparent until it is pressed, then filled.
+.part path,
+.part circle,
+.part rect {
+  fill: transparent;
+  transition: fill 60ms linear;
+}
+
+.part.on path,
+.part.on circle,
+.part.on rect {
+  fill: var(--pad-on, var(--color-accent));
+}
+
+// Stick caps follow the stick; a click on the stick fills them.
+.stick {
+  transition: transform 40ms linear;
+
+  circle {
+    fill: transparent;
+    transition: fill 60ms linear;
+  }
+}
+
+.stick.on circle:first-child {
+  fill: var(--pad-on, var(--color-accent));
+}
+
+// A trigger fills with how far it is pulled.
+.trigger {
+  fill: var(--color-accent);
+  fill-opacity: var(--pull, 0);
+  transition: fill-opacity 40ms linear;
+}

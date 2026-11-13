@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Changed
+
+- The PlayStation controller is now a line drawing of a DualShock 4 (supplied as an SVG) instead of a photo. Pressing a button fills that button on the drawing (the face buttons in their PlayStation colors), the sticks move with the analogue values, and L2 / R2 fill with how far they are pulled.
+
 ### Added
 
 - The charge of each controller is also shown next to the clock at the top of Big Picture.

@@ -152,20 +152,22 @@ let mockSession: ControllerStatus["session"] = null;
 let mockNavigation = true;
 let mockSystem = true;
 
-/** A slowly moving controller, so the live view can be designed in a browser. */
+const MOCK_BUTTONS: ControllerButton[] = [
+  "south", "east", "west", "north", "l1", "r1", "select", "start", "guide", "l3", "r3",
+  "dpadUp", "dpadDown", "dpadLeft", "dpadRight",
+];
+
+/** A controller going through every button and moving its sticks, so the live view can be designed in a browser. */
 function mockState(): PadSnapshot {
   const t = Date.now() / 1000;
-  const pressed: ControllerButton[] = [];
-  if (Math.floor(t) % 4 === 0) pressed.push("south");
-  if (Math.floor(t) % 5 === 2) pressed.push("dpadUp", "r1");
   return {
-    pressed,
+    pressed: [MOCK_BUTTONS[Math.floor(t) % MOCK_BUTTONS.length]],
     lx: Math.cos(t) * 0.8,
     ly: Math.sin(t) * 0.8,
-    rx: Math.sin(t * 0.7) * 0.4,
-    ry: 0,
+    rx: Math.sin(t * 0.7) * 0.9,
+    ry: Math.cos(t * 0.7) * 0.9,
     lt: (Math.sin(t * 1.3) + 1) / 2,
-    rt: 0,
+    rt: (Math.cos(t * 1.1) + 1) / 2,
   };
 }
 
