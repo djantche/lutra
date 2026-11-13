@@ -4,6 +4,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-13
+
 ### Changed
 
 - Holding the controller's Guide button for 3 seconds opens a power menu, like a console's: quit Lutra, back to the desktop mode (from Big Picture), minimize, or switch the controller off. It appears even when Lutra is out of sight, and acts on the controller whose button was held. In a game, holding the Guide still switches the controller off directly.
