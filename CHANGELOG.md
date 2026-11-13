@@ -4,9 +4,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-13
+
 ### Added
 
 - Lutra downloads Wine and Proton for you. A new **Runners** tab in the settings lists what Lutra has downloaded (with its size and how many games use it, and a way to remove it) and what can be installed: GE-Proton (GloriousEggroll's Proton), Wine and Wine Staging (Kron4ek's builds), straight from their GitHub releases. An install shows its real progress (bytes downloaded with speed and time left, then files extracted), checks the archive's SHA-256 before unpacking, keeps a log, and can be cancelled at any moment without leaving anything behind. It keeps running while you are on another page, and a message tells you how it ended.
+- The README now shows screenshots of a real library.
 - On a machine with no Wine or Proton, adding a Windows game offers to install the latest GE-Proton right there, and the runner list updates when it is done.
 
 ## [0.4.0] - 2026-11-13
