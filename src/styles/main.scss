@@ -34,6 +34,15 @@ button {
   cursor: pointer;
 }
 
+// The frameless window is moved by dragging these areas; what is clickable inside stays clickable.
+[data-drag-region] {
+  -webkit-app-region: drag;
+}
+
+[data-drag-region] :is(button, a, input, select, textarea, [data-focusable]) {
+  -webkit-app-region: no-drag;
+}
+
 h1,
 h2,
 h3,

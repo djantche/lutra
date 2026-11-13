@@ -1,2 +1,4 @@
 allowBuilds:
   "@parcel/watcher": false
+  electron: true
+  electron-winstaller: false

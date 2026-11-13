@@ -4,9 +4,11 @@ mod controller;
 mod db;
 mod gamedb;
 mod hardware;
+pub mod host;
 mod hyprland;
 mod installer;
 mod prefixes;
+mod rpc;
 mod session;
 mod steam;
 mod steamgriddb;
@@ -25,7 +27,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, State};
+use serde_json::json;
+use host::{AppHandle, State};
 
 use artwork::Error as ArtError;
 use controller::model::{OutputKind, PadSnapshot, Profile, apply};
@@ -44,8 +47,6 @@ const CONTROLLER_SYSTEM: &str = "controller_system";
 /// Owner of the controller profile used by games without their own, and of test sessions.
 const DEFAULT_PROFILE: &str = "default";
 const TEST_SESSION: &str = "test";
-/// Present in the data folder when the user asked for compatibility rendering.
-const RENDER_COMPAT_FLAG: &str = "compat-rendering";
 
 /// Where Lutra keeps its data, known before Tauri starts (same as `app_data_dir`).
 fn data_dir_early() -> Option<PathBuf> {
@@ -57,17 +58,16 @@ fn data_dir_early() -> Option<PathBuf> {
     Some(base.join("dev.lutra.app"))
 }
 
-/// Label of the in-game overlay window.
-const OVERLAY: &str = "overlay";
 const OVERLAY_TITLE: &str = "Lutra Overlay";
 
-/// Opens the in-game overlay over the running game, or closes it. The overlay is its own window,
-/// so the game keeps running underneath; while it is open the controller drives it, not the game.
+/// Opens the in-game overlay over the running game, or closes it. The overlay is its own window
+/// (made by the shell), so the game keeps running underneath; while it is open the controller
+/// drives it, not the game.
 fn toggle_overlay(app: &AppHandle) {
     let service = app.state::<ControllerService>();
-    if let Some(window) = app.get_webview_window(OVERLAY) {
+    if service.overlay_open() {
         service.set_overlay(false);
-        let _ = window.close();
+        let _ = app.emit("host:overlay", json!({ "open": false }));
         return;
     }
     let game_running = app
@@ -78,62 +78,43 @@ fn toggle_overlay(app: &AppHandle) {
     if !game_running {
         return;
     }
-
-    let built = tauri::WebviewWindowBuilder::new(
-        app,
-        OVERLAY,
-        tauri::WebviewUrl::App("index.html?overlay=1".into()),
-    )
-    .title(OVERLAY_TITLE)
-    // Hyprland allows a single fullscreen window per workspace: the overlay would take the game's
-    // place. There it is placed over the screen instead (`hyprland::show_overlay`).
-    .fullscreen(!hyprland::available())
-    .decorations(false)
-    .transparent(true)
-    .always_on_top(true)
-    .skip_taskbar(true)
-    .focused(true)
-    .build();
-    match built {
-        Ok(window) => {
-            service.set_overlay(true);
-            let handle = app.clone();
-            window.on_window_event(move |event| {
-                if matches!(event, tauri::WindowEvent::Destroyed) {
-                    handle.state::<ControllerService>().set_overlay(false);
-                }
-            });
-            applog::info("Overlay opened");
-            hyprland::show_overlay(OVERLAY_TITLE);
-        }
-        Err(error) => applog::warn(format!("Could not open the overlay: {error}")),
-    }
+    service.set_overlay(true);
+    applog::info("Overlay opened");
+    let _ = app.emit(
+        "host:overlay",
+        json!({
+            "open": true,
+            "title": OVERLAY_TITLE,
+            // Hyprland allows a single fullscreen window per workspace: the overlay would take the
+            // game's place. There it is placed over the screen instead (`overlay_shown`).
+            "fullscreen": !hyprland::available(),
+        }),
+    );
 }
 
-/// Closes the overlay; `show_lutra` also brings the Lutra window to the front.
-#[tauri::command]
-async fn close_overlay(app: AppHandle, show_lutra: bool) -> Result<(), String> {
-    app.state::<ControllerService>().set_overlay(false);
-    if let Some(window) = app.get_webview_window(OVERLAY) {
-        let _ = window.close();
-    }
-    if show_lutra && let Some(main) = app.get_webview_window("main") {
-        let _ = main.unminimize();
-        let _ = main.show();
-        let _ = main.set_focus();
-    }
+/// The shell (process `pid`) made the overlay window: on Hyprland, float and pin it over the game.
+// @rpc
+async fn overlay_shown(pid: i64) -> Result<(), String> {
+    hyprland::show_overlay(pid, OVERLAY_TITLE);
     Ok(())
 }
 
-/// Applies the rendering mode chosen in the settings. Must run before the window is created.
-/// Compatibility mode turns off WebKitGTK's DMA-BUF renderer: slower, but it avoids flickering
-/// on some GPU and driver combinations. A value set in the environment always wins.
-pub fn prepare_rendering() {
-    let wanted = data_dir_early().is_some_and(|dir| dir.join(RENDER_COMPAT_FLAG).exists());
-    if wanted && std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
-        // SAFETY: called from `main` before any other thread exists.
-        unsafe { std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1") };
+/// The overlay window is gone (closed by the user, or it could not be made).
+// @rpc
+async fn overlay_closed(app: AppHandle) -> Result<(), String> {
+    app.state::<ControllerService>().set_overlay(false);
+    Ok(())
+}
+
+/// Closes the overlay; `show_lutra` also brings the Lutra window to the front.
+// @rpc
+async fn close_overlay(app: AppHandle, show_lutra: bool) -> Result<(), String> {
+    app.state::<ControllerService>().set_overlay(false);
+    let _ = app.emit("host:overlay", json!({ "open": false }));
+    if show_lutra {
+        let _ = app.emit("host:show", ());
     }
+    Ok(())
 }
 
 struct Library(Mutex<Db>);
@@ -172,7 +153,7 @@ fn home_dir() -> Result<PathBuf, String> {
 }
 
 fn app_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    app.path().app_data_dir().map_err(|e| e.to_string())
+    Ok(app.data_dir())
 }
 
 /// Folder name for a game id (`steam:10` -> `steam_10`).
@@ -196,7 +177,7 @@ fn emit_library(app: &AppHandle) {
 }
 
 /// Interface mode requested on the command line (`lutra --big-picture`).
-#[tauri::command]
+// @rpc
 fn launch_mode() -> &'static str {
     if std::env::args().any(|arg| arg == "--big-picture") {
         "bigpicture"
@@ -206,13 +187,13 @@ fn launch_mode() -> &'static str {
 }
 
 /// Games already known, without touching the disk: used to paint the library instantly.
-#[tauri::command]
+// @rpc
 async fn list_games(library: State<'_, Library>) -> Result<Vec<Game>, String> {
     library.lock()?.list().map_err(|e| e.to_string())
 }
 
 /// Looks for installed games in every supported source, then returns the whole library.
-#[tauri::command]
+// @rpc
 async fn scan_sources(library: State<'_, Library>) -> Result<Vec<Game>, String> {
     let home = home_dir()?;
 
@@ -237,7 +218,7 @@ async fn scan_sources(library: State<'_, Library>) -> Result<Vec<Game>, String> 
     db.list().map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+// @rpc
 async fn set_favorite(
     library: State<'_, Library>,
     id: String,
@@ -250,20 +231,20 @@ async fn set_favorite(
 }
 
 /// Wine and Proton installs found on this machine.
-#[tauri::command]
+// @rpc
 async fn list_runners() -> Result<Vec<Runner>, String> {
     Ok(wine::detect_runners(&steam::steam_roots(&home_dir()?)))
 }
 
 /// Helper programs (Wine, umu, winetricks, gamemode, mangohud) and their versions.
-#[tauri::command]
+// @rpc
 async fn wine_tools() -> Result<Tools, String> {
-    tauri::async_runtime::spawn_blocking(wine::detect_tools)
+    host::async_runtime::spawn_blocking(wine::detect_tools)
         .await
         .map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+// @rpc
 async fn default_runner(library: State<'_, Library>) -> Result<Option<String>, String> {
     library
         .lock()?
@@ -272,7 +253,7 @@ async fn default_runner(library: State<'_, Library>) -> Result<Option<String>, S
 }
 
 /// Runner preselected when adding a game. `None` goes back to "the first one found".
-#[tauri::command]
+// @rpc
 async fn set_default_runner(
     library: State<'_, Library>,
     path: Option<String>,
@@ -316,7 +297,7 @@ fn title_or_stem(title: &str, exe: &Path) -> String {
     }
 }
 
-#[tauri::command]
+// @rpc
 async fn add_game(
     app: AppHandle,
     library: State<'_, Library>,
@@ -430,7 +411,7 @@ fn folder_size(path: &Path) -> u64 {
 }
 
 /// What removing a game can delete besides its entry.
-#[tauri::command]
+// @rpc
 async fn removable_prefix_of(
     app: AppHandle,
     library: State<'_, Library>,
@@ -439,7 +420,7 @@ async fn removable_prefix_of(
     let Some(prefix) = removable_prefix(&app, &*library.lock()?, &id)? else {
         return Ok(None);
     };
-    tauri::async_runtime::spawn_blocking(move || RemovablePrefix {
+    host::async_runtime::spawn_blocking(move || RemovablePrefix {
         bytes: folder_size(&prefix),
         path: prefix.to_string_lossy().into_owned(),
     })
@@ -451,7 +432,7 @@ async fn removable_prefix_of(
 /// Removes a game added by hand. With `everything`, its Wine prefix (game files installed in it
 /// and save games included), its logs and its controller profile go too; otherwise the prefix
 /// is kept, since it may hold save games.
-#[tauri::command]
+// @rpc
 async fn remove_game(
     app: AppHandle,
     library: State<'_, Library>,
@@ -501,7 +482,7 @@ async fn remove_game(
     }
     if let Some(prefix) = prefix {
         let path = prefix.clone();
-        tauri::async_runtime::spawn_blocking(move || fs::remove_dir_all(path))
+        host::async_runtime::spawn_blocking(move || fs::remove_dir_all(path))
             .await
             .map_err(|e| e.to_string())?
             .map_err(|e| format!("the game is removed, but not its prefix: {e}"))?;
@@ -512,7 +493,7 @@ async fn remove_game(
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn wine_settings(library: State<'_, Library>, id: String) -> Result<WineSettings, String> {
     let mut settings = library
         .lock()?
@@ -523,7 +504,7 @@ async fn wine_settings(library: State<'_, Library>, id: String) -> Result<WineSe
     Ok(settings)
 }
 
-#[tauri::command]
+// @rpc
 async fn save_wine_settings(
     library: State<'_, Library>,
     settings: WineSettings,
@@ -582,16 +563,16 @@ async fn save_wine_settings(
 }
 
 /// Looks a game up in GameDB, to fill in its name, release date, developer and genres.
-#[tauri::command]
+// @rpc
 async fn search_game_db(app: AppHandle, query: String) -> Result<Vec<gamedb::GameHit>, String> {
     let cache = app_dir(&app)?.join("gamedb");
-    tauri::async_runtime::spawn_blocking(move || gamedb::search(&cache, &query, 6))
+    host::async_runtime::spawn_blocking(move || gamedb::search(&cache, &query, 6))
         .await
         .map_err(|e| e.to_string())?
 }
 
 /// Saves the details of a game as the user edited them.
-#[tauri::command]
+// @rpc
 async fn save_game_meta(
     library: State<'_, Library>,
     id: String,
@@ -604,21 +585,21 @@ async fn save_game_meta(
         .ok_or_else(|| "game not found".to_string())
 }
 
-#[tauri::command]
+// @rpc
 async fn game_meta(library: State<'_, Library>, id: String) -> Result<db::GameMeta, String> {
     library.lock()?.game_meta(&id).map_err(|e| e.to_string())
 }
 
 /// What this machine has: GPUs, NT sync, gamescope.
-#[tauri::command]
+// @rpc
 async fn hardware_info() -> Result<hardware::Hardware, String> {
-    tauri::async_runtime::spawn_blocking(hardware_now)
+    host::async_runtime::spawn_blocking(hardware_now)
         .await
         .map_err(|e| e.to_string())
 }
 
 /// The options that suit this machine best, for a kind of runner.
-#[tauri::command]
+// @rpc
 async fn recommended_config(runner_kind: String) -> Result<WineConfig, String> {
     let kind = RunnerKind::parse(&runner_kind).ok_or("unknown runner type")?;
     Ok(wine::recommended_config(
@@ -994,7 +975,7 @@ fn watch_steam(app: AppHandle, id: String, app_id: String) {
     });
 }
 
-#[tauri::command]
+// @rpc
 async fn launch_game(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1124,7 +1105,7 @@ fn launch_inner(
 }
 
 /// Stops a running Windows game: its whole process group, then the Wine server of its prefix.
-#[tauri::command]
+// @rpc
 async fn stop_game(app: AppHandle, library: State<'_, Library>, id: String) -> Result<(), String> {
     let pid = app
         .state::<Running>()
@@ -1162,7 +1143,7 @@ async fn stop_game(app: AppHandle, library: State<'_, Library>, id: String) -> R
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn running_games(app: AppHandle) -> Result<Vec<String>, String> {
     Ok(app
         .state::<Running>()
@@ -1175,7 +1156,7 @@ async fn running_games(app: AppHandle) -> Result<Vec<String>, String> {
 }
 
 /// Opens winecfg or winetricks on a game's prefix.
-#[tauri::command]
+// @rpc
 async fn launch_wine_tool(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1210,7 +1191,7 @@ async fn launch_wine_tool(
 }
 
 /// Runs another program (an installer, a patch...) inside a game's prefix.
-#[tauri::command]
+// @rpc
 async fn run_in_prefix(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1248,7 +1229,7 @@ async fn run_in_prefix(
 }
 
 /// Opens a folder of a Windows game in the file manager: `files`, `prefix` or `logs`.
-#[tauri::command]
+// @rpc
 async fn open_game_folder(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1314,7 +1295,7 @@ struct InstallFinished {
 }
 
 /// Runs a game's setup program in a prefix and, once it closes, reports the programs it installed.
-#[tauri::command]
+// @rpc
 async fn start_install(app: AppHandle, request: InstallRequest) -> Result<InstallStarted, String> {
     let installer_exe = PathBuf::from(&request.installer_path);
     if !installer_exe.is_file() {
@@ -1436,7 +1417,7 @@ async fn start_install(app: AppHandle, request: InstallRequest) -> Result<Instal
 }
 
 /// Closes an installer that is still running.
-#[tauri::command]
+// @rpc
 async fn cancel_install(app: AppHandle, install_id: String) -> Result<(), String> {
     let pid = app
         .state::<Running>()
@@ -1455,7 +1436,7 @@ async fn cancel_install(app: AppHandle, install_id: String) -> Result<(), String
 }
 
 /// Wine prefixes that exist on this machine, to pick one for a game.
-#[tauri::command]
+// @rpc
 async fn list_prefixes(app: AppHandle) -> Result<Vec<prefixes::PrefixInfo>, String> {
     let lutra = app_dir(&app)?.join("prefixes");
     let roots = steam::steam_roots(&home_dir()?);
@@ -1463,7 +1444,7 @@ async fn list_prefixes(app: AppHandle) -> Result<Vec<prefixes::PrefixInfo>, Stri
 }
 
 /// Tells whether a folder can be the prefix of a game run by `runner_kind`, and why not.
-#[tauri::command]
+// @rpc
 async fn check_prefix(path: String, runner_kind: String) -> Result<(), String> {
     let kind = RunnerKind::parse(&runner_kind).ok_or("unknown runner type")?;
     prefixes::check_usable(Path::new(&path), kind)
@@ -1471,7 +1452,7 @@ async fn check_prefix(path: String, runner_kind: String) -> Result<(), String> {
 
 /// Opens the folder holding the Wine prefixes Lutra creates.
 /// Opens a web link with the default browser, outside of the AppImage's environment.
-#[tauri::command]
+// @rpc
 async fn open_external(url: String) -> Result<(), String> {
     if !(url.starts_with("https://") || url.starts_with("http://")) {
         return Err("only web links can be opened".into());
@@ -1479,7 +1460,7 @@ async fn open_external(url: String) -> Result<(), String> {
     wine::open_on_host(url)
 }
 
-#[tauri::command]
+// @rpc
 async fn open_prefixes_folder(app: AppHandle) -> Result<(), String> {
     let folder = app_dir(&app)?.join("prefixes");
     fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
@@ -1502,7 +1483,7 @@ fn reset_game_art(app: &AppHandle, library: &Library, id: &str) -> Result<(), St
 }
 
 /// Looks games up on SteamGridDB so the user can pick the right one for a game's artwork.
-#[tauri::command]
+// @rpc
 async fn search_artwork(
     library: State<'_, Library>,
     query: String,
@@ -1513,7 +1494,7 @@ async fn search_artwork(
         .map_err(|e| e.to_string())?
         .ok_or("no_key")?;
 
-    tauri::async_runtime::spawn_blocking(move || Client::new(&key).search(&query))
+    host::async_runtime::spawn_blocking(move || Client::new(&key).search(&query))
         .await
         .map_err(|e| e.to_string())?
         .map_err(|e| match e {
@@ -1523,7 +1504,7 @@ async fn search_artwork(
 }
 
 /// Uses a SteamGridDB game picked by the user for a game's artwork (`None`: back to automatic).
-#[tauri::command]
+// @rpc
 async fn pick_artwork(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1596,14 +1577,14 @@ fn art_settings_dto(db: &Db) -> Result<ArtSettings, String> {
     })
 }
 
-#[tauri::command]
+// @rpc
 async fn art_settings(library: State<'_, Library>) -> Result<ArtSettings, String> {
     let db = library.lock()?;
     art_settings_dto(&db)
 }
 
 /// Saves how Steam games get their images. Changing it fetches their artwork again.
-#[tauri::command]
+// @rpc
 async fn set_art_settings(
     app: AppHandle,
     library: State<'_, Library>,
@@ -1640,7 +1621,7 @@ async fn set_art_settings(
 }
 
 /// Checks and stores the SteamGridDB key. An empty key removes it. Fails with `invalid_key` if rejected.
-#[tauri::command]
+// @rpc
 async fn save_steamgriddb_key(library: State<'_, Library>, key: String) -> Result<bool, String> {
     let key = key.trim().to_string();
     if key.is_empty() {
@@ -1652,7 +1633,7 @@ async fn save_steamgriddb_key(library: State<'_, Library>, key: String) -> Resul
     }
 
     let to_check = key.clone();
-    tauri::async_runtime::spawn_blocking(move || Client::new(&to_check).validate())
+    host::async_runtime::spawn_blocking(move || Client::new(&to_check).validate())
         .await
         .map_err(|e| e.to_string())?
         .map_err(|e| match e {
@@ -1668,20 +1649,18 @@ async fn save_steamgriddb_key(library: State<'_, Library>, key: String) -> Resul
 }
 
 /// Returns the bytes of a downloaded artwork file. Only files inside the artwork folder are readable.
-#[tauri::command]
-async fn read_artwork(app: AppHandle, path: String) -> Result<tauri::ipc::Response, String> {
+// @rpc
+async fn read_artwork(app: AppHandle, path: String) -> Result<Vec<u8>, String> {
     let images = fs::canonicalize(app_dir(&app)?.join("images")).map_err(|e| e.to_string())?;
     let file = fs::canonicalize(&path).map_err(|e| e.to_string())?;
     if !file.starts_with(&images) {
         return Err("not an artwork file".into());
     }
-    fs::read(file)
-        .map(tauri::ipc::Response::new)
-        .map_err(|e| e.to_string())
+    fs::read(file).map_err(|e| e.to_string())
 }
 
 /// Downloads artwork in the background. Progress and results come back as events.
-#[tauri::command]
+// @rpc
 async fn import_images(app: AppHandle, force: bool) -> Result<(), String> {
     start_import(&app, force);
     Ok(())
@@ -1945,7 +1924,7 @@ fn run_import(app: &AppHandle, force: bool) -> Result<(), String> {
 }
 
 /// The SteamGridDB game used for a game's artwork: the one the user picked, or the best guess.
-#[tauri::command]
+// @rpc
 async fn artwork_match(
     library: State<'_, Library>,
     id: String,
@@ -1967,7 +1946,7 @@ async fn artwork_match(
         (key, game, info)
     };
 
-    tauri::async_runtime::spawn_blocking(move || {
+    host::async_runtime::spawn_blocking(move || {
         let client = Client::new(&key);
         let steam_app = (info.source == "steam").then_some(info.source_id.as_str());
         let found = match game.sgdb_game_id.and_then(|id| u64::try_from(id).ok()) {
@@ -1992,7 +1971,7 @@ struct ArtworkChoices {
 }
 
 /// Every image the user can choose from: Steam's own (for Steam games) and SteamGridDB's.
-#[tauri::command]
+// @rpc
 async fn artwork_choices(
     library: State<'_, Library>,
     id: String,
@@ -2008,7 +1987,7 @@ async fn artwork_choices(
         )
     };
 
-    tauri::async_runtime::spawn_blocking(move || {
+    host::async_runtime::spawn_blocking(move || {
         let official = |urls: Vec<String>| -> Vec<Candidate> {
             urls.into_iter()
                 .take(1)
@@ -2043,7 +2022,7 @@ async fn artwork_choices(
 }
 
 /// Downloads one image chosen by the user as a game's cover (`poster`) or banner (`hero`).
-#[tauri::command]
+// @rpc
 async fn set_artwork(
     app: AppHandle,
     library: State<'_, Library>,
@@ -2057,7 +2036,7 @@ async fn set_artwork(
     };
     let folder = app_dir(&app)?.join("images").join(dir_name(&id));
     let source = url.clone();
-    let saved = tauri::async_runtime::spawn_blocking(move || {
+    let saved = host::async_runtime::spawn_blocking(move || {
         artwork::download_first(&artwork::agent(), &[source], &folder, &stem)
     })
     .await
@@ -2130,7 +2109,7 @@ fn game_log_path(logs: &Path, id: &str, kind: &str) -> Option<PathBuf> {
 }
 
 /// The end of a log: Lutra's own (`app`) or one of a game's logs (see `game_log_path`).
-#[tauri::command]
+// @rpc
 async fn read_log(
     app: AppHandle,
     target: String,
@@ -2152,7 +2131,7 @@ async fn read_log(
 }
 
 /// Which logs a game has right now, in the order to show them.
-#[tauri::command]
+// @rpc
 async fn game_logs(app: AppHandle, id: String) -> Result<Vec<String>, String> {
     let logs = app_dir(&app)?.join("logs");
     Ok(["game", "previous", "proton", "graphics"]
@@ -2163,13 +2142,13 @@ async fn game_logs(app: AppHandle, id: String) -> Result<Vec<String>, String> {
 }
 
 /// Lets the interface write its own errors into Lutra's log.
-#[tauri::command]
+// @rpc
 async fn log_frontend(level: String, message: String) -> Result<(), String> {
     applog::write(applog::Level::parse(&level), &format!("[ui] {message}"));
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn open_logs_folder(app: AppHandle) -> Result<(), String> {
     let folder = app_dir(&app)?.join("logs");
     fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
@@ -2268,7 +2247,7 @@ struct ControllerStatus {
     steam: bool,
 }
 
-#[tauri::command]
+// @rpc
 async fn controller_status(
     service: State<'_, ControllerService>,
 ) -> Result<ControllerStatus, String> {
@@ -2286,7 +2265,7 @@ async fn controller_status(
 }
 
 /// What a controller is doing right now, before any profile is applied: for the live tester.
-#[tauri::command]
+// @rpc
 async fn controller_state(
     service: State<'_, ControllerService>,
     id: String,
@@ -2303,7 +2282,7 @@ struct PadPreview {
 }
 
 /// A controller's state before and after a profile, for the test screen. Nothing reaches a game.
-#[tauri::command]
+// @rpc
 async fn controller_preview(
     service: State<'_, ControllerService>,
     id: String,
@@ -2324,7 +2303,7 @@ struct ProfileInfo {
 }
 
 /// The default profile (`game: None`) or the one a game plays with.
-#[tauri::command]
+// @rpc
 async fn controller_profile(
     library: State<'_, Library>,
     game: Option<String>,
@@ -2349,7 +2328,7 @@ async fn controller_profile(
 }
 
 /// Saves the default profile (`game: None`) or a game's own profile.
-#[tauri::command]
+// @rpc
 async fn save_controller_profile(
     library: State<'_, Library>,
     service: State<'_, ControllerService>,
@@ -2386,13 +2365,13 @@ async fn save_controller_profile(
 }
 
 /// The keys and mouse buttons a controller button can be converted to.
-#[tauri::command]
+// @rpc
 async fn controller_keys() -> Vec<controller::convert::KeyInfo> {
     controller::convert::key_list()
 }
 
 /// Makes a game use the default profile again.
-#[tauri::command]
+// @rpc
 async fn reset_controller_profile(library: State<'_, Library>, game: String) -> Result<(), String> {
     library
         .lock()?
@@ -2401,7 +2380,7 @@ async fn reset_controller_profile(library: State<'_, Library>, game: String) -> 
 }
 
 /// Turns the virtual controller on without a game, to try a profile in any game or tester.
-#[tauri::command]
+// @rpc
 async fn start_controller_test(
     service: State<'_, ControllerService>,
     profile: Profile,
@@ -2416,13 +2395,13 @@ async fn start_controller_test(
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn stop_controller_test(service: State<'_, ControllerService>) -> Result<(), String> {
     service.end_session(TEST_SESSION);
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn set_controller_navigation(
     library: State<'_, Library>,
     service: State<'_, ControllerService>,
@@ -2436,7 +2415,7 @@ async fn set_controller_navigation(
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn set_controller_system(
     library: State<'_, Library>,
     service: State<'_, ControllerService>,
@@ -2450,183 +2429,76 @@ async fn set_controller_system(
     Ok(())
 }
 
-#[tauri::command]
+// @rpc
 async fn tray_settings(app: AppHandle) -> Result<tray::TraySettings, String> {
     Ok(tray::settings(&app))
 }
 
-#[tauri::command]
+// @rpc
 async fn set_tray_settings(app: AppHandle, settings: tray::TraySettings) -> Result<(), String> {
     tray::save_settings(&app, &settings)?;
     applog::info("Notification area settings saved");
     Ok(())
 }
 
-/// The tray menu in the interface's language.
-#[tauri::command]
-async fn set_tray_labels(app: AppHandle, labels: tray::TrayLabels) -> Result<(), String> {
-    tray::set_labels(&app, &labels)
-}
-
-#[tauri::command]
-async fn render_compat(app: AppHandle) -> Result<bool, String> {
-    Ok(app_dir(&app)?.join(RENDER_COMPAT_FLAG).exists())
-}
-
-/// Takes effect at the next start.
-#[tauri::command]
-async fn set_render_compat(app: AppHandle, enabled: bool) -> Result<(), String> {
-    let flag = app_dir(&app)?.join(RENDER_COMPAT_FLAG);
-    if enabled {
-        fs::write(&flag, b"").map_err(|e| e.to_string())?;
-    } else if flag.exists() {
-        fs::remove_file(&flag).map_err(|e| e.to_string())?;
+/// Starts the backend: sets everything up, then serves the shell's requests until it goes away.
+pub fn run() {
+    let Some(dir) = data_dir_early() else {
+        eprintln!("HOME is not set");
+        std::process::exit(1);
+    };
+    let app = AppHandle::new(dir.clone());
+    if let Err(error) = setup(&app, &dir) {
+        eprintln!("could not start: {error}");
+        std::process::exit(1);
     }
-    applog::info(format!(
-        "Compatibility rendering {}",
-        if enabled { "on" } else { "off" }
+    rpc::serve(&app);
+}
+
+fn setup(app: &AppHandle, dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fs::create_dir_all(dir)?;
+    applog::init(&dir.join("logs").join("lutra.log"))?;
+    applog::info(format!("Lutra {} started", env!("CARGO_PKG_VERSION")));
+    app.manage(Library(Mutex::new(Db::open(&dir.join("library.db"))?)));
+    app.manage(ImportRunning(AtomicBool::new(false)));
+    app.manage(Running(Mutex::new(HashMap::new())));
+    tray::setup(app);
+
+    let (navigation, system, system_profile) = {
+        let db = app.state::<Library>();
+        let db = db.lock()?;
+        let enabled = |key: &str| {
+            db.setting(key)
+                .ok()
+                .flatten()
+                .is_none_or(|value| value != "0")
+        };
+        (
+            enabled(CONTROLLER_NAVIGATION),
+            enabled(CONTROLLER_SYSTEM),
+            profile_for(&db, DEFAULT_PROFILE).unwrap_or_default(),
+        )
+    };
+    let nav_handle = app.clone();
+    let change_handle = app.clone();
+    app.manage(ControllerService::start(
+        navigation,
+        system,
+        system_profile,
+        // The overlay is the backend's to open or close; every other menu action goes to the
+        // shell, which hands it to the overlay when it is open, else to Lutra when it is in use.
+        Arc::new(move |action| match action.as_str() {
+            "overlay" => toggle_overlay(&nav_handle),
+            _ => {
+                let _ = nav_handle.emit("ui-action", action.as_str());
+            }
+        }),
+        Arc::new(move || {
+            let _ = change_handle.emit("controllers-changed", ());
+        }),
     ));
+    tray::announce(app);
     Ok(())
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
-            let dir = app.path().app_data_dir()?;
-            fs::create_dir_all(&dir)?;
-            applog::init(&dir.join("logs").join("lutra.log"))?;
-            applog::info(format!("Lutra {} started", env!("CARGO_PKG_VERSION")));
-            app.manage(Library(Mutex::new(Db::open(&dir.join("library.db"))?)));
-            app.manage(ImportRunning(AtomicBool::new(false)));
-            app.manage(Running(Mutex::new(HashMap::new())));
-            tray::setup(app.handle())?;
-
-            let (navigation, system, system_profile) = {
-                let db = app.state::<Library>();
-                let db = db.lock()?;
-                let enabled = |key: &str| {
-                    db.setting(key)
-                        .ok()
-                        .flatten()
-                        .is_none_or(|value| value != "0")
-                };
-                (
-                    enabled(CONTROLLER_NAVIGATION),
-                    enabled(CONTROLLER_SYSTEM),
-                    profile_for(&db, DEFAULT_PROFILE).unwrap_or_default(),
-                )
-            };
-            let nav_handle = app.handle().clone();
-            let change_handle = app.handle().clone();
-            app.manage(ControllerService::start(
-                navigation,
-                system,
-                system_profile,
-                // The overlay and the power-off hold act whatever window is in use; other menu
-                // actions go to the overlay when it is open, else to Lutra when it is in use.
-                Arc::new(move |action| {
-                    match action.as_str() {
-                        "overlay" => return toggle_overlay(&nav_handle),
-                        "powerOff" => {
-                            let _ = nav_handle.emit("ui-action", action.as_str());
-                            return;
-                        }
-                        _ => {}
-                    }
-                    if nav_handle.get_webview_window(OVERLAY).is_some() {
-                        let _ = nav_handle.emit_to(OVERLAY, "ui-action", action.as_str());
-                        return;
-                    }
-                    let focused = nav_handle
-                        .get_webview_window("main")
-                        .and_then(|window| window.is_focused().ok())
-                        .unwrap_or(false);
-                    if focused {
-                        let _ = nav_handle.emit("ui-action", action.as_str());
-                    }
-                }),
-                Arc::new(move || {
-                    let _ = change_handle.emit("controllers-changed", ());
-                }),
-            ));
-            Ok(())
-        })
-        // Closing the window keeps Lutra in the notification area, when the user wants it.
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event
-                && window.label() == "main"
-                && tray::closes_to_tray(window.app_handle())
-            {
-                api.prevent_close();
-                let _ = window.hide();
-            }
-        })
-        .invoke_handler(tauri::generate_handler![
-            launch_mode,
-            list_games,
-            scan_sources,
-            set_favorite,
-            list_runners,
-            wine_tools,
-            default_runner,
-            set_default_runner,
-            add_game,
-            hardware_info,
-            close_overlay,
-            start_install,
-            cancel_install,
-            game_logs,
-            search_game_db,
-            save_game_meta,
-            game_meta,
-            recommended_config,
-            list_prefixes,
-            check_prefix,
-            remove_game,
-            removable_prefix_of,
-            wine_settings,
-            save_wine_settings,
-            launch_game,
-            stop_game,
-            running_games,
-            launch_wine_tool,
-            run_in_prefix,
-            open_game_folder,
-            open_external,
-            open_prefixes_folder,
-            search_artwork,
-            pick_artwork,
-            artwork_match,
-            artwork_choices,
-            set_artwork,
-            read_log,
-            log_frontend,
-            open_logs_folder,
-            art_settings,
-            set_art_settings,
-            save_steamgriddb_key,
-            import_images,
-            read_artwork,
-            controller_status,
-            controller_state,
-            controller_preview,
-            controller_profile,
-            save_controller_profile,
-            controller_keys,
-            reset_controller_profile,
-            start_controller_test,
-            stop_controller_test,
-            set_controller_navigation,
-            set_controller_system,
-            tray_settings,
-            set_tray_settings,
-            set_tray_labels,
-            render_compat,
-            set_render_compat
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
+include!("rpc_dispatch.rs");

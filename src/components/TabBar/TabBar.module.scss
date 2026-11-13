@@ -1,5 +1,6 @@
 // Sized in em so each shell can scale it through its own font-size.
 .bar {
+  position: relative;
   display: flex;
   flex: none;
   gap: 0.3em;
@@ -8,6 +9,22 @@
   padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+// Slides under the current tab. Only `transform` and `width` change, never a layout property.
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--tab-w, 0);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--color-accent);
+  transform: translateX(var(--tab-x, 0));
+  transition:
+    transform var(--duration-base) var(--ease-spring),
+    width var(--duration-base) var(--ease-out);
+  pointer-events: none;
 }
 
 .tab {
@@ -35,7 +52,6 @@
 
 .active,
 .active:hover {
-  background: var(--color-surface-active);
   color: var(--color-text);
   font-weight: 600;
 
@@ -54,6 +70,10 @@
 // Big Picture: bigger, and the focused tab is a white pill like everything else there.
 .large {
   gap: 0.5em;
+
+  .indicator {
+    display: none;
+  }
 
   .tab {
     height: 2.8em;

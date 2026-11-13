@@ -35,24 +35,27 @@ The project must:
 
 ## Stack
 
-- **App shell**: [Tauri 2](https://tauri.app) (Rust backend)
+- **App shell**: [Electron](https://www.electronjs.org) (windows, tray icon, dialogs) around a **Rust backend** that runs as a child process (see Architecture)
 - **Frontend**: React + TypeScript + Vite
 - **Styles**: SCSS (SCSS modules, shared design tokens)
 - **Package manager**: pnpm
 - **Database**: SQLite
-- **Distribution**: AppImage (plus deb and rpm)
+- **Distribution**: AppImage (plus deb and rpm), built with electron-builder
 - **i18n**: translatable interface from day one (FR and EN at least)
 
 ## Architecture
 
-- **Rust (`src-tauri/`)**: everything that touches the system: source detection and reading, process launching and supervision, file access, local database, network calls (SteamGridDB), gamepad access. Exposed to the frontend through typed Tauri commands and events.
-- **React (`src/`)**: display and interaction only. No system logic in the frontend.
+- **Rust (`backend/`)**: everything that touches the system: source detection and reading, process launching and supervision, file access, local database, network calls (SteamGridDB), gamepad access. It is a standalone program (`lutra-backend`) started by the Electron shell, which talks to it in JSON lines over stdin / stdout (`rpc.rs`): requests `{id, cmd, args}` get `{id, ok}` or `{id, err}`, and events `{event, payload}` flow the other way. Nothing but those lines may ever be written to stdout (logs go to stderr and to the log file). The backend exits when its stdin closes, i.e. when the shell is gone.
+- **Commands**: a backend command is a function of `backend/src/lib.rs` marked with a `// @rpc` line. `backend/src/rpc_dispatch.rs` is generated from them: run `python3 backend/tools/gen_rpc.py` after adding, removing or changing one. Arguments arrive by name in camelCase (`showLutra` for `show_lutra`), `AppHandle` and `State<..>` arguments are filled in by the dispatcher. `host.rs` is the small replacement for what Tauri used to provide (shared state, `emit`, `spawn_blocking`).
+- **Electron shell (`electron/`)**: `main.cjs` creates the windows (main, in-game overlay), the tray icon and the native dialogs, starts the backend, and forwards its events to the windows; `preload.cjs` exposes the narrow `window.lutra` bridge. Events named `host:*` are for the shell itself (`host:tray`, `host:game`, `host:overlay`, `host:show`), the others are forwarded to the interface. The window shows only once the backend has said whether a notification area exists. Only one Lutra can run (`requestSingleInstanceLock`): a second one brings the first to the front.
+- **React (`src/`)**: display and interaction only. No system logic in the frontend. `lib/host.ts` is its only link with the shell (`invoke`, `listen`, window controls, dialogs); the interface is served by the shell under its own `lutra://app/` scheme.
+- **Why Electron**: with WebKitGTK (Tauri), animations on the dev machine (hybrid Intel / NVIDIA laptop, Hyprland) showed a stale frame, usually the starting position, just before the final one. Measured by filming the screen: 10 to 22 backward jumps per run in WebKitGTK against 0 to 5 in Chrome and Electron, and no WebKitGTK setting (`WEBKIT_DISABLE_COMPOSITING_MODE`, `WEBKIT_DISABLE_DMABUF_RENDERER`, `__NV_DISABLE_EXPLICIT_SYNC`, forcing the render GPU) fixed it.
 - **Modules**: the core is split into internal Rust modules (game sources, controllers, images) behind clear interfaces. The **controllers module** is the first use case and drives the design of the plugin API. The open plugin API (third-party plugins) will come once the internal modules are stable.
 - **Sources**: each game source produces `Discovered` entries (see `db.rs`) and calls `sync_source`, so the library stays source-agnostic.
 - **Storage**: SQLite (`rusqlite`) for the library, controller profiles and settings.
 - **AppImage environment**: the AppImage's `AppRun` exports `PYTHONHOME`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `PERLLIB`, `GST_*`, `GTK_*`... pointing into its own mount. Anything Lutra launches must not inherit them: `umu-run` is a Python script and dies with `No module named 'encodings'`. Every child process goes through `wine::host_env`, which drops every entry under `$APPDIR`.
 
-### Controllers module (`src-tauri/src/controller/`)
+### Controllers module (`backend/src/controller/`)
 
 Gamepad driver inspired by Steam Input:
 
@@ -66,7 +69,7 @@ Gamepad driver inspired by Steam Input:
    **Session**: when a game starts, each pad is grabbed exclusively (`EVIOCGRAB`, touchpad and sensors of the same device included). It is replaced by the virtual pad, and the game's rumble is forwarded to the real pad. Everything is given back when the game closes. A "Try" mode does the same without a game. A game whose profile is "Unchanged" also opens a session, without a virtual pad, so the system driver leaves it alone.
    **Hiding the real pad from games**: `EVIOCGRAB` does not cover `/dev/hidraw`, where SDL (HIDAPI) and Wine/Proton (winebus) also find Sony, Nintendo, etc. pads. With nothing done, the game sees the pad twice. Like Steam, Lutra gives the games it launches `SDL_GAMECONTROLLER_IGNORE_DEVICES` with the ids of the real pads (honored by SDL, Wine and Proton). The virtual pad therefore never shares the real one's ids: a DS4 presented in front of a DS4 v2 (`054c:09cc`) takes the v1's (`054c:05c4`) (`virtual_pad::identity`). Applications launched outside Lutra can still open the `hidraw`: same limit as Steam, and only root could avoid it.
 6. **Menus** (`nav.rs`): without a running game (system driver included), the pad sends the interface actions (`ui-action`, with repeat while a direction is held), only if the Lutra window has focus. The **Guide button acts on release** (`GuideWatcher`): short press = `menu` (Desktop → Big Picture, or Big Picture's side menu), held 2 s = `powerOff` (Bluetooth disconnect of the pad, no effect over USB). Options and Select give `options` (settings of the selected item).
-7. **In-game overlay**: during a game, the Guide is removed from the virtual pad (the game never sees it). A short press opens or closes the overlay (`NavAction::Overlay`, transparent Tauri `overlay` window). Under Hyprland (`hyprland.rs`), a fullscreen game hides every other window and a window opened by Lutra lands on Lutra's workspace: the overlay is therefore made **floating and pinned** (the only case drawn above a fullscreen window), placed on the game's screen. `hyprctl dispatch` takes Lua expressions in Hyprland 0.56 (`hl.dsp.window.pin({ action = 'enable', window = 'address:0x…' })`); the old `focuswindow title:…` syntax is silently rejected. Verified on a real fullscreen game with a screenshot. While it is open, the game gets a neutral pad and navigation actions go to the overlay (`src/overlay/`).
+7. **In-game overlay**: during a game, the Guide is removed from the virtual pad (the game never sees it). A short press opens or closes the overlay (`NavAction::Overlay`): the backend sends `host:overlay` and the shell opens a transparent, frameless, always-on-top window (`?overlay=1`), then calls `overlay_shown` with its process id so the backend can find it in Hyprland. Under Hyprland (`hyprland.rs`), a fullscreen game hides every other window and a window opened by Lutra lands on Lutra's workspace: the overlay is therefore made **floating and pinned** (the only case drawn above a fullscreen window), placed on the game's screen. `hyprctl dispatch` takes Lua expressions in Hyprland 0.56 (`hl.dsp.window.pin({ action = 'enable', window = 'address:0x…' })`); the old `focuswindow title:…` syntax is silently rejected. Verified on a real fullscreen game with a screenshot. While it is open, the game gets a neutral pad and navigation actions go to the overlay (`src/overlay/`).
 
 Pad visuals: `src/assets/controllers/` holds front-facing renders on a transparent background (`playstation.webp` for now). `ControllerPhoto` displays them and overlays the live state at coordinates measured on the image itself. Families without a render keep the SVG diagram of `GamepadVisual`. To add a pad you need a strictly front view with no pressed button, then measure its zones by drawing them over the image.
 
@@ -76,7 +79,7 @@ These points are intentions: they are refined as decisions are made, and this se
 
 ## Notification area
 
-`tray.rs`: icon with a menu (open, Big Picture, quit), in the interface language (`set_tray_labels`). Settings: closing the window keeps Lutra open, minimize during games (the window comes back at the end), start minimized (or `lutra --minimized`). Nothing is ever hidden without a `StatusNotifierWatcher` on the session bus, otherwise Lutra would be unreachable. The main window is created invisible (`tauri.conf.json`) and shown at startup by `tray::setup`.
+The icon and its menu (open, Big Picture, quit) belong to the shell (`electron/main.cjs`), in the interface language (`set_tray_labels`, answered by the shell itself). `backend/src/tray.rs` keeps the settings and tells the shell what to do (`host:tray`, `host:game`). Settings: closing the window keeps Lutra open, minimize during games (the window comes back at the end), start minimized (or `lutra --minimized`). Nothing is ever hidden without a `StatusNotifierWatcher` on the session bus, otherwise Lutra would be unreachable. The main window is created invisible and shown by the shell once the backend has said whether it may start hidden.
 
 ## Conventions
 
@@ -91,14 +94,13 @@ These points are intentions: they are refined as decisions are made, and this se
 - **State**: `zustand` for the shared library state (`state/library.ts`). Components subscribe to the slice they need, and an update only replaces the game concerned (`upsertGame`), so a single card redraws. Cards are memoized (`memo`). The backend pushes its changes through events.
 - **Right click**: the webview's menu (Reload, Inspect...) never shows. Text fields keep the native menu (copy/paste); everywhere else, `useContextMenu` opens the app's menu (`ContextMenuHost`, one per shell). A game has its menu through `useGameMenu`, and a page background through `usePageMenu`. Any new relevant clickable area should offer a consistent menu.
 - **Visible errors**: an action that fails does not settle for a `console.error`. Call `reportError`, which shows a notification to the user.
-- **Performance (WebKitGTK)**: rendering goes through WebKitGTK, much less forgiving than Chromium.
-  - Never `backdrop-filter`: it flickers and slows down, especially while scrolling. A more opaque background does the same job.
+- **Performance**: the interface must stay smooth on modest machines.
+  - Avoid `backdrop-filter`: a more opaque background does the same job for much less.
   - `will-change` only on large single elements animated continuously (Big Picture backgrounds, banners), never on repeated elements (cards, tiles), because every layer is expensive.
   - No expensive drawing hidden under an image: `GameArt` only renders its generated visual until the real image is loaded.
-  - A game list always goes through `VirtualGrid` (grids and lists, desktop and Big Picture): only the visible rows are mounted. A big library can reach thousands of games, and WebKitGTK stops drawing after a few rows if everything is mounted, each card also loading its image.
+  - A game list always goes through `VirtualGrid` (grids and lists, desktop and Big Picture): only the visible rows are mounted. A big library can reach thousands of games, each card also loading its image.
   - Updates pushed by the backend (`game-updated`, one per artwork found) are batched every 300 ms (`LibraryEffects`, `upsertGames`): never a new library render per game.
-  - "Compatibility rendering" (setting, `<data>/compat-rendering` file, read at startup) disables WebKitGTK's DMA-BUF engine. It is slower, but fixes flickering on some GPUs.
-- **Local images**: never a file path directly in an `<img>` (the `asset:` protocol is not reliable here). Go through `useArtworkUrl`, which reads the file through the `read_artwork` command.
+- **Local images**: never a file path directly in an `<img>` (the page cannot read the disk). Go through `useArtworkUrl`, which reads the file through the `read_artwork` command (bytes travel as base64, `{"$bytes": ...}`).
 - **No side lists in menus**: sections of a settings page or of a game's settings are a `TabBar` (left / right to change section, down to enter the content), never a vertical list next to the content, which is awkward to cross with a keyboard or a pad. The desktop mode's main sidebar and Big Picture's side menu are navigation between pages, not sections of a menu.
 - **Intuitive UX**: never show help about keys (arrows, Enter, etc.). Only exception: the controller test screen, where you leave by holding a button (progress ring), since all buttons are captured there. The interface must be understandable by itself: mouse, keyboard and gamepad work everywhere. In Big Picture, pointing at an element selects it (`hoverFocus`) and the cursor hides when not needed.
 - **Two visual identities**: desktop mode follows the codes of a modern desktop app (integrated title bar, light/dark theme). Big Picture mode follows those of a console (fullscreen, always dark, game artwork as background, big selectable elements).
@@ -107,16 +109,17 @@ These points are intentions: they are refined as decisions are made, and this se
 
 ## Commands
 
-Prerequisites: Node, pnpm, Rust (via `rustup`) and Tauri's system dependencies (`webkit2gtk-4.1`, `gtk3`, `librsvg`, `libsoup3`, `base-devel` on Arch).
+Prerequisites: Node, pnpm and Rust (via `rustup`).
 
 ```sh
 pnpm install          # install front dependencies
-pnpm tauri dev        # run the app in development (Vite + Rust)
+pnpm start            # build the interface and the backend, then run the app
 pnpm build            # type-check and build the front only
-pnpm tauri build      # produce the packages (deb, rpm, AppImage)
-cargo fmt --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
-cargo test --manifest-path src-tauri/Cargo.toml
+pnpm dist             # produce the packages in release/ (AppImage, deb, rpm)
+python3 backend/tools/gen_rpc.py   # after changing a backend command
+cargo fmt --manifest-path backend/Cargo.toml
+cargo clippy --manifest-path backend/Cargo.toml --all-targets
+cargo test --manifest-path backend/Cargo.toml
 ```
 
 Front lint and tests: to be added.
@@ -129,15 +132,15 @@ Front lint and tests: to be added.
   - `data/mockGames.ts`: fake games for the browser-only mode.
 - Settings (`views/SettingsView.tsx`): one category at a time (General, Windows games, Artwork, Logs, About), chosen in a `TabBar` (a row of tabs with the content under it). Each section is made of named groups, never the tab name repeated. Another page can open a specific category (`section`).
 - Big Picture: top bar (Home, Library) and **side menu** (`BigPictureMenu`, opened by the Guide) for controllers, settings and the way back to the desktop. Options / Select on a game opens `GameSettings` (reuses the desktop tabs, automatic saving).
-- Direct launch in Big Picture: `lutra --big-picture` (Tauri command `launch_mode`). F11 switches between the two modes.
-- `src-tauri/`: Rust backend (crate `lutra`, lib `lutra_lib`) and Tauri config.
+- Direct launch in Big Picture: `lutra --big-picture` (backend command `launch_mode`, the shell passes the option on). F11 switches between the two modes.
+- `backend/`: Rust backend (crate `lutra`, lib `lutra_lib`, binary `lutra-backend`). `electron/`: the shell. `build/`: icons used for the packages.
   - See also, first of all: `hardware.rs` (GPUs, including hybrid laptops, ntsync, gamescope; PRIME offload environment), `session.rs` (real tracking of a launch through `/proc`: the game's process carries its `.exe` name in `comm`), `prefixes.rs` (prefix types, runner ⇄ prefix compatibility, Lutra + Steam list), `installer.rs` (comparison of a prefix's `.exe` files before/after an installer), `gamedb.rs` (LizardByte GameDB: prefix search then IGDB entry).
   - Launch: `launch_game` emits `launch-progress` (real steps: check, start, prefix creation if missing, waiting for the game process); the interface shows a ring whose every arc is a step (`LaunchRing`), never a timer. Native games (`native`) go through the same mechanics. A game's logs are those of the launched game: process output, previous run (`.prev.log`), and Proton / DXVK / VKD3D logs in debug mode (`<id>.d/`).
   - GPU on a hybrid machine (`hardware::gpu_env`): besides PRIME offload, Vulkan only sees the chosen GPU (`MESA_VK_DEVICE_SELECT` + `MESA_VK_DEVICE_SELECT_FORCE_DEFAULT_DEVICE=1`, also verified in the steamrt4 container). Without it, DXVK/VKD3D present the iGPU as a second Direct3D card, and some games pick it (white screen of The Walking Dead: The Telltale Definitive Series). A game with no chosen GPU ("Automatic") or whose GPU has disappeared gets `preferred_gpu` (the dedicated card). Only Steam games escape it: Steam launches them itself.
   - Launch configs (`WineConfig`): GPU chosen from the list of detected GPUs, FPS limit, DXVK HUD, ntsync, NVAPI, Wayland, FSR, gamescope, driver tweaks; `recommended_config` sets them from the hardware. The proposed values always come from what is detected (list, never free input when it can be avoided).
   - `vdf.rs`: parser of Valve's text format. `steam.rs`: reads the local Steam libraries (all disks), ignores tools (Proton, runtimes) and reads playtime from `localconfig.vdf`. `db.rs`: SQLite (`~/.local/share/dev.lutra.app/library.db`), which keeps favorites and launches between scans.
   - `wine.rs`: detects Wine and Proton (Steam and `compatibilitytools.d`, hence GE-Proton) and builds the launch command. Proton goes through `umu-run` if installed, otherwise through the `proton` script. `steamgriddb.rs`: SteamGridDB API client (covers in `600x900`, banners in `1920x620`), images saved in `<data>/images/`.
-  - Tauri commands: `list_games`, `scan_sources`, `set_favorite`, `launch_game` (Steam through `steam://rungameid/<id>`, Wine games tracked until they close to count playtime, logs in `<data>/logs/`), `launch_mode`, `list_runners`, `add_game`, `remove_game` (with `everything`: prefix, logs and controller profile too), `removable_prefix`, `art_settings`, `set_art_settings`, `save_steamgriddb_key`, `read_artwork`, `import_images`.
+  - Backend commands: `list_games`, `scan_sources`, `set_favorite`, `launch_game` (Steam through `steam://rungameid/<id>`, Wine games tracked until they close to count playtime, logs in `<data>/logs/`), `launch_mode`, `list_runners`, `add_game`, `remove_game` (with `everything`: prefix, logs and controller profile too), `removable_prefix`, `art_settings`, `set_art_settings`, `save_steamgriddb_key`, `read_artwork`, `import_images`.
   - Every game also has a **logo** (`logo_path`), shown instead of its name by `GameLogo`, always in a fixed-size box specific to each screen (`--logo-width`, `--logo-height`) so a very wide logo never overflows: Steam's for a Steam game with official images, otherwise SteamGridDB's (white first, the banner being darkened). The logo is looked up separately from covers (`logo_checked_at`), so a game that already has its images still gets its logo.
   - Steam games' images come by default from Steam (no key), or from SteamGridDB if the user picks "Custom" (with optional fallback to Steam). Games added by hand always use SteamGridDB.
   - The backend notifies the frontend through events (`library-changed`, `game-updated`, `images-progress`) when something changes without a user action.
@@ -148,7 +151,7 @@ Front lint and tests: to be added.
   - Artwork gallery: `artwork_match` gives the SteamGridDB game in use, `artwork_choices` all the proposed images (Steam's for a Steam game, plus SteamGridDB's), `set_artwork` downloads the chosen image. The origin URL of each image is kept (`poster_url`, `hero_url`) to show which one is in place.
   - Wine prefixes live in `<data>/prefixes/<id>` and are never deleted automatically (they may hold saves). Only exception, on request: removing a game offers to delete its prefix too, with its size, when it is a Lutra prefix no other game uses (never a user-chosen folder nor a Steam prefix). The size is measured without following links: a prefix points to the whole file system.
   - To add a source: produce `Discovered` entries (see `db.rs`) and call `sync_source`.
-- In a plain browser (`pnpm dev`), `lib/backend.ts` detects the absence of Tauri and the app runs on the fake games of `data/mockGames.ts`. In the Tauri window, only real games appear.
+- In a plain browser (`pnpm dev`), `lib/backend.ts` detects the absence of the shell (`lib/host.ts`) and the app runs on the fake games of `data/mockGames.ts`. In the Lutra window, only real games appear.
 
 ## Open questions
 

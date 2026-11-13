@@ -1,12 +1,12 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { currentWindow } from "../../lib/host";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon/Icon";
 import styles from "./WindowControls.module.scss";
 
-/** Minimize, maximize and close, for the frameless window. Only rendered inside Tauri. */
+/** Minimize, maximize and close, for the frameless window. Only rendered inside the Lutra window. */
 export function WindowControls() {
   const { t } = useTranslation();
-  const appWindow = getCurrentWindow();
+  const appWindow = currentWindow();
 
   return (
     <div className={styles.controls}>

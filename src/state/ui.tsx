@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { currentWindow, invoke, isHosted } from "../lib/host";
 import { useTranslation } from "react-i18next";
 import { onTrayBigPicture, setTrayLabels } from "../lib/backend";
 
@@ -62,7 +61,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
 
   // `lutra --big-picture` forces console mode at startup.
   useEffect(() => {
-    if (!isTauri()) return;
+    if (!isHosted()) return;
     invoke<UiMode>("launch_mode")
       .then((launchMode) => {
         if (launchMode === "bigpicture") setMode("bigpicture");
@@ -72,8 +71,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.mode = mode;
-    if (!isTauri()) return;
-    getCurrentWindow()
+    if (!isHosted()) return;
+    currentWindow()
       .setFullscreen(mode === "bigpicture")
       .catch(() => {});
   }, [mode]);

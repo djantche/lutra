@@ -298,6 +298,11 @@ impl ControllerService {
         ignore_list(&self.controllers(), profile.output, windows_game(&owner))
     }
 
+    /// Whether the in-game overlay is open.
+    pub fn overlay_open(&self) -> bool {
+        self.shared.overlay.load(Ordering::SeqCst)
+    }
+
     /// Opens or closes the in-game overlay: while open, the game sees a neutral controller and
     /// the controller's input becomes menu actions.
     pub fn set_overlay(&self, open: bool) {

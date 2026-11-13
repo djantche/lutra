@@ -35,24 +35,24 @@ The controller driver needs write access to `/dev/uinput` (udev `uaccess` rule, 
 
 ## Development
 
-Prerequisites: Node, [pnpm](https://pnpm.io), Rust (via `rustup`) and Tauri's system dependencies (`webkit2gtk-4.1`, `gtk3`, `librsvg`, `libsoup3`, `base-devel` on Arch).
+Prerequisites: Node, [pnpm](https://pnpm.io) and Rust (via `rustup`).
 
 ```sh
-pnpm install          # frontend dependencies
-pnpm tauri dev        # run the app in development (Vite + Rust)
-pnpm build            # type-check and build the frontend
-pnpm tauri build      # deb, rpm and AppImage packages
+pnpm install          # dependencies (Electron included)
+pnpm start            # build the interface and the backend, then run the app
+pnpm build            # type-check and build the interface only
+pnpm dist             # AppImage, deb and rpm packages in release/
 
-cargo fmt --manifest-path src-tauri/Cargo.toml
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
-cargo test --manifest-path src-tauri/Cargo.toml
+cargo fmt --manifest-path backend/Cargo.toml
+cargo clippy --manifest-path backend/Cargo.toml --all-targets
+cargo test --manifest-path backend/Cargo.toml
 ```
 
 ### Stack
 
-[Tauri 2](https://tauri.app) (Rust) · React + TypeScript + Vite · SCSS · SQLite · zustand.
+[Electron](https://www.electronjs.org) · Rust · React + TypeScript + Vite · SCSS · SQLite · zustand.
 
-The Rust backend (`src-tauri/`) handles everything that touches the system; the React frontend (`src/`) only displays and reacts. Architecture, conventions and decisions are documented in [`AGENTS.md`](AGENTS.md).
+The Rust backend (`backend/`) handles everything that touches the system and runs as a child process of the Electron shell (`electron/`), which shows the React interface (`src/`). Architecture, conventions and decisions are documented in [`AGENTS.md`](AGENTS.md).
 
 ## Contributing
 

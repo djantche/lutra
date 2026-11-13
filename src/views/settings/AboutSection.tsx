@@ -1,4 +1,4 @@
-import { getVersion } from "@tauri-apps/api/app";
+import { appVersion } from "../../lib/host";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsGroup/SettingsGroup";
@@ -15,7 +15,7 @@ export function AboutSection() {
       setVersion("dev");
       return;
     }
-    getVersion()
+    appVersion()
       .then(setVersion)
       .catch(() => setVersion(null));
   }, []);

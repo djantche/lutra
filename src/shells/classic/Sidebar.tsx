@@ -45,7 +45,7 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.brand} data-tauri-drag-region>
+      <div className={styles.brand} data-drag-region>
         <img src="/lutra.svg" alt="" width={28} height={28} />
         <span>Lutra</span>
       </div>

@@ -1,4 +1,4 @@
-import { isTauri } from "@tauri-apps/api/core";
+import { isHosted } from "../../lib/host";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../components/Icon/Icon";
 import { TextField } from "../../components/TextField/TextField";
@@ -18,7 +18,7 @@ export function TitleBar({ scrolled, canGoBack, onBack, query, onQuery }: TitleB
   const { t } = useTranslation();
 
   return (
-    <header className={cx(styles.bar, scrolled && styles.scrolled)} data-tauri-drag-region>
+    <header className={cx(styles.bar, scrolled && styles.scrolled)} data-drag-region>
       <button
         type="button"
         data-focusable
@@ -42,8 +42,8 @@ export function TitleBar({ scrolled, canGoBack, onBack, query, onQuery }: TitleB
         spellCheck={false}
       />
 
-      <div className={styles.spacer} data-tauri-drag-region />
-      {isTauri() && <WindowControls />}
+      <div className={styles.spacer} data-drag-region />
+      {isHosted() && <WindowControls />}
     </header>
   );
 }

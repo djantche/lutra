@@ -1,9 +1,12 @@
 .control {
   display: inline-flex;
   flex: none;
+  // Many or long choices wrap onto a second line instead of leaving their card.
+  flex-wrap: wrap;
+  max-width: 100%;
   padding: 0.25em;
   gap: 0.15em;
-  border-radius: 999px;
+  border-radius: 1.3em;
   background: var(--color-surface-hover);
 }
 
@@ -13,6 +16,7 @@
   justify-content: center;
   gap: 0.45em;
   min-width: 2.2em;
+  white-space: nowrap;
   border: 0;
   border-radius: 999px;
   background: transparent;

@@ -1,22 +1,31 @@
 .group {
   display: flex;
   flex-direction: column;
-  gap: 0.7em;
+  gap: 0.75em;
+  // Groups slide in one after the other when a page opens.
+  animation: rise 420ms var(--ease-out) both;
+  animation-delay: calc(var(--group-index, 0) * 45ms);
+
+  @for $i from 1 through 8 {
+    &:nth-child(#{$i}) {
+      --group-index: #{$i - 1};
+    }
+  }
 }
 
 .title {
-  padding: 0 0.4em;
-  color: var(--color-text-muted);
-  font-size: 0.8em;
+  padding: 0 0.2em;
+  color: var(--color-text);
+  font-size: 1.1em;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: -0.005em;
 }
 
+// Every option is a bar of its own with a thin gap in between, like a console's option list.
 .card {
-  border: 1px solid var(--color-border);
-  border-radius: 1.1em;
-  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 .row {
@@ -25,10 +34,20 @@
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.8em 2em;
-  padding: 1.1em 1.4em;
+  padding: 1em 1.3em;
+  border-radius: 0.55em;
+  background: var(--color-surface);
+  transition: background var(--duration-fast) var(--ease-out);
 
-  & + & {
-    border-top: 1px solid var(--color-border);
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }
 

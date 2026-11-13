@@ -93,7 +93,7 @@ fn plan(clients: &Value, monitors: &Value, own_pid: i64, title: &str) -> Option<
 
 /// Makes the overlay window cover the game's screen, above the game. Waits for the window to
 /// appear; best effort, since the overlay still works as a plain window elsewhere.
-pub fn show_overlay(title: &'static str) {
+pub fn show_overlay(pid: i64, title: &'static str) {
     if !available() {
         return;
     }
@@ -103,7 +103,7 @@ pub fn show_overlay(title: &'static str) {
             let found = hyprctl_json("clients")
                 .zip(hyprctl_json("monitors"))
                 .and_then(|(clients, monitors)| {
-                    plan(&clients, &monitors, i64::from(std::process::id()), title)
+                    plan(&clients, &monitors, pid, title)
                 });
             if let Some(found) = found {
                 break found;

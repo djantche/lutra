@@ -1,11 +1,9 @@
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { invoke, isHosted, listen, pickPath, type UnlistenFn } from "./host";
 import { MOCK_GAMES } from "../data/mockGames";
 import type { Game } from "../types/game";
 
-/** True inside the Tauri window. In a plain browser (`pnpm dev`) the app runs on mock data. */
-export const hasBackend = (): boolean => isTauri();
+/** True inside the Lutra window. In a plain browser (`pnpm dev`) the app runs on mock data. */
+export const hasBackend = (): boolean => isHosted();
 
 export const initialGames = (): Game[] => (hasBackend() ? [] : MOCK_GAMES);
 
@@ -229,26 +227,19 @@ export const listRunners = (): Promise<Runner[]> =>
 /** Opens the native file picker. Resolves to null if cancelled. */
 export async function pickProgram(): Promise<string | null> {
   if (!hasBackend()) return "/mock/Games/Demo Game/demo.exe";
-  const picked = await openDialog({
-    multiple: false,
-    directory: false,
-    filters: [{ name: "Windows", extensions: ["exe", "bat"] }],
-  });
-  return typeof picked === "string" ? picked : null;
+  return pickPath({ filters: [{ name: "Windows", extensions: ["exe", "bat"] }] });
 }
 
 /** Opens the native file picker for a Linux program (binary, AppImage or script): no filter. */
 export async function pickLinuxProgram(): Promise<string | null> {
   if (!hasBackend()) return "/mock/Games/Linux Demo/run.sh";
-  const picked = await openDialog({ multiple: false, directory: false });
-  return typeof picked === "string" ? picked : null;
+  return pickPath({});
 }
 
 /** Opens the native folder picker. Resolves to null if cancelled. */
 export async function pickFolder(): Promise<string | null> {
   if (!hasBackend()) return "/mock/Prefixes/demo";
-  const picked = await openDialog({ multiple: false, directory: true });
-  return typeof picked === "string" ? picked : null;
+  return pickPath({ directory: true });
 }
 
 const MOCK_TOOLS: Tools = {
@@ -332,14 +323,6 @@ export const runInPrefix = (id: string, exePath: string) =>
   hasBackend() ? invoke<void>("run_in_prefix", { id, exePath }) : Promise.resolve();
 export const openGameFolder = (id: string, what: "files" | "prefix" | "logs") =>
   hasBackend() ? invoke<void>("open_game_folder", { id, what }) : Promise.resolve();
-let mockCompat = false;
-export const renderCompat = (): Promise<boolean> =>
-  hasBackend() ? invoke<boolean>("render_compat") : Promise.resolve(mockCompat);
-export function setRenderCompat(enabled: boolean): Promise<void> {
-  if (hasBackend()) return invoke<void>("set_render_compat", { enabled });
-  mockCompat = enabled;
-  return Promise.resolve();
-}
 
 export const openPrefixesFolder = () => (hasBackend() ? invoke<void>("open_prefixes_folder") : Promise.resolve());
 

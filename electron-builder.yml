@@ -1,0 +1,30 @@
+appId: dev.lutra.app
+productName: Lutra
+copyright: GPL-3.0-or-later
+directories:
+  output: release
+  buildResources: build
+# Plain folders rather than an asar archive: the interface is served from `dist` by file path.
+asar: false
+files:
+  - dist/**
+  - electron/**
+  - package.json
+extraResources:
+  - from: backend/target/release/lutra-backend
+    to: lutra-backend
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  category: Game
+  icon: build/icon.png
+  maintainer: Lutra contributors
+  synopsis: A modern game library and launcher for Linux
+  description: A unified game library and launcher for Linux with a modern interface.
+  desktop:
+    entry:
+      StartupWMClass: lutra
+      Comment: Unified game library and launcher
+artifactName: ${productName}_${version}_${arch}.${ext}

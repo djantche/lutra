@@ -1,42 +1,37 @@
 [package]
 name = "lutra"
-version = "0.1.2"
-description = "A modern game library and launcher for Linux"
+version = "0.2.0"
+description = "The backend of Lutra, a modern game library and launcher for Linux"
 authors = ["Lutra contributors"]
 license = "GPL-3.0-or-later"
 edition = "2024"
+default-run = "lutra-backend"
+
+[[bin]]
+name = "lutra-backend"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "lutra_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
+crate-type = ["rlib"]
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.42.0", features = ["bundled"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
-tauri-plugin-dialog = "2.8.4"
 ureq = { version = "3", features = ["json"] }
 shlex = "2.0.1"
 evdev = "0.13.2"
 libc = "0.2.191"
 
-# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+# Read the optimization guideline for more details: https://doc.rust-lang.org/cargo/reference/profiles.html
 [profile.release]
 codegen-units = 1
 lto = true
 opt-level = 3
-panic = "abort"
 strip = true
 
 [dev-dependencies]

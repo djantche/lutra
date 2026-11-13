@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Switch } from "../../components/Switch/Switch";
-import { renderCompat, setRenderCompat, setTraySettings, traySettings, type TraySettings } from "../../lib/backend";
+import { setTraySettings, traySettings, type TraySettings } from "../../lib/backend";
 import { reportError } from "../../state/toasts";
 import { Select } from "../../components/Select/Select";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
@@ -13,7 +13,6 @@ import styles from "./GeneralSection.module.scss";
 export function GeneralSection() {
   const { t, i18n } = useTranslation();
   const { mode, setMode } = useUi();
-  const [compat, setCompat] = useState(false);
   const [tray, setTray] = useState<TraySettings | null>(null);
 
   useEffect(() => {
@@ -28,12 +27,6 @@ export function GeneralSection() {
     setTray(next);
     setTraySettings(next).catch((error) => reportError(t("errors.save"), error));
   };
-
-  useEffect(() => {
-    renderCompat()
-      .then(setCompat)
-      .catch(() => setCompat(false));
-  }, []);
 
   return (
     <>
@@ -92,20 +85,6 @@ export function GeneralSection() {
         </SettingsRow>
       </SettingsGroup>
     )}
-
-    <SettingsGroup title={t("settings.groupRendering")}>
-
-      <SettingsRow title={t("settings.renderCompat")} description={t("settings.renderCompatHint")}>
-        <Switch
-          ariaLabel={t("settings.renderCompat")}
-          checked={compat}
-          onChange={(enabled) => {
-            setCompat(enabled);
-            setRenderCompat(enabled).catch((error) => reportError(t("errors.save"), error));
-          }}
-        />
-      </SettingsRow>
-    </SettingsGroup>
     </>
   );
 }

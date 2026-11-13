@@ -2,11 +2,17 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-13
 
 ### Changed
 
+- Lutra now runs on Electron instead of Tauri. On WebKitGTK, which Tauri uses on Linux, animations could show a stale frame (often the starting position) right before the final one, which looked like shaking; Chromium does not. The Rust backend is unchanged in what it does and now runs as a child process of Electron.
+- Only one Lutra can run at a time: launching it again brings the open window to the front.
 - Sections of the settings and of a game's settings are now a row of tabs instead of a side list, easier to cross with a keyboard or a gamepad (also in Big Picture).
+
+### Removed
+
+- The "compatibility rendering" setting, which only applied to WebKitGTK.
 
 ### Fixed
 
