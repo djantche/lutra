@@ -4,6 +4,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-13
+
 ### Added
 
 - Two more controllers get their own line drawing: the DualSense (PlayStation 5) and the Steam Deck, picked from the controller's USB ids. On the test and remap screens they light up like the DualShock 4 does: pressed buttons fill, sticks move, triggers fill with their pull. The Steam Deck's buttons are named like an Xbox pad's.
@@ -14,6 +16,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ### Fixed
 
+- Only one Lutra can run, whatever way it is started. Besides the window lock (a second launch brings the first one to the front, and `lutra --big-picture` switches it to Big Picture), the backend now locks the data folder, so two Lutras can never fight over the controllers and the database, even with different settings folders. A second one says "Lutra is already running" and closes.
 - The interface adapts to the window. Lutra asked for a window of at least 960 px, which a tiled window manager can make narrower: the page then laid out wider than the window and its right side was cut off. The minimum is gone, the sidebar becomes a rail of icons in a narrow window, and the home page, the library toolbar, the Controllers page, the Big Picture top bar and the search filters wrap instead of overflowing.
 
 ## [0.5.0] - 2026-11-13
