@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { useInputAction } from "../../input/useInputAction";
+import { cx } from "../../lib/cx";
 import styles from "./Slider.module.scss";
 
 interface SliderProps {
@@ -11,10 +12,12 @@ interface SliderProps {
   ariaLabel: string;
   /** How the value is shown next to the slider. */
   format?: (value: number) => string;
+  /** Takes the whole width of its row instead of a fixed size. */
+  wide?: boolean;
 }
 
 /** A horizontal slider that works with the mouse, the keyboard and the controller. */
-export function Slider({ value, min, max, step, onChange, ariaLabel, format = String }: SliderProps) {
+export function Slider({ value, min, max, step, onChange, ariaLabel, format = String, wide = false }: SliderProps) {
   const track = useRef<HTMLDivElement>(null);
   const ratio = max > min ? (value - min) / (max - min) : 0;
 
@@ -59,7 +62,7 @@ export function Slider({ value, min, max, step, onChange, ariaLabel, format = St
   });
 
   return (
-    <div className={styles.slider}>
+    <div className={cx(styles.slider, wide && styles.wide)}>
       <div
         ref={track}
         className={styles.track}

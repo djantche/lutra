@@ -136,14 +136,18 @@
       "windows": "Jeux Windows",
       "artwork": "Illustrations",
       "logs": "Journaux",
-      "about": "À propos"
+      "about": "À propos",
+      "audio": "Audio",
+      "accessibility": "Accessibilité"
     },
     "tabsHint": {
       "general": "Langue, mode d'affichage et rendu de l'application.",
       "windows": "Wine, Proton et les outils qui lancent tes jeux Windows.",
       "artwork": "D'où viennent les jaquettes, bannières et logos de tes jeux.",
       "logs": "Ce que Lutra a fait, pour comprendre ce qui n'a pas marché.",
-      "about": "Lutra, sa version et sa licence."
+      "about": "Lutra, sa version et sa licence.",
+      "audio": "Volume et périphériques des haut-parleurs et du micro, et sons de l'interface.",
+      "accessibility": "Taille de l'interface, contraste et animations."
     },
     "groupTray": "Zone de notification",
     "trayClose": "Fermer la fenêtre garde Lutra ouvert",
@@ -604,5 +608,28 @@
   "tray": {
     "open": "Ouvrir Lutra",
     "quit": "Quitter Lutra"
+  },
+  "audio": {
+    "output": "Sortie",
+    "outputDevice": "Périphérique de sortie",
+    "voice": "Voix",
+    "inputDevice": "Périphérique d'entrée",
+    "general": "Général",
+    "uiSounds": "Activer les sons de l'interface",
+    "mute": "Couper le son",
+    "unmute": "Rétablir le son",
+    "systemTitle": "Son du système",
+    "unavailable": "Les réglages du son ne sont pas disponibles",
+    "unavailableHint": "Lutra lit le son du système via PipeWire ou PulseAudio (pactl), introuvable ici."
+  },
+  "accessibility": {
+    "title": "Accessibilité",
+    "scale": "Échelle de l'interface",
+    "smaller": "Texte plus petit",
+    "larger": "Texte plus grand",
+    "contrast": "Mode contraste élevé",
+    "contrastHint": "Rend le texte, les boutons et les icônes plus distincts du fond.",
+    "motion": "Réduire les animations",
+    "motionHint": "Désactive les animations, effets et transitions pour limiter les mouvements à l'écran."
   }
 }

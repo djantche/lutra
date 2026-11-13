@@ -1,0 +1,29 @@
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.mute {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.4em;
+  height: 2.4em;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+
+  &:hover {
+    background: var(--color-surface-active);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--color-danger);
+  }
+}
+
+.device {
+  min-width: min(22em, 100%);
+}

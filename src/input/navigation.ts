@@ -105,7 +105,7 @@ function moveFocus(direction: Direction): void {
       bestScore = s;
     }
   }
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = document.documentElement.dataset.motion === "reduced";
   const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
   if (!best) {
     // Nothing left to select that way: the list still shows what is past its last item.

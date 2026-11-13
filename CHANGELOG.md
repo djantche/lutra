@@ -11,6 +11,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ### Added
 
+- Audio settings, like Steam's: the volume and device of the speakers and of the microphone (read and set through PipeWire / PulseAudio, mute included), and the interface sounds switch, which moved here from the general settings. When the system's sound cannot be read, the section says so instead of showing made-up devices.
+- Accessibility settings: the size of the interface (80 % to 150 %), a high contrast mode (light and dark, Big Picture included), and a reduce-motion switch that follows the system until you choose. Everything is kept and applied at start.
 - The charge of each controller is also shown next to the clock at the top of Big Picture.
 - "Minimize" and "Quit Lutra" in the Big Picture menu: Minimize puts Lutra out of sight in the notification area (or minimizes it when there is none).
 - While Lutra is in the notification area (or minimized) and no game runs, the Guide button (PlayStation button and equivalents) brings it back, in Big Picture. During a game it still opens the overlay.

@@ -210,6 +210,22 @@ pub(crate) fn dispatch(
             let force: bool = rpc::arg(args, "force")?;
             host::async_runtime::block_on(import_images(app.clone(), force)).and_then(rpc::to_value)
         }
+        "audio_status" => host::async_runtime::block_on(audio_status()).and_then(rpc::to_value),
+        "set_audio_volume" => {
+            let kind: String = rpc::arg(args, "kind")?;
+            let percent: u8 = rpc::arg(args, "percent")?;
+            host::async_runtime::block_on(set_audio_volume(kind, percent)).and_then(rpc::to_value)
+        }
+        "set_audio_muted" => {
+            let kind: String = rpc::arg(args, "kind")?;
+            let muted: bool = rpc::arg(args, "muted")?;
+            host::async_runtime::block_on(set_audio_muted(kind, muted)).and_then(rpc::to_value)
+        }
+        "set_audio_device" => {
+            let kind: String = rpc::arg(args, "kind")?;
+            let name: String = rpc::arg(args, "name")?;
+            host::async_runtime::block_on(set_audio_device(kind, name)).and_then(rpc::to_value)
+        }
         "artwork_match" => {
             let id: String = rpc::arg(args, "id")?;
             host::async_runtime::block_on(artwork_match(app.state::<Library>(), id))

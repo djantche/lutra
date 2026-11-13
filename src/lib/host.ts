@@ -16,6 +16,7 @@ interface LutraBridge {
   ): Promise<void>;
   pick(options: PickOptions): Promise<string | null>;
   version(): Promise<string>;
+  setZoom(factor: number): void;
 }
 
 declare global {
@@ -63,5 +64,11 @@ export const currentWindow = () => ({
 
 /** Native file or folder picker. Resolves to the chosen path, or null when cancelled. */
 export const pickPath = (options: PickOptions): Promise<string | null> => bridge().pick(options);
+
+/** Zooms the whole interface; 1 is normal size. */
+export function setZoom(factor: number): void {
+  if (isHosted()) bridge().setZoom(factor);
+  else document.documentElement.style.zoom = String(factor);
+}
 
 export const appVersion = (): Promise<string> => bridge().version();

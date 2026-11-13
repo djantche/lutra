@@ -67,11 +67,16 @@ p {
   scrollbar-color: var(--color-border) transparent;
 }
 
-@media (prefers-reduced-motion: reduce) {
+// Reduced motion (Settings > Accessibility; follows the system until the user chooses): nothing
+// animates, and infinite animations stop instead of flickering.
+html[data-motion="reduced"] {
+  &,
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

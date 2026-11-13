@@ -33,6 +33,16 @@
   }
 }
 
+// Big Picture sets its own dark colors: high contrast has to raise them here too.
+:global(:root[data-contrast="high"]) .shell {
+  --color-text-muted: rgb(255 255 255 / 0.92);
+  --color-text-subtle: rgb(255 255 255 / 0.76);
+  --color-border: rgb(255 255 255 / 0.42);
+  --color-surface: rgb(255 255 255 / 0.13);
+  --color-surface-hover: rgb(255 255 255 / 0.21);
+  --color-surface-active: rgb(255 255 255 / 0.3);
+}
+
 .backdrop {
   position: absolute;
   inset: 0;

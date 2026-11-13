@@ -3,16 +3,20 @@ import { useTranslation } from "react-i18next";
 import type { IconName } from "../components/Icon/Icon";
 import { TabBar } from "../components/TabBar/TabBar";
 import { AboutSection } from "./settings/AboutSection";
+import { AccessibilitySection } from "./settings/AccessibilitySection";
+import { AudioSection } from "./settings/AudioSection";
 import { ArtworkSection } from "./settings/ArtworkSection";
 import { GeneralSection } from "./settings/GeneralSection";
 import { LogsSection } from "./settings/LogsSection";
 import { WindowsSection } from "./settings/WindowsSection";
 import styles from "./SettingsView.module.scss";
 
-export type SettingsSection = "general" | "windows" | "artwork" | "logs" | "about";
+export type SettingsSection = "general" | "audio" | "accessibility" | "windows" | "artwork" | "logs" | "about";
 
 const SECTIONS: { value: SettingsSection; icon: IconName }[] = [
   { value: "general", icon: "settings" },
+  { value: "audio", icon: "volume" },
+  { value: "accessibility", icon: "accessibility" },
   { value: "windows", icon: "monitor" },
   { value: "artwork", icon: "image" },
   { value: "logs", icon: "terminal" },
@@ -21,6 +25,8 @@ const SECTIONS: { value: SettingsSection; icon: IconName }[] = [
 
 const CONTENT: Record<SettingsSection, ComponentType> = {
   general: GeneralSection,
+  audio: AudioSection,
+  accessibility: AccessibilitySection,
   windows: WindowsSection,
   artwork: ArtworkSection,
   logs: LogsSection,

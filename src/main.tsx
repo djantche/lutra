@@ -6,6 +6,9 @@ import App from "./App";
 import { OverlayApp } from "./overlay/OverlayApp";
 import "./i18n";
 import "./styles/main.scss";
+import { applyAccessibility } from "./lib/accessibility";
+
+applyAccessibility();
 
 // The in-game overlay is the same app opened in its own window (`?overlay=1`).
 const overlay = new URLSearchParams(window.location.search).get("overlay") === "1";

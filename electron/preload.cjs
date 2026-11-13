@@ -1,6 +1,6 @@
 // Exposes the few things the interface may ask of the shell, as `window.lutra`.
 // Nothing else of Node or Electron reaches the page.
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webFrame } = require("electron");
 
 contextBridge.exposeInMainWorld("lutra", {
   /** Runs a backend command. Rejects with the backend's message, as a plain string. */
@@ -23,6 +23,9 @@ contextBridge.exposeInMainWorld("lutra", {
 
   /** Native file or folder picker. Resolves to the chosen path, or null. */
   pick: (options) => ipcRenderer.invoke("pick", options),
+
+  /** Zooms the whole interface (1 is normal size). */
+  setZoom: (factor) => webFrame.setZoomFactor(factor),
 
   version: () => ipcRenderer.invoke("version"),
 });

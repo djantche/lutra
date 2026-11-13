@@ -136,14 +136,18 @@
       "windows": "Windows games",
       "artwork": "Artwork",
       "logs": "Logs",
-      "about": "About"
+      "about": "About",
+      "audio": "Audio",
+      "accessibility": "Accessibility"
     },
     "tabsHint": {
       "general": "Language, display mode and rendering of the app.",
       "windows": "Wine, Proton and the tools that run your Windows games.",
       "artwork": "Where the covers, banners and logos of your games come from.",
       "logs": "What Lutra did, to understand what went wrong.",
-      "about": "Lutra, its version and its licence."
+      "about": "Lutra, its version and its licence.",
+      "audio": "Volume and devices of the speakers and the microphone, and the interface sounds.",
+      "accessibility": "Size of the interface, contrast and animations."
     },
     "groupTray": "Notification area",
     "trayClose": "Closing the window keeps Lutra running",
@@ -604,5 +608,28 @@
   "tray": {
     "open": "Open Lutra",
     "quit": "Quit Lutra"
+  },
+  "audio": {
+    "output": "Output",
+    "outputDevice": "Output device",
+    "voice": "Voice",
+    "inputDevice": "Input device",
+    "general": "General",
+    "uiSounds": "Enable UI sounds",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "systemTitle": "System sound",
+    "unavailable": "Sound controls are not available",
+    "unavailableHint": "Lutra reads the sound of the system through PipeWire or PulseAudio (pactl), which was not found."
+  },
+  "accessibility": {
+    "title": "Accessibility",
+    "scale": "UI scale",
+    "smaller": "Smaller text",
+    "larger": "Larger text",
+    "contrast": "High contrast mode",
+    "contrastHint": "Make text, buttons and icons more distinct from the background.",
+    "motion": "Reduce motion",
+    "motionHint": "Disable animations, effects and transitions to reduce movement on screen."
   }
 }

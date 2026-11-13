@@ -5,6 +5,12 @@
   width: 16em;
 }
 
+.wide {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
 .track {
   position: relative;
   flex: 1;

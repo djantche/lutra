@@ -1,5 +1,6 @@
 mod applog;
 mod artwork;
+mod audio;
 mod controller;
 mod db;
 mod gamedb;
@@ -1693,6 +1694,27 @@ fn start_import(app: &AppHandle, force: bool) {
             },
         );
     });
+}
+
+/// The system's sound: volume and device of the speakers and of the microphone.
+// @rpc
+async fn audio_status() -> Result<audio::Status, String> {
+    audio::status()
+}
+
+// @rpc
+async fn set_audio_volume(kind: String, percent: u8) -> Result<(), String> {
+    audio::set_volume(audio::Kind::parse(&kind)?, percent)
+}
+
+// @rpc
+async fn set_audio_muted(kind: String, muted: bool) -> Result<(), String> {
+    audio::set_muted(audio::Kind::parse(&kind)?, muted)
+}
+
+// @rpc
+async fn set_audio_device(kind: String, name: String) -> Result<(), String> {
+    audio::set_device(audio::Kind::parse(&kind)?, &name)
 }
 
 /// How the artwork of games is looked up, from the user's settings.

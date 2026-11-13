@@ -75,3 +75,32 @@
     color-scheme: light;
   }
 }
+
+// High contrast mode (Settings > Accessibility): text, borders and surfaces stand out more.
+:root[data-contrast="high"] {
+  --color-bg: #000;
+  --color-bg-elevated: #0a0a0f;
+  --color-text: #fff;
+  --color-text-muted: #dadcec;
+  --color-text-subtle: #b4b8cf;
+  --color-border: rgb(255 255 255 / 0.34);
+  --color-border-strong: rgb(255 255 255 / 0.62);
+  --color-surface: rgb(255 255 255 / 0.1);
+  --color-surface-hover: rgb(255 255 255 / 0.18);
+  --color-surface-active: rgb(255 255 255 / 0.27);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-contrast="high"] {
+    --color-bg: #fff;
+    --color-bg-elevated: #fff;
+    --color-text: #000;
+    --color-text-muted: #25283b;
+    --color-text-subtle: #454961;
+    --color-border: rgb(0 0 0 / 0.4);
+    --color-border-strong: rgb(0 0 0 / 0.75);
+    --color-surface: rgb(0 0 0 / 0.07);
+    --color-surface-hover: rgb(0 0 0 / 0.13);
+    --color-surface-active: rgb(0 0 0 / 0.2);
+  }
+}
