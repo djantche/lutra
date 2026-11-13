@@ -4,18 +4,16 @@ import type { IconName } from "../components/Icon/Icon";
 import { SideNav } from "../components/SideNav/SideNav";
 import { AboutSection } from "./settings/AboutSection";
 import { ArtworkSection } from "./settings/ArtworkSection";
-import { EmulationSection } from "./settings/EmulationSection";
 import { GeneralSection } from "./settings/GeneralSection";
 import { LogsSection } from "./settings/LogsSection";
 import { WindowsSection } from "./settings/WindowsSection";
 import styles from "./SettingsView.module.scss";
 
-export type SettingsSection = "general" | "windows" | "emulation" | "artwork" | "logs" | "about";
+export type SettingsSection = "general" | "windows" | "artwork" | "logs" | "about";
 
 const SECTIONS: { value: SettingsSection; icon: IconName }[] = [
   { value: "general", icon: "settings" },
   { value: "windows", icon: "monitor" },
-  { value: "emulation", icon: "console" },
   { value: "artwork", icon: "image" },
   { value: "logs", icon: "terminal" },
   { value: "about", icon: "info" },
@@ -24,7 +22,6 @@ const SECTIONS: { value: SettingsSection; icon: IconName }[] = [
 const CONTENT: Record<SettingsSection, ComponentType> = {
   general: GeneralSection,
   windows: WindowsSection,
-  emulation: EmulationSection,
   artwork: ArtworkSection,
   logs: LogsSection,
   about: AboutSection,

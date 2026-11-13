@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "../../components/Icon/Icon";
 import { cx } from "../../lib/cx";
-import { filterGames, librarySystems, systemFilter, type LibraryFilter } from "../../lib/library";
-import { platformOf } from "../../lib/platforms";
+import { filterGames, type LibraryFilter } from "../../lib/library";
 import { SOURCES, SOURCE_COLOR } from "../../lib/sources";
 import { useLibrary } from "../../state/library";
 import { useUi } from "../../state/ui";
@@ -42,9 +41,7 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
 
   const isLibrary = (filter: LibraryFilter) => page.name === "library" && page.filter === filter;
   const library = (filter: LibraryFilter) => () => onNavigate({ name: "library", filter });
-  // Emulated games are listed by console, not as one "Emulators" source.
-  const sources = SOURCES.filter((source) => source !== "emulator" && games.some((game) => game.source === source));
-  const consoles = librarySystems(games);
+  const sources = SOURCES.filter((source) => games.some((game) => game.source === source));
 
   return (
     <aside className={styles.sidebar}>
@@ -69,12 +66,6 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
           onClick={library("favorites")}
         />
         <NavItem label={t("nav.recent")} icon="clock" active={isLibrary("recent")} onClick={library("recent")} />
-        <NavItem
-          label={t("nav.emulation")}
-          icon="console"
-          active={page.name === "emulation"}
-          onClick={() => onNavigate({ name: "emulation" })}
-        />
 
         <h2 className={styles.sectionTitle}>{t("nav.sources")}</h2>
         {sources.map((source) => (
@@ -85,18 +76,6 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
             count={filterGames(games, source).length}
             active={isLibrary(source)}
             onClick={library(source)}
-          />
-        ))}
-
-        {consoles.length > 0 && <h2 className={styles.sectionTitle}>{t("nav.consoles")}</h2>}
-        {consoles.map(({ system, count }) => (
-          <NavItem
-            key={system}
-            label={platformOf(system).name}
-            dotColor={platformOf(system).color}
-            count={count}
-            active={isLibrary(systemFilter(system))}
-            onClick={library(systemFilter(system))}
           />
         ))}
       </nav>

@@ -1,33 +1,9 @@
 import type { TFunction } from "i18next";
 import type { Game, GameSource } from "../types/game";
-import { makerRank, platformOf } from "./platforms";
 
-/** A page of the library: everything, a shortcut, a source, or the games of one console. */
-export type LibraryFilter = "all" | "favorites" | "recent" | GameSource | `system:${string}`;
+/** A page of the library: everything, a shortcut, or one source. */
+export type LibraryFilter = "all" | "favorites" | "recent" | GameSource;
 
-export const systemFilter = (system: string): LibraryFilter => `system:${system}`;
-
-/** The console a filter is about, if it is a console's. */
-export function filterSystem(filter: LibraryFilter): string | null {
-  return filter.startsWith("system:") ? filter.slice("system:".length) : null;
-}
-
-/** The consoles of the emulated games in the library, with their game count, maker by maker. */
-export function librarySystems(games: Game[]): { system: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const game of games) {
-    if (game.system) counts.set(game.system, (counts.get(game.system) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([system, count]) => ({ system, count, platform: platformOf(system) }))
-    .sort(
-      (a, b) =>
-        makerRank(a.platform.maker) - makerRank(b.platform.maker) ||
-        (a.platform.year ?? 9999) - (b.platform.year ?? 9999) ||
-        a.platform.name.localeCompare(b.platform.name),
-    )
-    .map(({ system, count }) => ({ system, count }));
-}
 export type SortKey = "name" | "lastPlayed" | "playtime";
 
 export function recentGames(games: Game[], limit = Infinity): Game[] {
@@ -45,12 +21,8 @@ export function filterGames(games: Game[], filter: LibraryFilter): Game[] {
       return games.filter((game) => game.favorite);
     case "recent":
       return recentGames(games, 10);
-    default: {
-      const system = filterSystem(filter);
-      return system
-        ? games.filter((game) => game.system === system)
-        : games.filter((game) => game.source === filter);
-    }
+    default:
+      return games.filter((game) => game.source === filter);
   }
 }
 
@@ -66,10 +38,8 @@ export function sortGames(games: Game[], key: SortKey): Game[] {
   }
 }
 
-/** What a filter's page is called: a console by its name, the rest translated. */
+/** What a filter's page is called. */
 export function filterTitle(filter: LibraryFilter, t: TFunction): string {
-  const system = filterSystem(filter);
-  if (system) return platformOf(system).name;
   switch (filter) {
     case "all":
       return t("nav.allGames");

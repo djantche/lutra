@@ -667,7 +667,7 @@ fn power_off(info: &ControllerInfo) {
     if info.bus != "bluetooth" || !is_bluetooth_address(&info.id) {
         return;
     }
-    if let Err(error) = std::process::Command::new("bluetoothctl")
+    if let Err(error) = crate::wine::host_env(&mut std::process::Command::new("bluetoothctl"))
         .args(["disconnect", &info.id])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())

@@ -1,19 +1,34 @@
 # Changelog
 
-Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
+
+## [0.1.1] - 2026-11-13
+
+### Changed
+
+- New application icon: an otter, on the accent color.
+- Lutra now focuses on PC games. Documentation, changelog and README are written in English.
+
+### Removed
+
+- Emulation: libretro cores, BIOS and ROM management, the built-in player, RetroArch support, the Emulation page and settings, and every console-related filter, tab and dialog. Emulated games and their settings are dropped from the library database on first start; saves and downloaded cores stay on disk.
+
+### Fixed
+
+- Windows games failed to start from the AppImage (`Fatal Python error: Failed to import encodings module`). The AppImage's `AppRun` exported `PYTHONHOME`, `PYTHONPATH`, `LD_LIBRARY_PATH` and other variables pointing into its own mount, which `umu-run` (a Python script) inherited. Every process launched by Lutra now gets the environment of the system.
 
 ## [0.1.0] - 2026-11-13
 
-Première version publique.
+First public release.
 
-### Ajouté
+### Added
 
-- Bibliothèque unifiée : Steam (bibliothèques locales), jeux Windows (Wine / Proton), jeux natifs Linux et jeux émulés, avec favoris, temps de jeu et filtres par source ou par console.
-- Lancement des jeux Windows : préfixes Wine gérés par Lutra, détection de Wine, Proton et GE-Proton, `umu-run`, configuration par jeu, choix du GPU sur les machines hybrides, arrêt d'un jeu, journaux de lancement.
-- Émulation intégrée : cœurs libretro installés et mis à jour automatiquement, BIOS, ROM, options par console et par jeu, sauvegardes, lecteur propre à Lutra (RetroArch pour les cœurs à rendu GPU).
-- Pilote de manettes : détection à chaud, recentrage du drift, zones mortes, courbes, remappage, conversion en clavier / souris, profils par défaut et par jeu, manette virtuelle Xbox 360 ou DualShock 4 (HID), vibrations, navigation dans les menus, overlay en jeu.
-- Illustrations depuis Steam, SteamGridDB et libretro (jaquettes, bannières, logos), galerie de choix, cache disque.
-- Mode bureau (thème clair / sombre) et mode Big Picture plein écran, navigation clavier et manette.
-- Zone de notification, démarrage réduit, option `--big-picture`.
-- Interface en français et en anglais.
-- Paquets AppImage, `.deb` et `.rpm`.
+- Unified library: Steam (local libraries), Windows games (Wine / Proton), native Linux games and emulated games, with favorites, playtime and filters by source.
+- Windows game launching: Lutra-managed Wine prefixes, Wine, Proton and GE-Proton detection, `umu-run`, per-game configuration, GPU choice on hybrid machines, stopping a game, launch logs.
+- Built-in emulation: libretro cores installed and updated automatically, BIOS, ROMs, per-console and per-game options, saves, Lutra's own player (RetroArch for cores that need GPU rendering).
+- Controller driver: hot-plugging, drift recentering, dead zones, curves, remapping, conversion to keyboard / mouse, default and per-game profiles, virtual Xbox 360 or DualShock 4 (HID) pad, rumble, menu navigation, in-game overlay.
+- Artwork from Steam, SteamGridDB and libretro (covers, banners, logos), choice gallery, disk cache.
+- Desktop mode (light / dark theme) and fullscreen Big Picture mode, keyboard and gamepad navigation.
+- Notification area, start minimized, `--big-picture` option.
+- Interface in English and French.
+- AppImage, `.deb` and `.rpm` packages.

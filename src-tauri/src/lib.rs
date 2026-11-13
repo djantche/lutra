@@ -2,12 +2,10 @@ mod applog;
 mod artwork;
 mod controller;
 mod db;
-mod emulation;
 mod gamedb;
 mod hardware;
 mod hyprland;
 mod installer;
-mod player;
 mod prefixes;
 mod session;
 mod steam;
@@ -710,7 +708,7 @@ fn spawn_process(
     let _ = log.write_all(launch_header(spec).as_bytes());
 
     let mut command = Command::new(&spec.program);
-    command
+    wine::host_env(&mut command)
         .args(&spec.args)
         .envs(spec.envs.iter().map(|(key, value)| (key, value)))
         .stdout(log.try_clone().map_err(|e| e.to_string())?)
@@ -1021,11 +1019,7 @@ fn launch_inner(
     match info.source.as_str() {
         "steam" => {
             applog::info(format!("Launching {id} through Steam"));
-            tauri_plugin_opener::open_url(
-                format!("steam://rungameid/{}", info.source_id),
-                None::<&str>,
-            )
-            .map_err(|e| e.to_string())?;
+            wine::open_on_host(format!("steam://rungameid/{}", info.source_id))?;
             library
                 .lock()?
                 .mark_played(id, now())
@@ -1112,7 +1106,6 @@ fn launch_inner(
             );
             Ok(())
         }
-        "emulator" => emulation::commands::launch(app, library, id),
         other => Err(format!("launching {other} games is not supported yet")),
     }
 }
@@ -1131,13 +1124,13 @@ async fn stop_game(app: AppHandle, library: State<'_, Library>, id: String) -> R
     applog::info(format!("Stopping {id} (process {pid})"));
     if id.starts_with("steam:") {
         // Steam's wrapper process: it takes the game down with it.
-        let _ = Command::new("kill")
+        let _ = wine::host_env(&mut Command::new("kill"))
             .args(["-TERM", &pid.to_string()])
             .status();
         return Ok(());
     }
 
-    let _ = Command::new("kill")
+    let _ = wine::host_env(&mut Command::new("kill"))
         .args(["-TERM", "--", &format!("-{pid}")])
         .status();
 
@@ -1146,10 +1139,12 @@ async fn stop_game(app: AppHandle, library: State<'_, Library>, id: String) -> R
         .wine_settings(&id)
         .map_err(|e| e.to_string())?;
     if let Some(settings) = settings.filter(|settings| settings.runner_kind == "wine") {
-        let _ = Command::new(Path::new(&settings.runner_path).with_file_name("wineserver"))
-            .arg("-k")
-            .env("WINEPREFIX", &settings.prefix_path)
-            .status();
+        let _ = wine::host_env(&mut Command::new(
+            Path::new(&settings.runner_path).with_file_name("wineserver"),
+        ))
+        .arg("-k")
+        .env("WINEPREFIX", &settings.prefix_path)
+        .status();
     }
     Ok(())
 }
@@ -1271,7 +1266,7 @@ async fn open_game_folder(
             folder.display()
         ));
     }
-    tauri_plugin_opener::open_path(folder, None::<&str>).map_err(|e| e.to_string())
+    wine::open_on_host(folder)
 }
 
 /// What the user asks for when installing a game from its setup program.
@@ -1439,7 +1434,7 @@ async fn cancel_install(app: AppHandle, install_id: String) -> Result<(), String
         .copied();
     if let Some(pid) = pid {
         applog::info(format!("Cancelling {install_id}"));
-        let _ = Command::new("kill")
+        let _ = wine::host_env(&mut Command::new("kill"))
             .args(["-TERM", "--", &format!("-{pid}")])
             .status();
     }
@@ -1462,11 +1457,20 @@ async fn check_prefix(path: String, runner_kind: String) -> Result<(), String> {
 }
 
 /// Opens the folder holding the Wine prefixes Lutra creates.
+/// Opens a web link with the default browser, outside of the AppImage's environment.
+#[tauri::command]
+async fn open_external(url: String) -> Result<(), String> {
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return Err("only web links can be opened".into());
+    }
+    wine::open_on_host(url)
+}
+
 #[tauri::command]
 async fn open_prefixes_folder(app: AppHandle) -> Result<(), String> {
     let folder = app_dir(&app)?.join("prefixes");
     fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
-    tauri_plugin_opener::open_path(folder, None::<&str>).map_err(|e| e.to_string())
+    wine::open_on_host(folder)
 }
 
 /// Forgets a game's artwork so it is downloaded again, and tells the interface.
@@ -1655,13 +1659,7 @@ async fn save_steamgriddb_key(library: State<'_, Library>, key: String) -> Resul
 async fn read_artwork(app: AppHandle, path: String) -> Result<tauri::ipc::Response, String> {
     let images = fs::canonicalize(app_dir(&app)?.join("images")).map_err(|e| e.to_string())?;
     let file = fs::canonicalize(&path).map_err(|e| e.to_string())?;
-    // Downloaded artwork, or a system picture from RetroArch's assets.
-    let system_picture = file.extension().is_some_and(|ext| ext == "png")
-        && emulation::icons::roots(&home_dir()?)
-            .iter()
-            .filter_map(|root| fs::canonicalize(root).ok())
-            .any(|root| file.starts_with(root));
-    if !file.starts_with(&images) && !system_picture {
+    if !file.starts_with(&images) {
         return Err("not an artwork file".into());
     }
     fs::read(file)
@@ -1712,8 +1710,7 @@ struct ArtPlan {
 impl ArtPlan {
     /// Whether this game can get artwork with what is configured.
     fn can_serve(&self, target: &ImageTarget) -> bool {
-        // libretro's thumbnail server needs no key.
-        if self.client.is_some() || target.source == "emulator" {
+        if self.client.is_some() {
             return true;
         }
         target.source == "steam" && (self.steam_source == SteamArt::Official || self.fallback)
@@ -1753,22 +1750,6 @@ impl ArtPlan {
     fn fetch_logo(&self, images: &Path, target: &ImageTarget) -> Result<Option<Image>, ArtError> {
         let folder = images.join(dir_name(&target.id));
         let is_steam = target.source == "steam";
-        // Emulated games: libretro's logos, named after the game's file. A ROM folder can hold
-        // thousands of games, too many to look each one up on SteamGridDB.
-        if target.source == "emulator" {
-            let (system, stem) = target
-                .source_id
-                .split_once('|')
-                .unwrap_or(("", target.title.as_str()));
-            use emulation::thumbnails::{Kind, candidates};
-            return Ok(artwork::download_first(
-                &self.agent,
-                &candidates(system, stem, Kind::Logo),
-                &folder,
-                "logo",
-            )?
-            .map(image));
-        }
         let official = || {
             artwork::download_first(
                 &self.agent,
@@ -1828,42 +1809,6 @@ impl ArtPlan {
     ) -> Result<(Option<Image>, Option<Image>), ArtError> {
         let folder = images.join(dir_name(&target.id));
         let is_steam = target.source == "steam";
-
-        // Emulated games: libretro's thumbnails first (named after the game's file), then
-        // SteamGridDB for whatever is still missing.
-        if target.source == "emulator" {
-            let (system, stem) = target
-                .source_id
-                .split_once('|')
-                .unwrap_or(("", target.title.as_str()));
-            use emulation::thumbnails::{Kind, candidates};
-            let mut poster = artwork::download_first(
-                &self.agent,
-                &candidates(system, stem, Kind::Boxart),
-                &folder,
-                "poster",
-            )?
-            .map(image);
-            let mut hero = artwork::download_first(
-                &self.agent,
-                &[
-                    candidates(system, stem, Kind::Snap),
-                    candidates(system, stem, Kind::Title),
-                ]
-                .concat(),
-                &folder,
-                "hero",
-            )?
-            .map(image);
-            if (poster.is_none() || hero.is_none())
-                && let Some(client) = &self.client
-            {
-                let (extra_poster, extra_hero) = self.custom(client, target, &folder)?;
-                poster = poster.or(extra_poster);
-                hero = hero.or(extra_hero);
-            }
-            return Ok((poster, hero));
-        }
 
         if is_steam && self.steam_source == SteamArt::Official && target.sgdb_id.is_none() {
             return self.official(&target.source_id, &folder);
@@ -2215,7 +2160,7 @@ async fn log_frontend(level: String, message: String) -> Result<(), String> {
 async fn open_logs_folder(app: AppHandle) -> Result<(), String> {
     let folder = app_dir(&app)?.join("logs");
     fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
-    tauri_plugin_opener::open_path(folder, None::<&str>).map_err(|e| e.to_string())
+    wine::open_on_host(folder)
 }
 
 fn load_profile(db: &Db, owner: &str) -> Result<Option<Profile>, String> {
@@ -2492,15 +2437,6 @@ async fn set_controller_system(
     Ok(())
 }
 
-/// The interface's language, for what the backend shows or hands to emulators.
-#[tauri::command]
-async fn set_ui_language(library: State<'_, Library>, language: String) -> Result<(), String> {
-    library
-        .lock()?
-        .set_setting(emulation::commands::UI_LANGUAGE, &language)
-        .map_err(|e| e.to_string())
-}
-
 #[tauri::command]
 async fn tray_settings(app: AppHandle) -> Result<tray::TraySettings, String> {
     Ok(tray::settings(&app))
@@ -2540,16 +2476,6 @@ async fn set_render_compat(app: AppHandle, enabled: bool) -> Result<(), String> 
     Ok(())
 }
 
-/// Runs an emulated game with Lutra's own libretro player (`lutra --play <config.json>`).
-pub fn play(config: &Path) -> i32 {
-    player::main(config)
-}
-
-/// Prints the options a libretro core declares (`lutra --core-options <core> <language>`).
-pub fn list_core_options(core: &Path, language: &str) -> i32 {
-    player::list_options(core, language)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -2563,7 +2489,6 @@ pub fn run() {
             app.manage(Library(Mutex::new(Db::open(&dir.join("library.db"))?)));
             app.manage(ImportRunning(AtomicBool::new(false)));
             app.manage(Running(Mutex::new(HashMap::new())));
-            emulation::commands::ensure_library_cores(app.handle());
             tray::setup(app.handle())?;
 
             let (navigation, system, system_profile) = {
@@ -2638,19 +2563,6 @@ pub fn run() {
             add_game,
             hardware_info,
             close_overlay,
-            emulation::commands::emulation_status,
-            emulation::commands::set_emulation_dirs,
-            emulation::commands::scan_roms,
-            emulation::commands::install_core,
-            emulation::commands::emulation_systems,
-            emulation::commands::add_rom,
-            emulation::commands::emulation_profile,
-            emulation::commands::save_emulation_profile,
-            emulation::commands::core_options,
-            set_ui_language,
-            emulation::commands::emulator_settings,
-            emulation::commands::save_emulator_settings,
-            emulation::commands::open_emulation_folder,
             start_install,
             cancel_install,
             game_logs,
@@ -2670,6 +2582,7 @@ pub fn run() {
             launch_wine_tool,
             run_in_prefix,
             open_game_folder,
+            open_external,
             open_prefixes_folder,
             search_artwork,
             pick_artwork,

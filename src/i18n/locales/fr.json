@@ -19,17 +19,14 @@
     "bigPicture": "Big Picture",
     "bigPictureHint": "Mode console",
     "addGame": "Ajouter un jeu",
-    "controllers": "Manettes",
-    "emulation": "Émulation",
-    "consoles": "Consoles"
+    "controllers": "Manettes"
   },
   "sources": {
     "steam": "Steam",
     "gog": "GOG",
     "epic": "Epic Games",
     "wine": "Wine / Proton",
-    "native": "Natifs",
-    "emulator": "Émulateurs"
+    "native": "Natifs"
   },
   "window": {
     "minimize": "Réduire",
@@ -87,8 +84,7 @@
       "check": "Vérification des réglages…",
       "start": "Démarrage du jeu…",
       "prefix": "Création du préfixe Wine…",
-      "wait": "En attente du jeu…",
-      "core": "Installation de l'émulateur…"
+      "wait": "En attente du jeu…"
     }
   },
   "settings": {
@@ -135,13 +131,12 @@
     "steamGridDbKey": "Clé API",
     "groupLutraLog": "Journal de Lutra",
     "version": "Version {{version}}",
-    "aboutHint": "Une bibliothèque de jeux unifiée et un lanceur pour Linux : Steam, jeux Windows, jeux natifs et consoles au même endroit.",
+    "aboutHint": "Une bibliothèque de jeux unifiée et un lanceur pour Linux : Steam, jeux Windows et jeux natifs au même endroit.",
     "license": "Licence",
     "licenseHint": "Logiciel libre : tu peux l'utiliser, l'étudier, le modifier et le partager.",
     "tabs": {
       "general": "Général",
       "windows": "Jeux Windows",
-      "emulation": "Émulation",
       "artwork": "Illustrations",
       "logs": "Journaux",
       "about": "À propos"
@@ -149,7 +144,6 @@
     "tabsHint": {
       "general": "Langue, mode d'affichage et rendu de l'application.",
       "windows": "Wine, Proton et les outils qui lancent tes jeux Windows.",
-      "emulation": "Où sont tes jeux de console et tes BIOS. Les consoles et leurs émulateurs se gèrent dans la page Émulation.",
       "artwork": "D'où viennent les jaquettes, bannières et logos de tes jeux.",
       "logs": "Ce que Lutra a fait, pour comprendre ce qui n'a pas marché.",
       "about": "Lutra, sa version et sa licence."
@@ -195,15 +189,7 @@
     "linuxHint": "Un programme Linux : un binaire, un AppImage ou un script.",
     "optimized": "Optimisé automatiquement pour cette machine (carte graphique, synchronisation, GameMode). Tu peux affiner dans les réglages du jeu.",
     "kindInstall": "Installer",
-    "kindRom": "Console",
-    "console": "Console",
-    "searchConsole": "Rechercher une console",
-    "noConsole": "Aucune console ne correspond.",
-    "romFile": "Fichier du jeu",
-    "romFormats": "Formats acceptés : {{formats}}",
-    "biosMissing": "Cette console demande des BIOS absents : {{files}}. Le jeu sera ajouté, mais ne se lancera qu'une fois ces fichiers en place.",
-    "folderInstead": "Tu as tout un dossier de jeux ?",
-    "hintRom": "Choisis la console puis le fichier du jeu. Lutra s'occupe de l'émulateur, des BIOS et de la jaquette."
+    "folderInstead": "Tu as tout un dossier de jeux ?"
   },
   "errors": {
     "launch": "Impossible de lancer {{title}} :",
@@ -307,10 +293,7 @@
     "tabDetails": "Informations",
     "tabPerformance": "Performances",
     "saving": "Enregistrement…",
-    "saved": "Tout est enregistré",
-    "tabVideo": "Graphismes",
-    "tabControls": "Commandes",
-    "tabEmulator": "Émulateur"
+    "saved": "Tout est enregistré"
   },
   "logs": {
     "filter": "Filtrer les lignes",
@@ -577,159 +560,6 @@
     "program": "Programme du jeu",
     "programHint": "Ce que l'installeur a ajouté, le plus probable en premier.",
     "noneFound": "Aucun nouveau programme trouvé. Choisis toi-même le programme du jeu."
-  },
-  "emulation": {
-    "title": "Émulation",
-    "loading": "Analyse de votre installation d'émulation…",
-    "notInstalled": "Non installé",
-    "retroarchMissing": "Seules les consoles 3D (N64, PSP, Dreamcast, GameCube…) passent encore par RetroArch. Toutes les autres tournent dans le lecteur de Lutra.",
-    "romFolders": "Dossiers de jeux",
-    "romFoldersHint": "Lutra cherche les ROM dans ces dossiers. Les images disque (ISO, CUE, CHD) doivent être dans un dossier nommé d'après leur console, comme psx ou saturn.",
-    "addFolder": "Ajouter un dossier",
-    "scan": "Chercher les jeux",
-    "scanned": "{{count}} jeu(x) trouvé(s) : {{added}} nouveau(x), {{removed}} retiré(s).",
-    "unplaced": "{{count}} image(s) disque ignorée(s) : mets-les dans un dossier nommé d'après leur console (psx, saturn, dreamcast…).",
-    "withoutCore": "{{count}} jeu(x) attendent leur émulateur : Lutra l'installe.",
-    "scanFailed": "Impossible de parcourir les dossiers :",
-    "biosFolder": "Dossier des BIOS",
-    "biosFolderHint": "Là où sont rangés les BIOS dont certaines consoles ont besoin. Lutra ne les télécharge jamais.",
-    "useRetroarchBios": "Utiliser le dossier de RetroArch ({{path}})",
-    "firmware": {
-      "present": "OK",
-      "different": "Autre version",
-      "missing": "Manquant"
-    },
-    "optional": "facultatif",
-    "installed": "{{name}} {{version}} installé.",
-    "installFailed": "Impossible d'installer {{name}} :",
-    "game": {
-      "fullscreen": "Plein écran",
-      "fullscreenHint": "Lance le jeu en plein écran.",
-      "resume": "Reprendre là où tu t'es arrêté",
-      "resumeHint": "Sauvegarde la partie à la sortie et la recharge la fois suivante.",
-      "system": "Console",
-      "start": "Démarrage"
-    },
-    "subtitle": "Toutes tes consoles au même endroit : leurs jeux, l'émulateur qui les lance et les BIOS qu'elles demandent.",
-    "addGame": "Ajouter un jeu",
-    "settings": "Dossiers et BIOS",
-    "statGames_one": "jeu de console",
-    "statGames_other": "jeux de console",
-    "statReady_one": "console prête",
-    "statReady_other": "consoles prêtes",
-    "statFolders_one": "dossier de jeux",
-    "statFolders_other": "dossiers de jeux",
-    "noFolder": "Aucun dossier de jeux",
-    "noFolderHint": "Indique où sont tes ROM : Lutra les range par console et récupère leurs jaquettes.",
-    "filter": "Consoles affichées",
-    "filterMine": "Mes consoles",
-    "filterReady": "Jouables",
-    "filterAll": "Toutes",
-    "noGames": "Aucun jeu de console pour l'instant",
-    "noGamesHint": "Ajoute un dossier de ROM ou un jeu : sa console apparaîtra ici.",
-    "noSystems": "Aucune console jouable",
-    "noSystemsHint": "Affiche toutes les consoles et installe l'émulateur de celle qui t'intéresse.",
-    "otherMakers": "Autres",
-    "games_one": "{{count}} jeu",
-    "games_other": "{{count}} jeux",
-    "state": {
-      "ready": "Prête",
-      "bios": "BIOS manquant",
-      "noCore": "Émulateur à installer"
-    },
-    "kind": {
-      "home": "Console de salon",
-      "handheld": "Console portable",
-      "arcade": "Arcade",
-      "computer": "Ordinateur"
-    },
-    "gamesTitle": "Jeux",
-    "systemEmpty": "Aucun jeu pour cette console",
-    "systemEmptyHint": "Ajoute un jeu {{name}}, ou range tes ROM dans un de tes dossiers de jeux puis lance une recherche.",
-    "emulator": "Émulateur",
-    "noCore": "Aucun émulateur installé",
-    "formats": "Formats acceptés",
-    "bios": "BIOS",
-    "biosWhere": "Place les fichiers manquants ici",
-    "recheck": "Vérifier à nouveau",
-    "changeFolder": "Changer de dossier",
-    "romFoldersTitle": "Où chercher les jeux",
-    "emulators": "Émulateurs",
-    "emulatorsAuto": "Choisis et installés par Lutra",
-    "emulatorsAutoHint": "Pour chaque console, Lutra choisit le meilleur émulateur, le télécharge, le vérifie et le met à jour. Tu n'as rien à installer.",
-    "statEmulators_one": "émulateur prêt",
-    "statEmulators_other": "émulateurs prêts",
-    "coreByLutra": "Choisi par Lutra pour cette console, installé et mis à jour automatiquement.",
-    "noCoreAuto": "Lutra l'installera tout seul au premier lancement d'un jeu.",
-    "noCoreYet": "Lutra ne sait pas encore émuler cette console.",
-    "installNow": "Installer maintenant",
-    "needsRetroarch": "Demande encore RetroArch",
-    "needsRetroarchHint": "Cet émulateur dessine avec la carte graphique : en attendant que le lecteur de Lutra le prenne en charge, il passe par RetroArch. Installe RetroArch pour jouer à cette console.",
-    "profile": {
-      "configure": "Réglages de la console",
-      "consoleTitle": "Réglages — {{name}}",
-      "consoleHint": "Pour tous les jeux de cette console, sauf ceux qui ont leurs propres réglages. Enregistré automatiquement.",
-      "section": {
-        "video": "Graphismes",
-        "controls": "Commandes",
-        "emulator": "Émulateur"
-      },
-      "picture": "Image",
-      "scaling": "Rendu des pixels",
-      "scalingValue": {
-        "sharp": "Nets",
-        "smooth": "Lissés",
-        "integer": "Entiers"
-      },
-      "scalingHint": {
-        "sharp": "Des pixels carrés et nets à toute taille, sans scintillement.",
-        "smooth": "Adoucis, comme sur un téléviseur.",
-        "integer": "Chaque pixel de la console prend le même nombre de pixels de l'écran, avec des bordures."
-      },
-      "aspect": "Format",
-      "aspectValue": {
-        "console": "Console",
-        "square": "Pixels carrés",
-        "stretch": "Étiré"
-      },
-      "aspectHint": {
-        "console": "La forme de l'écran d'origine (4:3 pour une console de salon).",
-        "square": "Chaque pixel carré : l'image exacte que produit la console.",
-        "stretch": "Tout l'écran, quitte à déformer l'image."
-      },
-      "effect": "Effet d'écran",
-      "effectValue": {
-        "none": "Aucun",
-        "scanlines": "Lignes CRT",
-        "lcd": "Grille LCD"
-      },
-      "effectHint": {
-        "none": "L'image telle quelle.",
-        "scanlines": "Les lignes sombres d'un téléviseur à tube.",
-        "lcd": "La grille d'un écran de console portable."
-      },
-      "buttons": "Boutons de la console",
-      "buttonHint": "Bouton de la manette qui le déclenche",
-      "stickAsDpad": "Stick gauche comme croix",
-      "stickAsDpadHint": "Pour les consoles sans stick : le stick gauche dirige aussi le personnage.",
-      "resetButtons": "Revenir à la disposition par défaut",
-      "reset": "Rétablir",
-      "emulator": "Options de l'émulateur",
-      "emulatorVideo": "Options vidéo de l'émulateur",
-      "emulatorInput": "Options de commandes de l'émulateur",
-      "noOptions": "Aucune option",
-      "noOptionsHint": "Cet émulateur ne propose pas de réglage.",
-      "defaults": "Valeurs par défaut",
-      "resetOptions": "Revenir aux options d'origine",
-      "resetOptionsHint": "Les valeurs choisies par l'émulateur lui-même.",
-      "own": "Réglages propres à ce jeu",
-      "ownOn": "Ce jeu a ses propres réglages : ils ne changent pas ceux de la console.",
-      "ownOff": "Ce jeu suit les réglages de sa console ({{name}}). Active cette option pour lui en donner de propres."
-    },
-    "options": {
-      "on": "Activé",
-      "off": "Désactivé"
-    }
   },
   "overlay": {
     "title": "Menu du jeu",

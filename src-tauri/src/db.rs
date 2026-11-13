@@ -1,13 +1,12 @@
 //! Local SQLite library: games found by the sources plus what the user did with them.
 
-use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::collections::HashSet;
+use std::path::Path;
 
 use chrono::{DateTime, SecondsFormat};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 use serde::Serialize;
 
-use crate::emulation::retroarch::EmulatorConfig;
 use crate::wine::WineConfig;
 
 const GAME_COLUMNS: &str = "id, title, source, source_id, playtime_minutes, last_played, favorite, exe_path, runner_kind, poster_path, hero_path, poster_url, hero_url, images_checked_at, sgdb_game_id, meta_json, logo_path";
@@ -61,9 +60,6 @@ pub struct Game {
     pub exe_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runner_kind: Option<String>,
-    /// libretro database name of an emulated game's system.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub system: Option<String>,
 }
 
 /// What is known about a game beyond its files: fetched from GameDB, then editable by the user.
@@ -109,27 +105,6 @@ pub struct ManualGame {
     pub prefix_path: String,
     pub config: WineConfig,
     pub meta: Option<GameMeta>,
-}
-
-/// A ROM found by a scan.
-#[derive(Debug, Clone)]
-pub struct EmulatorGame {
-    pub id: String,
-    pub title: String,
-    pub rom_path: String,
-    /// `<system>|<file name without extension>`: what the thumbnail server needs.
-    pub source_id: String,
-    pub config: EmulatorConfig,
-}
-
-/// Everything the user can configure about an emulated game.
-#[derive(Debug, Clone, PartialEq, Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EmulatorSettings {
-    pub id: String,
-    pub title: String,
-    pub rom_path: String,
-    pub config: EmulatorConfig,
 }
 
 /// What is needed to start a game.
@@ -207,19 +182,10 @@ fn game_from_row(row: &Row) -> rusqlite::Result<Game> {
         .get::<_, Option<String>>("meta_json")?
         .and_then(|json| serde_json::from_str(&json).ok())
         .unwrap_or_default();
-    let source: String = row.get("source")?;
-    // An emulated game's source id is `<system>|<file name>`.
-    let system = if source == "emulator" {
-        row.get::<_, Option<String>>("source_id")?
-            .and_then(|id| id.split_once('|').map(|(system, _)| system.to_string()))
-    } else {
-        None
-    };
     Ok(Game {
         hue: hue_for(&id),
         title: row.get("title")?,
-        source,
-        system,
+        source: row.get("source")?,
         developer: meta.developer,
         year: meta
             .release_date
@@ -309,7 +275,17 @@ impl Db {
                 conn.execute(&format!("ALTER TABLE games ADD COLUMN {column}"), [])?;
             }
         }
-        conn.execute_batch("PRAGMA user_version = 6;")?;
+        if version < 7 {
+            // Emulation was dropped: forget the emulated games and their settings (saves and
+            // downloaded cores stay on disk).
+            conn.execute_batch(
+                "DELETE FROM controller_profiles WHERE owner IN (SELECT id FROM games WHERE source = 'emulator');
+                 DELETE FROM games WHERE source = 'emulator';
+                 DELETE FROM settings WHERE key IN ('rom_dirs', 'bios_dir', 'ui_language')
+                    OR key LIKE 'emulation_profile:%';",
+            )?;
+        }
+        conn.execute_batch("PRAGMA user_version = 7;")?;
         Ok(Self { conn })
     }
 
@@ -409,96 +385,6 @@ impl Db {
                 config,
                 meta
             ],
-        )?;
-        Ok(())
-    }
-
-    /// Makes the emulated games match a scan: new ROMs are added, ROMs that are gone are removed,
-    /// and what the user set for a game that is still there (its name, core, options) is kept.
-    /// Makes the emulated games match a scan of `scanned`. A game missing from the scan is
-    /// removed when its file was in one of those folders or is gone: a ROM added by hand from
-    /// elsewhere stays.
-    pub fn sync_emulator(
-        &mut self,
-        found: &[EmulatorGame],
-        scanned: &[PathBuf],
-    ) -> rusqlite::Result<(usize, usize)> {
-        let tx = self.conn.transaction()?;
-        let before: HashMap<String, Option<String>> = {
-            let mut statement =
-                tx.prepare("SELECT id, exe_path FROM games WHERE source = 'emulator'")?;
-            let ids = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
-            ids.collect::<rusqlite::Result<_>>()?
-        };
-        let mut keep = HashSet::new();
-        for game in found {
-            let config = serde_json::to_string(&game.config).unwrap_or_default();
-            tx.execute(
-                "INSERT INTO games (id, source, source_id, title, exe_path, runner_kind, config_json)
-                 VALUES (?1, 'emulator', ?2, ?3, ?4, 'libretro', ?5)
-                 ON CONFLICT(id) DO UPDATE SET exe_path = excluded.exe_path, source_id = excluded.source_id",
-                params![game.id, game.source_id, game.title, game.rom_path, config],
-            )?;
-            keep.insert(game.id.clone());
-        }
-        let added = keep.iter().filter(|id| !before.contains_key(*id)).count();
-        let gone: Vec<&String> = before
-            .iter()
-            .filter(|(id, _)| !keep.contains(*id))
-            .filter(|(_, path)| {
-                let path = Path::new(path.as_deref().unwrap_or_default());
-                !path.is_file() || scanned.iter().any(|dir| path.starts_with(dir))
-            })
-            .map(|(id, _)| id)
-            .collect();
-        for id in &gone {
-            tx.execute("DELETE FROM games WHERE id = ?1", [id])?;
-        }
-        tx.commit()?;
-        Ok((added, gone.len()))
-    }
-
-    /// Adds one ROM chosen by the user. Fails if it is already in the library.
-    pub fn add_emulator(
-        &self,
-        game: &EmulatorGame,
-        meta: Option<&GameMeta>,
-    ) -> rusqlite::Result<()> {
-        let config = serde_json::to_string(&game.config).unwrap_or_default();
-        let meta = meta.and_then(|meta| serde_json::to_string(meta).ok());
-        self.conn.execute(
-            "INSERT INTO games (id, source, source_id, title, exe_path, runner_kind, config_json, meta_json)
-             VALUES (?1, 'emulator', ?2, ?3, ?4, 'libretro', ?5, ?6)",
-            params![game.id, game.source_id, game.title, game.rom_path, config, meta],
-        )?;
-        Ok(())
-    }
-
-    pub fn emulator_settings(&self, id: &str) -> rusqlite::Result<Option<EmulatorSettings>> {
-        self.conn
-            .query_row(
-                "SELECT id, title, exe_path, config_json FROM games WHERE id = ?1 AND source = 'emulator'",
-                [id],
-                |row| {
-                    let config: Option<String> = row.get(3)?;
-                    Ok(EmulatorSettings {
-                        id: row.get(0)?,
-                        title: row.get(1)?,
-                        rom_path: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
-                        config: config
-                            .and_then(|json| serde_json::from_str(&json).ok())
-                            .unwrap_or_default(),
-                    })
-                },
-            )
-            .optional()
-    }
-
-    pub fn save_emulator_settings(&self, settings: &EmulatorSettings) -> rusqlite::Result<()> {
-        let config = serde_json::to_string(&settings.config).unwrap_or_default();
-        self.conn.execute(
-            "UPDATE games SET title = ?2, config_json = ?3 WHERE id = ?1 AND source = 'emulator'",
-            params![settings.id, settings.title, config],
         )?;
         Ok(())
     }
@@ -1167,101 +1053,5 @@ mod tests {
             db.get("wine:1").unwrap().unwrap().developer.as_deref(),
             Some("Someone else")
         );
-    }
-
-    fn rom(id: &str, title: &str) -> EmulatorGame {
-        EmulatorGame {
-            id: id.into(),
-            title: title.into(),
-            rom_path: format!("/roms/{title}.sfc"),
-            source_id: format!("Nintendo - Super Nintendo Entertainment System|{title}"),
-            config: EmulatorConfig {
-                system: "Nintendo - Super Nintendo Entertainment System".into(),
-                ..EmulatorConfig::default()
-            },
-        }
-    }
-
-    #[test]
-    fn a_scan_adds_new_roms_removes_missing_ones_and_keeps_what_the_user_set() {
-        let mut db = Db::open_in_memory().unwrap();
-        assert_eq!(
-            db.sync_emulator(
-                &[rom("emulator:1", "Zelda"), rom("emulator:2", "Metroid")],
-                &[PathBuf::from("/roms")]
-            )
-            .unwrap(),
-            (2, 0)
-        );
-
-        // The user renames a game, sets it to resume where it was left, and plays it.
-        let mut settings = db.emulator_settings("emulator:1").unwrap().unwrap();
-        settings.title = "A Link to the Past".into();
-        settings.config.auto_resume = true;
-        db.save_emulator_settings(&settings).unwrap();
-        db.set_favorite("emulator:1", true).unwrap();
-        db.add_playtime("emulator:1", 40).unwrap();
-
-        // Metroid's file is gone, Mario is new.
-        let result = db
-            .sync_emulator(
-                &[rom("emulator:1", "Zelda"), rom("emulator:3", "Mario")],
-                &[PathBuf::from("/roms")],
-            )
-            .unwrap();
-        assert_eq!(result, (1, 1));
-
-        let kept = db.get("emulator:1").unwrap().unwrap();
-        assert_eq!(kept.title, "A Link to the Past");
-        assert!(kept.favorite);
-        assert_eq!(kept.playtime_minutes, 40);
-        assert!(
-            db.emulator_settings("emulator:1")
-                .unwrap()
-                .unwrap()
-                .config
-                .auto_resume
-        );
-        assert!(db.get("emulator:2").unwrap().is_none());
-        assert_eq!(db.get("emulator:3").unwrap().unwrap().source, "emulator");
-        assert_eq!(
-            db.get("emulator:3")
-                .unwrap()
-                .unwrap()
-                .runner_kind
-                .as_deref(),
-            Some("libretro")
-        );
-    }
-
-    #[test]
-    fn a_rom_added_by_hand_outside_the_rom_folders_survives_a_scan() {
-        let mut db = Db::open_in_memory().unwrap();
-        let file = std::env::temp_dir().join("lutra-test-hand-added.sfc");
-        std::fs::write(&file, b"rom").unwrap();
-        let mut game = rom("emulator:9", "Hand");
-        game.rom_path = file.to_string_lossy().into_owned();
-        db.add_emulator(&game, None).unwrap();
-        assert!(db.add_emulator(&game, None).is_err(), "added twice");
-        assert_eq!(
-            db.get("emulator:9").unwrap().unwrap().system.as_deref(),
-            Some("Nintendo - Super Nintendo Entertainment System")
-        );
-
-        db.sync_emulator(&[], &[PathBuf::from("/roms")]).unwrap();
-        assert!(db.get("emulator:9").unwrap().is_some());
-        // Once its file is gone, it goes too.
-        std::fs::remove_file(&file).unwrap();
-        db.sync_emulator(&[], &[PathBuf::from("/roms")]).unwrap();
-        assert!(db.get("emulator:9").unwrap().is_none());
-    }
-
-    #[test]
-    fn a_scan_never_touches_games_of_other_sources() {
-        let mut db = Db::open_in_memory().unwrap();
-        db.add_manual(&manual("wine:1", "Foo")).unwrap();
-        db.sync_emulator(&[], &[]).unwrap();
-        assert!(db.get("wine:1").unwrap().is_some());
-        assert!(db.emulator_settings("wine:1").unwrap().is_none());
     }
 }

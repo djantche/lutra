@@ -4,7 +4,6 @@ import { GameLogo } from "../../components/GameLogo/GameLogo";
 import { GameArt } from "../../components/GameArt/GameArt";
 import { Icon, type IconName } from "../../components/Icon/Icon";
 import { Spinner } from "../../components/Spinner/Spinner";
-import { useEmulatorSettings } from "../../hooks/useEmulatorSettings";
 import { useGameSettings } from "../../hooks/useGameSettings";
 import { hoverFocus } from "../../input/hoverFocus";
 import { useAutofocus } from "../../input/useAutofocus";
@@ -14,8 +13,6 @@ import type { Game } from "../../types/game";
 import { ArtworkTab } from "../classic/config/artwork/ArtworkTab";
 import { ControllerTab } from "../classic/config/ControllerTab";
 import { DetailsTab } from "../classic/config/DetailsTab";
-import { EmulatorTab } from "../classic/config/EmulatorTab";
-import { GameProfileTab } from "../../views/emulation/profile/GameProfileTab";
 import { GeneralTab } from "../classic/config/GeneralTab";
 import { LaunchTab } from "../classic/config/LaunchTab";
 import { LogsTab } from "../classic/config/LogsTab";
@@ -29,9 +26,6 @@ type Section =
   | "wine"
   | "performance"
   | "launch"
-  | "video"
-  | "controls"
-  | "emulator"
   | "controller"
   | "artwork"
   | "logs";
@@ -52,18 +46,16 @@ export function GameSettings({ game, onClose }: { game: Game; onClose: () => voi
   const { t } = useTranslation();
   const isManual = game.source === "wine" || game.source === "native";
   const isNative = game.source === "native";
-  const isEmulator = game.source === "emulator";
   const ref = useAutofocus<HTMLDivElement>();
-  const [section, setSection] = useState<Section>(isManual || isEmulator ? "general" : "artwork");
+  const [section, setSection] = useState<Section>(isManual ? "general" : "artwork");
   const { settings, details, setDetails, runners, tools, dirty, valid, change, changeConfig, save } = useGameSettings(
     game.id,
     isManual,
     onClose,
   );
-  const emulator = useEmulatorSettings(game.id, isEmulator, onClose);
-  const pending = isEmulator ? emulator.dirty : dirty;
-  const pendingValid = isEmulator ? true : valid;
-  const writePending = isEmulator ? emulator.save : save;
+  const pending = dirty;
+  const pendingValid = valid;
+  const writePending = save;
 
   // The tile that opened the settings gets the focus back.
   useEffect(() => {
@@ -77,7 +69,7 @@ export function GameSettings({ game, onClose }: { game: Game; onClose: () => voi
     if (!pending || !pendingValid) return;
     const timer = window.setTimeout(writePending, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [pending, pendingValid, writePending, settings, details, emulator.settings]);
+  }, [pending, pendingValid, writePending, settings, details]);
 
   // Leaving writes what is pending first, so nothing typed a moment ago is lost.
   const leave = () => {
@@ -92,17 +84,7 @@ export function GameSettings({ game, onClose }: { game: Game; onClose: () => voi
     }
   });
 
-  const sections: SectionItem[] = isEmulator
-    ? [
-        { value: "general", icon: "info" },
-        { value: "video", icon: "monitor" },
-        { value: "controls", icon: "gamepad" },
-        { value: "emulator", icon: "console" },
-        { value: "controller", icon: "settings" },
-        { value: "artwork", icon: "image" },
-        { value: "logs", icon: "terminal" },
-      ]
-    : isManual
+  const sections: SectionItem[] = isManual
     ? [
         { value: "general", icon: "info" },
         { value: "details", icon: "info" },
@@ -159,23 +141,7 @@ export function GameSettings({ game, onClose }: { game: Game; onClose: () => voi
       </aside>
 
       <main className={styles.content}>
-        {(isManual && !settings) || (isEmulator && !emulator.settings) ? <Spinner /> : null}
-        {emulator.settings && section === "general" && (
-          <EmulatorTab
-            settings={emulator.settings}
-            cores={emulator.cores}
-            onChange={emulator.change}
-            onConfig={emulator.changeConfig}
-          />
-        )}
-        {emulator.settings && (section === "video" || section === "controls" || section === "emulator") && (
-          <GameProfileTab
-            section={section}
-            settings={emulator.settings}
-            consoleProfile={emulator.consoleProfile}
-            onConfig={emulator.changeConfig}
-          />
-        )}
+        {isManual && !settings ? <Spinner /> : null}
         {settings && section === "general" && <GeneralTab settings={settings} runners={runners} onChange={change} />}
         {details && section === "details" && (
           <DetailsTab title={settings?.title ?? game.title} details={details} onChange={setDetails} />

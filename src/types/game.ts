@@ -1,4 +1,4 @@
-export type GameSource = "steam" | "gog" | "epic" | "wine" | "native" | "emulator";
+export type GameSource = "steam" | "gog" | "epic" | "wine" | "native";
 
 export interface Game {
   id: string;
@@ -30,8 +30,6 @@ export interface Game {
   /** Set for games added by hand (Windows or Linux). */
   exePath?: string;
   runnerKind?: "wine" | "proton";
-  /** libretro database name of an emulated game's system. */
-  system?: string;
   playtimeMinutes: number;
   /** ISO date, or null if the game was never launched. */
   lastPlayed: string | null;

@@ -49,7 +49,7 @@ pub struct Tray {
 
 /// Whether a notification area is there to show Lutra's icon.
 fn host_available() -> bool {
-    std::process::Command::new("busctl")
+    crate::wine::host_env(&mut std::process::Command::new("busctl"))
         .args(["--user", "--no-legend", "list"])
         .output()
         .is_ok_and(|output| {

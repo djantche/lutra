@@ -16,7 +16,6 @@ interface MenuItem {
 const ITEMS: MenuItem[] = [
   { tab: "home", icon: "home" },
   { tab: "library", icon: "grid" },
-  { tab: "emulation", icon: "console" },
   { tab: "controllers", icon: "gamepad" },
   { tab: "settings", icon: "settings" },
 ];

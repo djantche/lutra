@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { hoverFocus } from "../../input/hoverFocus";
 import { useAutofocus } from "../../input/useAutofocus";
 import { VirtualGrid } from "../../components/VirtualGrid/VirtualGrid";
-import { filterGames, filterTitle, librarySystems, sortGames, systemFilter, type LibraryFilter } from "../../lib/library";
+import { filterGames, filterTitle, sortGames, type LibraryFilter } from "../../lib/library";
 import { SOURCES } from "../../lib/sources";
 import { useLibrary } from "../../state/library";
 import type { Game } from "../../types/game";
@@ -27,9 +27,7 @@ export function LibraryView({ onFocusGame, onOpenGame }: LibraryViewProps) {
   const filters: LibraryFilter[] = [
     "all",
     "favorites",
-    // Emulated games by console rather than all together.
-    ...SOURCES.filter((source) => source !== "emulator" && games.some((game) => game.source === source)),
-    ...librarySystems(games).map(({ system }) => systemFilter(system)),
+    ...SOURCES.filter((source) => games.some((game) => game.source === source)),
   ];
   const visible = sortGames(filterGames(games, filter), "name");
 

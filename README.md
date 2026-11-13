@@ -1,48 +1,47 @@
 # Lutra
 
-Une bibliothèque de jeux unifiée et un lanceur pour Linux, dans l'esprit de [Lutris](https://github.com/lutris/lutris), avec une interface moderne, fluide et utilisable à la souris, au clavier et à la manette.
+A unified game library and launcher for Linux, in the spirit of [Lutris](https://github.com/lutris/lutris), with a modern, fluid interface you can drive with a mouse, a keyboard or a gamepad.
 
-> *Lutra* est le mot latin pour « loutre », clin d'œil à Lutris (*lutris* = « de la loutre »).
+> *Lutra* is Latin for "otter", a nod to Lutris (*lutris* = "of the otter").
 
-## Fonctionnalités
+## Features
 
-- **Une seule bibliothèque** pour Steam (lecture des bibliothèques locales, tous disques confondus), les jeux Windows (Wine / Proton), les jeux natifs Linux et les jeux émulés.
-- **Jeux Windows** : préfixes Wine gérés par Lutra, détection de Wine et de Proton (Steam, GE-Proton, `umu-run`), configuration par jeu (variables d'environnement, DLL, esync/fsync, DXVK/VKD3D, FSR, gamescope, GameMode, MangoHud, GPU choisi sur les portables hybrides…).
-- **Émulation intégrée** : cœurs libretro installés et mis à jour automatiquement, BIOS, ROM, options par console et par jeu, sauvegardes. Les jeux tournent dans le lecteur de Lutra (RetroArch n'est utilisé que pour les cœurs qui exigent le rendu GPU). Voir [`docs/EMULATION.md`](docs/EMULATION.md).
-- **Pilote de manettes** façon Steam Input : détection à chaud, zones mortes, courbes, remappage, conversion en clavier / souris, profils par jeu, manette virtuelle Xbox 360 ou DualShock 4 (HID), vibrations, overlay en jeu.
-- **Illustrations** : jaquettes, bannières, héros et logos depuis Steam, [SteamGridDB](https://www.steamgriddb.com/) (clé API personnelle) et libretro, avec cache disque.
-- **Deux interfaces** : un mode bureau moderne (thème clair / sombre) et un mode **Big Picture** plein écran pensé pour la manette.
-- **Zone de notification**, démarrage réduit, journaux intégrés, interface en français et en anglais.
+- **One library** for Steam (local libraries, all disks included), Windows games (Wine / Proton) and native Linux games.
+- **Windows games**: Wine prefixes managed by Lutra, Wine and Proton detection (Steam, GE-Proton, `umu-run`), per-game configuration (environment variables, DLLs, esync/fsync, DXVK/VKD3D, FSR, gamescope, GameMode, MangoHud, GPU choice on hybrid laptops...), installers followed from start to finish.
+- **Controller driver**, Steam Input style: hot-plugging, dead zones, curves, remapping, conversion to keyboard / mouse, per-game profiles, virtual Xbox 360 or DualShock 4 (HID) pad, rumble, in-game overlay.
+- **Artwork**: covers, banners, heroes and logos from Steam and [SteamGridDB](https://www.steamgriddb.com/) (personal API key), cached on disk.
+- **Two interfaces**: a modern desktop mode (light / dark theme) and a fullscreen **Big Picture** mode built for gamepads.
+- **Notification area**, start minimized, built-in logs, interface in English and French.
 
-## Installation
+## Install
 
-Les paquets (AppImage, `.deb`, `.rpm`) sont disponibles dans les [releases](https://github.com/djantche/lutra/releases).
+Packages (AppImage, `.deb`, `.rpm`) are available on the [releases page](https://github.com/djantche/lutra/releases).
 
 ```sh
 chmod +x Lutra_*.AppImage
 ./Lutra_*.AppImage
 ```
 
-Options de lancement :
+Launch options:
 
-| Option | Effet |
+| Option | Effect |
 | --- | --- |
-| `--big-picture` | démarre directement en mode Big Picture |
-| `--minimized` | démarre réduit dans la zone de notification |
+| `--big-picture` | start directly in Big Picture mode |
+| `--minimized` | start minimized in the notification area |
 
-### Manettes
+### Controllers
 
-Le pilote de manettes a besoin d'un accès en écriture à `/dev/uinput` (règle udev `uaccess`, souvent déjà fournie par les règles de Steam). Pour la DualShock 4 virtuelle en HID, il faut aussi `/dev/uhid`. L'écran **Manettes** de Lutra indique la commande à lancer si l'un d'eux manque.
+The controller driver needs write access to `/dev/uinput` (udev `uaccess` rule, often already provided by Steam's rules). The virtual HID DualShock 4 also needs `/dev/uhid`. Lutra's **Controllers** screen shows the command to run when one of them is missing.
 
-## Développement
+## Development
 
-Prérequis : Node, [pnpm](https://pnpm.io), Rust (via `rustup`) et les dépendances système de Tauri (`webkit2gtk-4.1`, `gtk3`, `librsvg`, `libsoup3`, `base-devel` sur Arch).
+Prerequisites: Node, [pnpm](https://pnpm.io), Rust (via `rustup`) and Tauri's system dependencies (`webkit2gtk-4.1`, `gtk3`, `librsvg`, `libsoup3`, `base-devel` on Arch).
 
 ```sh
-pnpm install          # dépendances du frontend
-pnpm tauri dev        # app en développement (Vite + Rust)
-pnpm build            # vérifie les types et builde le frontend
-pnpm tauri build      # paquets deb, rpm et AppImage
+pnpm install          # frontend dependencies
+pnpm tauri dev        # run the app in development (Vite + Rust)
+pnpm build            # type-check and build the frontend
+pnpm tauri build      # deb, rpm and AppImage packages
 
 cargo fmt --manifest-path src-tauri/Cargo.toml
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets
@@ -53,12 +52,12 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 [Tauri 2](https://tauri.app) (Rust) · React + TypeScript + Vite · SCSS · SQLite · zustand.
 
-Le backend Rust (`src-tauri/`) gère tout ce qui touche au système ; le frontend React (`src/`) se limite à l'affichage et à l'interaction. L'architecture détaillée, les conventions et les décisions sont dans [`AGENTS.md`](AGENTS.md).
+The Rust backend (`src-tauri/`) handles everything that touches the system; the React frontend (`src/`) only displays and reacts. Architecture, conventions and decisions are documented in [`AGENTS.md`](AGENTS.md).
 
-## Contribuer
+## Contributing
 
-Les commits sont petits et ciblés, en anglais. Le code Rust doit passer `cargo fmt` et `cargo clippy`, le TypeScript est en mode strict, et tout texte d'interface passe par l'i18n.
+Commits are small and focused, written in English. Rust code must pass `cargo fmt` and `cargo clippy`, TypeScript is strict, and every user-facing text goes through i18n (English and French).
 
-## Licence
+## License
 
-[GPL-3.0-or-later](LICENSE), comme Lutris.
+[GPL-3.0-or-later](LICENSE), like Lutris.

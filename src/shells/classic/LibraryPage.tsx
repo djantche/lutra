@@ -4,7 +4,7 @@ import { EmptyLibrary } from "../../components/EmptyLibrary/EmptyLibrary";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
 import { Icon } from "../../components/Icon/Icon";
 import { VirtualGrid } from "../../components/VirtualGrid/VirtualGrid";
-import { filterGames, filterSystem, filterTitle, sortGames, type LibraryFilter, type SortKey } from "../../lib/library";
+import { filterGames, filterTitle, sortGames, type LibraryFilter, type SortKey } from "../../lib/library";
 import { SOURCES } from "../../lib/sources";
 import { useLibrary } from "../../state/library";
 import { GameCard } from "./GameCard";
@@ -35,7 +35,7 @@ export function LibraryPage({ filter, query = "", onOpenGame }: LibraryPageProps
   }, [games, filter, query, sort]);
 
   // Inside a source page, repeating the source on every game is noise.
-  const inSource = !query.trim() && (SOURCES.some((source) => source === filter) || filterSystem(filter) !== null);
+  const inSource = !query.trim() && SOURCES.some((source) => source === filter);
   const title = query.trim() ? t("library.results", { query: query.trim() }) : filterTitle(filter, t);
   const sorts: { value: SortKey; label: string }[] = [
     { value: "name", label: t("library.sortName") },

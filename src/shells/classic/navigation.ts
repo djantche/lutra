@@ -6,9 +6,7 @@ export type Page =
   | { name: "library"; filter: LibraryFilter }
   | { name: "game"; id: string }
   | { name: "settings"; section?: SettingsSection }
-  | { name: "controllers" }
-  /** The emulation dashboard, or one system's page. */
-  | { name: "emulation"; system?: string };
+  | { name: "controllers" };
 
 export function pageKey(page: Page): string {
   switch (page.name) {
@@ -18,8 +16,6 @@ export function pageKey(page: Page): string {
       return `game:${page.id}`;
     case "settings":
       return `settings:${page.section ?? ""}`;
-    case "emulation":
-      return `emulation:${page.system ?? ""}`;
     default:
       return page.name;
   }

@@ -6,9 +6,9 @@ import { cx } from "../../lib/cx";
 import styles from "./TopBar.module.scss";
 
 /** Every page of Big Picture. */
-export type Tab = "home" | "library" | "emulation" | "controllers" | "settings";
+export type Tab = "home" | "library" | "controllers" | "settings";
 /** The pages in the top bar; the others (controllers, settings) live in the side menu. */
-export const TABS: Tab[] = ["home", "library", "emulation"];
+export const TABS: Tab[] = ["home", "library"];
 
 function useClock(language: string): string {
   const [now, setNow] = useState(() => new Date());

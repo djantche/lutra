@@ -1,9 +1,7 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { MOCK_GAMES } from "../data/mockGames";
-import type { ControllerButton } from "./controllers";
 import type { Game } from "../types/game";
 
 /** True inside the Tauri window. In a plain browser (`pnpm dev`) the app runs on mock data. */
@@ -34,124 +32,6 @@ export interface GameMeta {
   genres: string[];
   description: string | null;
   igdbId: number | null;
-}
-
-// ---- Emulation ----
-
-export interface FirmwareStatus {
-  description: string;
-  path: string;
-  optional: boolean;
-  state: "present" | "different" | "missing";
-}
-
-export interface CoreView {
-  id: string;
-  displayName: string;
-  version: string | null;
-  /** `lutra` cores were downloaded and checked by Lutra; `system` ones come with the distribution. */
-  origin: "lutra" | "system";
-  /** libretro database names, one per system. */
-  systems: string[];
-  extensions: string[];
-  firmware: FirmwareStatus[];
-  /** Every required firmware is in place. */
-  ready: boolean;
-  hwRender: boolean;
-}
-
-export interface EmulationStatus {
-  retroarch: { path: string; version: string | null } | null;
-  cores: CoreView[];
-  systems: { name: string; cores: string[] }[];
-  romDirs: string[];
-  biosDir: string;
-  defaultBiosDir: string;
-  /** The BIOS folder of the user's own RetroArch, when it is not the one in use. */
-  suggestedBiosDir: string | null;
-}
-
-export interface ScanSummary {
-  added: number;
-  removed: number;
-  total: number;
-  /** Disc images in folders that do not say which system they are for. */
-  unplaced: number;
-  /** Games whose system has no installed core. */
-  withoutCore: number;
-}
-
-/** A console button, by libretro's names (a Super Nintendo pad: B at the bottom, A on the right). */
-export type RetroButton =
-  | "b" | "y" | "select" | "start" | "up" | "down" | "left" | "right"
-  | "a" | "x" | "l" | "r" | "l2" | "r2" | "l3" | "r3";
-
-export interface EmulationProfile {
-  video: {
-    /** Sharp square pixels, smoothed, or whole multiples only. */
-    scaling: "sharp" | "smooth" | "integer";
-    aspect: "console" | "square" | "stretch";
-    effect: "none" | "scanlines" | "lcd";
-  };
-  controls: {
-    /** The controller button that presses each console button, when not the same position. */
-    remap: Partial<Record<RetroButton, ControllerButton>>;
-    /** The left stick also works as the directional pad. */
-    stickAsDpad: boolean;
-  };
-  /** The emulator's options the user changed; the others keep the core's defaults. */
-  coreOptions: Record<string, string>;
-}
-
-export const DEFAULT_EMULATION_PROFILE: EmulationProfile = {
-  video: { scaling: "sharp", aspect: "console", effect: "none" },
-  controls: { remap: {}, stickAsDpad: false },
-  coreOptions: {},
-};
-
-export interface CoreOption {
-  key: string;
-  label: string;
-  info: string | null;
-  category: string | null;
-  values: { value: string; label: string }[];
-  default: string;
-  visible: boolean;
-}
-
-export interface CoreOptions {
-  categories: { key: string; label: string; info: string | null }[];
-  options: CoreOption[];
-}
-
-export interface EmulatorConfig {
-  system: string;
-  fullscreen: boolean;
-  autoResume: boolean;
-  /** Settings kept for this game only; its console's otherwise. */
-  profile: EmulationProfile | null;
-}
-
-export interface EmulatorSettings {
-  id: string;
-  title: string;
-  romPath: string;
-  config: EmulatorConfig;
-}
-
-export interface CoreChoice {
-  id: string;
-  name: string;
-  origin: CoreView["origin"];
-  ready: boolean;
-}
-
-export interface EmulatorSettingsView {
-  settings: EmulatorSettings;
-  /** What the game uses when it has no settings of its own. */
-  consoleProfile: EmulationProfile;
-  /** Installed cores that can play this game, the preferred one first. */
-  cores: CoreChoice[];
 }
 
 /** A game found in GameDB, with the details it would fill in. */
@@ -270,7 +150,7 @@ export interface PrefixInfo {
 /** One real stage of a game launch, pushed by the backend. */
 export interface LaunchProgress {
   id: string;
-  stage: "check" | "core" | "start" | "prefix" | "wait";
+  stage: "check" | "start" | "prefix" | "wait";
   step: number;
   steps: number;
   state: "progress" | "ready" | "failed" | "ended";
@@ -536,212 +416,6 @@ export const startInstall = (request: InstallRequest): Promise<{ installId: stri
 export const cancelInstall = (installId: string): Promise<void> =>
   hasBackend() ? invoke<void>("cancel_install", { installId }) : Promise.resolve();
 
-const MOCK_CORES: CoreView[] = [
-  {
-    id: "snes9x",
-    displayName: "Nintendo - SNES / SFC (Snes9x)",
-    version: "1.63",
-    origin: "system",
-    systems: ["Nintendo - Super Nintendo Entertainment System"],
-    extensions: ["smc", "sfc"],
-    firmware: [],
-    ready: true,
-    hwRender: false,
-  },
-  {
-    id: "swanstation",
-    displayName: "Sony - PlayStation (SwanStation)",
-    version: "0.1",
-    origin: "lutra",
-    systems: ["Sony - PlayStation"],
-    extensions: ["cue", "chd", "iso"],
-    firmware: [{ description: "scph5501.bin (PS1 US BIOS)", path: "scph5501.bin", optional: false, state: "missing" }],
-    ready: false,
-    hwRender: true,
-  },
-];
-let mockEmuDirs = { romDirs: ["/mock/Roms"], biosDir: "/mock/Bios" };
-
-export const emulationStatus = (): Promise<EmulationStatus> =>
-  hasBackend()
-    ? invoke<EmulationStatus>("emulation_status")
-    : Promise.resolve({
-        retroarch: { path: "/usr/bin/retroarch", version: "1.22.2" },
-        cores: MOCK_CORES,
-        systems: [],
-        ...mockEmuDirs,
-        defaultBiosDir: "/mock/lutra/emulation/system",
-        suggestedBiosDir: "/mock/Games/bios",
-      });
-
-export function setEmulationDirs(romDirs: string[], biosDir: string | null): Promise<void> {
-  if (hasBackend()) return invoke<void>("set_emulation_dirs", { romDirs, biosDir });
-  mockEmuDirs = { romDirs, biosDir: biosDir ?? "/mock/lutra/emulation/system" };
-  return Promise.resolve();
-}
-
-export const scanRoms = (): Promise<ScanSummary> =>
-  hasBackend()
-    ? invoke<ScanSummary>("scan_roms")
-    : Promise.resolve({ added: 3, removed: 0, total: 3, unplaced: 1, withoutCore: 1 });
-
-export const installCore = (coreId: string): Promise<{ name: string; version: string }> =>
-  hasBackend() ? invoke<{ name: string; version: string }>("install_core", { coreId }) : Promise.resolve({ name: coreId, version: "1.0" });
-
-export const emulatorSettings = (id: string): Promise<EmulatorSettingsView> =>
-  hasBackend()
-    ? invoke<EmulatorSettingsView>("emulator_settings", { id })
-    : Promise.resolve({
-        settings: {
-          id,
-          title: "Demo ROM",
-          romPath: "/mock/Roms/demo.sfc",
-          config: { system: "Nintendo - Super Nintendo Entertainment System", fullscreen: true, autoResume: false, profile: null },
-        },
-        consoleProfile: DEFAULT_EMULATION_PROFILE,
-        cores: [{ id: "snes9x", name: "Nintendo - SNES / SFC (Snes9x)", origin: "system", ready: true }],
-      });
-
-export function saveEmulatorSettings(settings: EmulatorSettings): Promise<Game> {
-  if (hasBackend()) return invoke<Game>("save_emulator_settings", { settings });
-  const known = MOCK_GAMES.find((game) => game.id === settings.id) ?? MOCK_GAMES[0];
-  return Promise.resolve({ ...known, id: settings.id, title: settings.title });
-}
-
-export interface SystemView {
-  /** libretro database name, e.g. "Nintendo - Super Nintendo Entertainment System". */
-  name: string;
-  /** Installed cores for it, in the order Lutra tries them: the first is the one used. */
-  cores: CoreChoice[];
-  /** The core Lutra installs when none is. */
-  recommendedCore: string | null;
-  /** BIOS files of the core in use. */
-  firmware: FirmwareStatus[];
-  games: number;
-  /** File extensions the installed cores accept. */
-  extensions: string[];
-  /** Picture of the console, from RetroArch's assets (read through `useArtworkUrl`). */
-  icon: string | null;
-  /** Its emulator draws with the GPU: it still runs in RetroArch, not in Lutra's player. */
-  needsRetroarch: boolean;
-}
-
-const MOCK_SYSTEMS: SystemView[] = [
-  {
-    name: "Nintendo - Super Nintendo Entertainment System",
-    cores: [{ id: "snes9x", name: "Nintendo - SNES / SFC (Snes9x)", origin: "system", ready: true }],
-    recommendedCore: "snes9x",
-    firmware: [],
-    games: 2,
-    extensions: ["sfc", "smc", "zip"],
-    icon: null,
-    needsRetroarch: false,
-  },
-  {
-    name: "Sony - PlayStation",
-    cores: [{ id: "swanstation", name: "Sony - PlayStation (SwanStation)", origin: "lutra", ready: false }],
-    recommendedCore: "swanstation",
-    firmware: [{ description: "PS1 US BIOS", path: "scph5501.bin", optional: false, state: "missing" }],
-    games: 1,
-    extensions: ["cue", "chd", "pbp"],
-    icon: null,
-    needsRetroarch: false,
-  },
-  {
-    name: "Nintendo - Game Boy Advance",
-    cores: [],
-    recommendedCore: "mgba",
-    firmware: [],
-    games: 0,
-    extensions: [],
-    icon: null,
-    needsRetroarch: false,
-  },
-  {
-    name: "Sega - Mega Drive - Genesis",
-    cores: [{ id: "genesis_plus_gx", name: "Sega - MS/GG/MD/CD (Genesis Plus GX)", origin: "system", ready: true }],
-    recommendedCore: "genesis_plus_gx",
-    firmware: [],
-    games: 0,
-    extensions: ["md", "gen", "bin", "zip"],
-    icon: null,
-    needsRetroarch: false,
-  },
-];
-
-/** Every system worth showing on the emulation dashboard. */
-export const emulationSystems = (): Promise<SystemView[]> =>
-  hasBackend() ? invoke<SystemView[]>("emulation_systems") : Promise.resolve(MOCK_SYSTEMS);
-
-export interface NewRom {
-  path: string;
-  system: string;
-  title: string;
-  meta: GameMeta | null;
-}
-
-export function addRom(rom: NewRom): Promise<Game> {
-  if (hasBackend()) return invoke<Game>("add_rom", { rom });
-  return Promise.resolve({
-    id: `emulator:${Math.abs(rom.path.length * 7919)}`,
-    title: rom.title || "ROM",
-    source: "emulator",
-    system: rom.system,
-    hue: (rom.path.length * 37) % 360,
-    genres: rom.meta?.genres ?? [],
-    playtimeMinutes: 0,
-    lastPlayed: null,
-    favorite: false,
-  });
-}
-
-/** Opens the native file picker for a game of a system; no filter when its formats are unknown. */
-export async function pickRom(extensions: string[]): Promise<string | null> {
-  if (!hasBackend()) return "/mock/Roms/Super Metroid (USA).sfc";
-  const picked = await openDialog({
-    multiple: false,
-    directory: false,
-    filters: extensions.length > 0 ? [{ name: "ROM", extensions }] : undefined,
-  });
-  return typeof picked === "string" ? picked : null;
-}
-
-const mockProfiles = new Map<string, EmulationProfile>();
-
-/** The settings a console's games share. */
-export const emulationProfile = (system: string): Promise<EmulationProfile> =>
-  hasBackend()
-    ? invoke<EmulationProfile>("emulation_profile", { system })
-    : Promise.resolve(mockProfiles.get(system) ?? DEFAULT_EMULATION_PROFILE);
-
-export function saveEmulationProfile(system: string, profile: EmulationProfile): Promise<void> {
-  if (hasBackend()) return invoke<void>("save_emulation_profile", { system, profile });
-  mockProfiles.set(system, profile);
-  return Promise.resolve();
-}
-
-const MOCK_CORE_OPTIONS: CoreOptions = {
-  categories: [
-    { key: "video", label: "Vidéo", info: null },
-    { key: "system", label: "Système", info: null },
-  ],
-  options: [
-    { key: "snes9x_hires_blend", label: "Fusion des pixels haute résolution", info: "Adoucit les jeux qui alternent deux résolutions.", category: "video", values: [{ value: "disabled", label: "disabled" }, { value: "merge", label: "Fusionner" }, { value: "blur", label: "Flou" }], default: "disabled", visible: true },
-    { key: "snes9x_overclock", label: "Accélération du processeur", info: "Réduit les ralentissements de certains jeux.", category: "system", values: [{ value: "disabled", label: "disabled" }, { value: "enabled", label: "enabled" }], default: "disabled", visible: true },
-  ],
-};
-
-/** The options the emulator of a console offers, as it describes them. */
-export const coreOptions = (system: string): Promise<CoreOptions> =>
-  hasBackend() ? invoke<CoreOptions>("core_options", { system }) : Promise.resolve(MOCK_CORE_OPTIONS);
-
-/** The interface's language, which the backend hands to emulators. */
-export const setUiLanguage = (language: string): Promise<void> =>
-  hasBackend() ? invoke<void>("set_ui_language", { language }) : Promise.resolve();
-
-export const openEmulationFolder = (what: "bios" | "saves" | "states" | "cores") =>
-  hasBackend() ? invoke<void>("open_emulation_folder", { what }) : Promise.resolve();
-
 /** Closes the in-game overlay, optionally bringing the Lutra window to the front. */
 export const closeOverlay = (showLutra: boolean): Promise<void> =>
   hasBackend() ? invoke<void>("close_overlay", { showLutra }) : Promise.resolve();
@@ -888,7 +562,7 @@ export const importImages = (force: boolean): Promise<void> =>
   hasBackend() ? invoke<void>("import_images", { force }) : Promise.resolve();
 
 export const openExternal = (url: string): Promise<void> =>
-  hasBackend() ? openUrl(url) : Promise.resolve(void window.open(url, "_blank", "noopener"));
+  hasBackend() ? invoke<void>("open_external", { url }) : Promise.resolve(void window.open(url, "_blank", "noopener"));
 
 // ---- events pushed by the backend ----
 

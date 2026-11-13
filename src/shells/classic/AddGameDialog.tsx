@@ -29,12 +29,10 @@ import {
   type GameHit,
   type Runner,
 } from "../../lib/backend";
-import { useEmulation } from "../../hooks/useEmulation";
 import { useLibraryStore } from "../../state/library";
-import { RomFields } from "./RomFields";
 import styles from "./AddGameDialog.module.scss";
 
-type Kind = "windows" | "linux" | "install" | "rom";
+type Kind = "windows" | "linux" | "install";
 
 /** "C:\Games\Foo Bar\foo_bar.exe" -> "foo_bar". */
 function fileStem(path: string): string {
@@ -42,26 +40,16 @@ function fileStem(path: string): string {
   return name.replace(/\.[^.]+$/, "");
 }
 
-/** "Super Metroid (USA) [!]" -> "Super Metroid": dump tags are not part of a game's name. */
-function romTitle(path: string): string {
-  return fileStem(path).replace(/\s*[([][^)\]]*[)\]]/g, "").trim();
-}
-
 interface AddGameDialogProps {
-  /** Opens on the console flow, with this system chosen when it is a string. */
-  romSystem?: string | null;
   onClose: () => void;
   onAdded: (id: string) => void;
 }
 
-export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProps) {
+export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
   const { t } = useTranslation();
   const addGame = useLibraryStore((state) => state.addGame);
-  const addRom = useLibraryStore((state) => state.addRom);
 
-  const [kind, setKind] = useState<Kind>(romSystem === undefined ? "windows" : "rom");
-  const [system, setSystem] = useState(romSystem ?? "");
-  const emulation = useEmulation();
+  const [kind, setKind] = useState<Kind>("windows");
   const [exePath, setExePath] = useState("");
   const [title, setTitle] = useState("");
   const [titleEdited, setTitleEdited] = useState(false);
@@ -88,25 +76,6 @@ export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProp
 
   // GameDB is searched by what the user calls the game: the name field, or the file name until they edit it.
   const lookup = useGameLookup(exePath === "" || kind === "install" ? "" : title);
-
-  const pickedRom = (path: string) => {
-    setExePath(path);
-    if (!titleEdited) setTitle(romTitle(path));
-  };
-
-  const chooseSystem = (next: string) => {
-    if (next === system) return;
-    setSystem(next);
-    // A file of another console cannot be kept.
-    setExePath("");
-  };
-
-  const addFolder = () => {
-    emulation
-      .addRomFolder()
-      .then((added) => added && onClose())
-      .catch(() => {});
-  };
 
   const browse = () => {
     (kind === "linux" ? pickLinuxProgram() : pickProgram())
@@ -136,10 +105,8 @@ export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProp
   const runner = runners?.find((candidate) => candidate.path === runnerPath);
   const needsRunner = kind === "windows" || kind === "install";
   const installing = kind === "install";
-  const rom = kind === "rom";
   const dateValid = isValidDate(details.releaseDate);
-  const canSubmit =
-    exePath !== "" && (!needsRunner || runner !== undefined) && (!rom || system !== "") && dateValid && !busy;
+  const canSubmit = exePath !== "" && (!needsRunner || runner !== undefined) && dateValid && !busy;
   const afterInstall = install !== null;
 
   const finish = (game: { id: string }) => {
@@ -169,17 +136,6 @@ export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProp
           setInstall(started);
           setBusy(false);
         })
-        .catch(failed);
-      return;
-    }
-    if (rom) {
-      addRom({
-        path: exePath,
-        system,
-        title: title.trim(),
-        meta: metaFromDetails(details),
-      })
-        .then(finish)
         .catch(failed);
       return;
     }
@@ -225,7 +181,7 @@ export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProp
     <Dialog
       size="lg"
       title={t("addGame.title")}
-      description={rom ? t("addGame.hintRom") : t("addGame.hint")}
+      description={t("addGame.hint")}
       onClose={onClose}
       busy={busy}
       footer={
@@ -268,30 +224,17 @@ export function AddGameDialog({ romSystem, onClose, onAdded }: AddGameDialogProp
           { value: "windows", label: t("addGame.kindWindows"), icon: "settings" },
           { value: "linux", label: t("addGame.kindLinux"), icon: "terminal" },
           { value: "install", label: t("addGame.kindInstall"), icon: "plus" },
-          { value: "rom", label: t("addGame.kindRom"), icon: "console" },
         ]}
         value={kind}
         onChange={chooseKind}
       />
 
-      {rom ? (
-        <RomFields
-          systems={emulation.systems}
-          system={system}
-          onSystem={chooseSystem}
-          romPath={exePath}
-          onRom={pickedRom}
-          onInstalled={emulation.reload}
-          onAddFolder={addFolder}
-        />
-      ) : (
       <FormField
         label={installing ? t("install.installer") : t("addGame.program")}
         hint={kind === "linux" ? t("addGame.linuxHint") : installing ? t("install.installerHint") : undefined}
       >
         <FilePicker value={exePath} placeholder={t("addGame.browse")} onPick={browse} />
       </FormField>
-      )}
 
       {exePath !== "" && (
         <>

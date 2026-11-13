@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import {
   addGame as addGameBackend,
-  addRom as addRomBackend,
   hasBackend,
   importImages,
   initialGames,
@@ -14,7 +13,6 @@ import {
   type ImageProgress,
   type LaunchProgress,
   type NewGame,
-  type NewRom,
 } from "../lib/backend";
 import i18n from "../i18n";
 import type { Game } from "../types/game";
@@ -70,7 +68,6 @@ interface LibraryState {
   rescan: () => void;
   addGame: (input: NewGame) => Promise<Game>;
   removeGame: (id: string, everything?: boolean) => Promise<void>;
-  addRom: (rom: NewRom) => Promise<Game>;
 }
 
 function armLaunchGuard(set: (state: Partial<LibraryState>) => void) {
@@ -185,13 +182,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   addGame: async (input) => {
     const game = await addGameBackend(input);
-    get().upsertGame(game);
-    fetchArtwork();
-    return game;
-  },
-
-  addRom: async (rom) => {
-    const game = await addRomBackend(rom);
     get().upsertGame(game);
     fetchArtwork();
     return game;

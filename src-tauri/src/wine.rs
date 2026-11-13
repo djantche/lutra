@@ -186,10 +186,72 @@ pub fn find_in_path(name: &str) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
+/// What to change in a child's environment so it sees the system and not Lutra's AppImage.
+///
+/// The AppImage's `AppRun` points `PYTHONHOME`, `LD_LIBRARY_PATH`, `PERLLIB`, `GST_*`, `GTK_*`
+/// and more at its own mount. A game inherits them, and `umu-run` (a Python script) then dies
+/// looking for `encodings` in a folder that has no Python. Every entry under `appdir` is removed;
+/// a variable left empty is unset. Returns `(name, new value)`, `None` meaning unset.
+pub fn host_env_changes(
+    vars: impl IntoIterator<Item = (String, String)>,
+    appdir: &str,
+) -> Vec<(String, Option<String>)> {
+    let appdir = appdir.trim_end_matches('/');
+    if appdir.is_empty() {
+        return Vec::new();
+    }
+    let inside = |entry: &str| {
+        entry
+            .strip_prefix(appdir)
+            .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+    };
+    vars.into_iter()
+        .filter(|(name, value)| name != "APPDIR" && value.split(':').any(inside))
+        .map(|(name, value)| {
+            let kept: Vec<&str> = value.split(':').filter(|entry| !inside(entry)).collect();
+            let kept = kept.join(":");
+            (name, (!kept.is_empty()).then_some(kept))
+        })
+        .collect()
+}
+
+/// Opens a folder or a URL with the desktop's default application (`xdg-open`), with the
+/// environment of the system rather than the AppImage's, which would break the application that
+/// opens it (Steam for `steam://`, the file manager for a folder).
+pub fn open_on_host(target: impl AsRef<std::ffi::OsStr>) -> Result<(), String> {
+    let mut command = Command::new("xdg-open");
+    host_env(&mut command)
+        .arg(target)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("could not run xdg-open: {e}"))
+}
+
+/// Gives `command` the environment of the system instead of the one set up by Lutra's AppImage.
+/// Does nothing outside an AppImage.
+pub fn host_env(command: &mut Command) -> &mut Command {
+    let Some(appdir) = std::env::var_os("APPDIR").and_then(|dir| dir.into_string().ok()) else {
+        return command;
+    };
+    let vars = std::env::vars().filter(|(name, _)| name != "APPDIR");
+    for (name, value) in host_env_changes(vars, &appdir) {
+        match value {
+            Some(value) => command.env(name, value),
+            None => command.env_remove(name),
+        };
+    }
+    command
+}
+
 pub fn detect_tools() -> Tools {
     let wine = find_in_path("wine");
     let wine_version = wine.as_ref().and_then(|wine| {
-        let output = Command::new(wine).arg("--version").output().ok()?;
+        let output = host_env(Command::new(wine).arg("--version"))
+            .output()
+            .ok()?;
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
         (!text.is_empty()).then_some(text)
     });
@@ -600,6 +662,35 @@ pub fn build_launch(request: &LaunchRequest) -> Result<LaunchSpec, String> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn host_env_drops_what_points_into_the_appimage() {
+        let appdir = "/tmp/.mount_Lutra.abc";
+        let vars = [
+            ("PYTHONHOME", "/tmp/.mount_Lutra.abc/usr/"),
+            ("PYTHONPATH", "/tmp/.mount_Lutra.abc/usr/share/pyshared/:"),
+            ("PATH", "/tmp/.mount_Lutra.abc/usr/bin/:/usr/bin:/bin"),
+            ("LD_LIBRARY_PATH", "/tmp/.mount_Lutra.abc/usr/lib/"),
+            ("GTK_DATA_PREFIX", "/tmp/.mount_Lutra.abc"),
+            ("HOME", "/home/me"),
+            ("LIKE_IT", "/tmp/.mount_Lutra.abcd/usr"),
+        ]
+        .map(|(k, v)| (k.to_string(), v.to_string()));
+        let changes: std::collections::HashMap<_, _> =
+            host_env_changes(vars, appdir).into_iter().collect();
+        assert_eq!(changes["PYTHONHOME"], None);
+        assert_eq!(changes["LD_LIBRARY_PATH"], None);
+        assert_eq!(changes["GTK_DATA_PREFIX"], None);
+        // Only the AppRun's trailing empty entry would be left: the variable goes.
+        assert_eq!(changes["PYTHONPATH"], None);
+        assert_eq!(changes["PATH"].as_deref(), Some("/usr/bin:/bin"));
+        assert!(!changes.contains_key("HOME"));
+        assert!(
+            !changes.contains_key("LIKE_IT"),
+            "a sibling folder is not the AppImage"
+        );
+        assert!(host_env_changes([("A".to_string(), "/x".to_string())], "").is_empty());
+    }
     use super::*;
 
     fn runner(kind: RunnerKind, path: &str) -> Runner {

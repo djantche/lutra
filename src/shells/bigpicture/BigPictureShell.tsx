@@ -10,16 +10,12 @@ import { useUi } from "../../state/ui";
 import type { Game } from "../../types/game";
 import { SettingsView } from "../../views/SettingsView";
 import { ControllersView } from "../../views/controllers/ControllersView";
-import { EmulationView } from "../../views/emulation/EmulationView";
-import type { SettingsSection } from "../../views/SettingsView";
 import { BigPictureMenu } from "./BigPictureMenu";
 import { GameHub } from "./GameHub";
 import { GameSettings } from "./GameSettings";
 import { HomeView } from "./HomeView";
 import { LaunchScreen } from "./LaunchScreen";
-import { LibraryTile } from "./LibraryTile";
-import { LibraryView, tileWidth } from "./LibraryView";
-import { VirtualGrid } from "../../components/VirtualGrid/VirtualGrid";
+import { LibraryView } from "./LibraryView";
 import { Splash } from "./Splash";
 import { TopBar, TABS, type Tab } from "./TopBar";
 import styles from "./BigPictureShell.module.scss";
@@ -51,16 +47,8 @@ export function BigPictureShell() {
   const [hubId, setHubId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
-  // The console open on the emulation page, and the settings category to show.
-  const [emulationSystem, setEmulationSystem] = useState<string | null>(null);
-  const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(undefined);
   const { setMode } = useUi();
   const idle = useIdleCursor();
-
-  // A settings category asked for by another page only holds until the settings are left.
-  useEffect(() => {
-    if (tab !== "settings") setSettingsSection(undefined);
-  }, [tab]);
 
   const focused = games.find((game) => game.id === focusedId) ?? null;
   const hub = games.find((game) => game.id === hubId) ?? null;
@@ -82,10 +70,6 @@ export function BigPictureShell() {
         const step = action === "tabNext" ? 1 : -1;
         const from = Math.max(0, TABS.indexOf(tab));
         setTab(TABS[(from + step + TABS.length) % TABS.length]);
-        return true;
-      }
-      if (action === "back" && tab === "emulation" && emulationSystem !== null) {
-        setEmulationSystem(null);
         return true;
       }
       if (action === "back" && tab !== "home") {
@@ -113,30 +97,6 @@ export function BigPictureShell() {
               />
             )}
             {tab === "library" && <LibraryView onFocusGame={setFocusedId} onOpenGame={openGame} />}
-            {tab === "emulation" && (
-              <div className={styles.settings}>
-                <EmulationView
-                  system={emulationSystem}
-                  onSystem={setEmulationSystem}
-                  renderGames={(list) => (
-                    <VirtualGrid
-                      items={list}
-                      getKey={(game) => game.id}
-                      minColumnWidth={tileWidth()}
-                      columnGap={28}
-                      rowGap={36}
-                      renderItem={(game) => (
-                        <LibraryTile game={game} autofocus={false} onFocusGame={setFocusedId} onOpenGame={openGame} />
-                      )}
-                    />
-                  )}
-                  onOpenSettings={() => {
-                    setSettingsSection("emulation");
-                    setTab("settings");
-                  }}
-                />
-              </div>
-            )}
             {tab === "controllers" && (
               <div className={styles.settings}>
                 <ControllersView />
@@ -144,7 +104,7 @@ export function BigPictureShell() {
             )}
             {tab === "settings" && (
               <div className={styles.settings}>
-                <SettingsView section={settingsSection} />
+                <SettingsView />
               </div>
             )}
           </div>

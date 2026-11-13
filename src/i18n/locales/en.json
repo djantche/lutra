@@ -19,17 +19,14 @@
     "bigPicture": "Big Picture",
     "bigPictureHint": "Console mode",
     "addGame": "Add a game",
-    "controllers": "Controllers",
-    "emulation": "Emulation",
-    "consoles": "Consoles"
+    "controllers": "Controllers"
   },
   "sources": {
     "steam": "Steam",
     "gog": "GOG",
     "epic": "Epic Games",
     "wine": "Wine / Proton",
-    "native": "Native",
-    "emulator": "Emulators"
+    "native": "Native"
   },
   "window": {
     "minimize": "Minimize",
@@ -87,8 +84,7 @@
       "check": "Checking the settings…",
       "start": "Starting the game…",
       "prefix": "Creating the Wine prefix…",
-      "wait": "Waiting for the game…",
-      "core": "Installing the emulator…"
+      "wait": "Waiting for the game…"
     }
   },
   "settings": {
@@ -135,13 +131,12 @@
     "steamGridDbKey": "API key",
     "groupLutraLog": "Lutra's log",
     "version": "Version {{version}}",
-    "aboutHint": "A unified game library and launcher for Linux: Steam, Windows games, native games and consoles in one place.",
+    "aboutHint": "A unified game library and launcher for Linux: Steam, Windows games and native games in one place.",
     "license": "Licence",
     "licenseHint": "Free software: you may use, study, change and share it.",
     "tabs": {
       "general": "General",
       "windows": "Windows games",
-      "emulation": "Emulation",
       "artwork": "Artwork",
       "logs": "Logs",
       "about": "About"
@@ -149,7 +144,6 @@
     "tabsHint": {
       "general": "Language, display mode and rendering of the app.",
       "windows": "Wine, Proton and the tools that run your Windows games.",
-      "emulation": "Where your console games and BIOS files are. Consoles and their emulators are managed on the Emulation page.",
       "artwork": "Where the covers, banners and logos of your games come from.",
       "logs": "What Lutra did, to understand what went wrong.",
       "about": "Lutra, its version and its licence."
@@ -195,15 +189,7 @@
     "linuxHint": "A Linux program: a binary, an AppImage or a script.",
     "optimized": "Optimized for this machine automatically (graphics card, synchronisation, GameMode). You can fine-tune it in the game's settings.",
     "kindInstall": "Install",
-    "kindRom": "Console",
-    "console": "Console",
-    "searchConsole": "Search for a console",
-    "noConsole": "No console matches.",
-    "romFile": "Game file",
-    "romFormats": "Accepted formats: {{formats}}",
-    "biosMissing": "This console needs missing BIOS files: {{files}}. The game is added, but only starts once they are in place.",
-    "folderInstead": "Got a whole folder of games?",
-    "hintRom": "Pick the console, then the game's file. Lutra takes care of the emulator, BIOS files and cover."
+    "folderInstead": "Got a whole folder of games?"
   },
   "errors": {
     "launch": "Could not start {{title}}:",
@@ -307,10 +293,7 @@
     "tabDetails": "Details",
     "tabPerformance": "Performance",
     "saving": "Saving…",
-    "saved": "All changes saved",
-    "tabVideo": "Graphics",
-    "tabControls": "Controls",
-    "tabEmulator": "Emulator"
+    "saved": "All changes saved"
   },
   "logs": {
     "filter": "Filter lines",
@@ -577,159 +560,6 @@
     "program": "Game program",
     "programHint": "What the installer added, the likeliest first.",
     "noneFound": "No new program was found. Pick the game's program yourself."
-  },
-  "emulation": {
-    "title": "Emulation",
-    "loading": "Looking at your emulation setup…",
-    "notInstalled": "Not installed",
-    "retroarchMissing": "Only 3D consoles (N64, PSP, Dreamcast, GameCube…) still go through RetroArch. Every other console runs in Lutra's player.",
-    "romFolders": "Game folders",
-    "romFoldersHint": "Lutra looks for ROMs in these folders. Disc images (ISO, CUE, CHD) need to sit in a folder named after their system, like psx or saturn.",
-    "addFolder": "Add a folder",
-    "scan": "Scan for games",
-    "scanned": "{{count}} game(s) found: {{added}} new, {{removed}} removed.",
-    "unplaced": "{{count}} disc image(s) were skipped: put them in a folder named after their system (psx, saturn, dreamcast…).",
-    "withoutCore": "{{count}} game(s) are waiting for their emulator: Lutra is installing it.",
-    "scanFailed": "Could not scan the folders:",
-    "biosFolder": "BIOS folder",
-    "biosFolderHint": "Where the BIOS files some consoles need are kept. Lutra never downloads them.",
-    "useRetroarchBios": "Use RetroArch's folder ({{path}})",
-    "firmware": {
-      "present": "OK",
-      "different": "Another version",
-      "missing": "Missing"
-    },
-    "optional": "optional",
-    "installed": "{{name}} {{version}} installed.",
-    "installFailed": "Could not install {{name}}:",
-    "game": {
-      "fullscreen": "Fullscreen",
-      "fullscreenHint": "Starts the game fullscreen.",
-      "resume": "Resume where you left off",
-      "resumeHint": "Saves the game when you quit and loads it next time.",
-      "system": "System",
-      "start": "Starting"
-    },
-    "subtitle": "All your consoles in one place: their games, the emulator that runs them and the BIOS files they need.",
-    "addGame": "Add a game",
-    "settings": "Folders and BIOS",
-    "statGames_one": "console game",
-    "statGames_other": "console games",
-    "statReady_one": "console ready",
-    "statReady_other": "consoles ready",
-    "statFolders_one": "game folder",
-    "statFolders_other": "game folders",
-    "noFolder": "No game folder yet",
-    "noFolderHint": "Tell Lutra where your ROMs are: it sorts them by console and fetches their covers.",
-    "filter": "Consoles shown",
-    "filterMine": "My consoles",
-    "filterReady": "Playable",
-    "filterAll": "All",
-    "noGames": "No console games yet",
-    "noGamesHint": "Add a ROM folder or a game: its console will show up here.",
-    "noSystems": "No playable console",
-    "noSystemsHint": "Show every console and install the emulator of the one you want.",
-    "otherMakers": "Other",
-    "games_one": "{{count}} game",
-    "games_other": "{{count}} games",
-    "state": {
-      "ready": "Ready",
-      "bios": "BIOS missing",
-      "noCore": "Emulator to install"
-    },
-    "kind": {
-      "home": "Home console",
-      "handheld": "Handheld",
-      "arcade": "Arcade",
-      "computer": "Computer"
-    },
-    "gamesTitle": "Games",
-    "systemEmpty": "No games for this console",
-    "systemEmptyHint": "Add a {{name}} game, or put your ROMs in one of your game folders and search again.",
-    "emulator": "Emulator",
-    "noCore": "No emulator installed",
-    "formats": "Accepted formats",
-    "bios": "BIOS",
-    "biosWhere": "Put the missing files here",
-    "recheck": "Check again",
-    "changeFolder": "Change folder",
-    "romFoldersTitle": "Where to look for games",
-    "emulators": "Emulators",
-    "emulatorsAuto": "Picked and installed by Lutra",
-    "emulatorsAutoHint": "For each console, Lutra picks the best emulator, downloads it, checks it and keeps it up to date. There is nothing to install.",
-    "statEmulators_one": "emulator ready",
-    "statEmulators_other": "emulators ready",
-    "coreByLutra": "Picked by Lutra for this console, installed and updated automatically.",
-    "noCoreAuto": "Lutra installs it by itself the first time a game starts.",
-    "noCoreYet": "Lutra cannot emulate this console yet.",
-    "installNow": "Install now",
-    "needsRetroarch": "Still needs RetroArch",
-    "needsRetroarchHint": "This emulator draws with the graphics card: until Lutra's player handles it, it runs in RetroArch. Install RetroArch to play this console.",
-    "profile": {
-      "configure": "Console settings",
-      "consoleTitle": "Settings — {{name}}",
-      "consoleHint": "For every game of this console, except those with their own settings. Saved automatically.",
-      "section": {
-        "video": "Graphics",
-        "controls": "Controls",
-        "emulator": "Emulator"
-      },
-      "picture": "Picture",
-      "scaling": "Pixel rendering",
-      "scalingValue": {
-        "sharp": "Sharp",
-        "smooth": "Smooth",
-        "integer": "Integer"
-      },
-      "scalingHint": {
-        "sharp": "Square, crisp pixels at any size, without shimmering.",
-        "smooth": "Softened, as on a television.",
-        "integer": "Every console pixel gets the same number of screen pixels, with borders."
-      },
-      "aspect": "Shape",
-      "aspectValue": {
-        "console": "Console",
-        "square": "Square pixels",
-        "stretch": "Stretched"
-      },
-      "aspectHint": {
-        "console": "The original screen's shape (4:3 for a home console).",
-        "square": "Each pixel square: the exact picture the console makes.",
-        "stretch": "The whole screen, even if the picture is distorted."
-      },
-      "effect": "Screen effect",
-      "effectValue": {
-        "none": "None",
-        "scanlines": "CRT lines",
-        "lcd": "LCD grid"
-      },
-      "effectHint": {
-        "none": "The picture as it is.",
-        "scanlines": "The dark lines of a tube television.",
-        "lcd": "The grid of a handheld's screen."
-      },
-      "buttons": "Console buttons",
-      "buttonHint": "The controller button that presses it",
-      "stickAsDpad": "Left stick as D-pad",
-      "stickAsDpadHint": "For consoles without a stick: the left stick steers too.",
-      "resetButtons": "Back to the default layout",
-      "reset": "Reset",
-      "emulator": "Emulator options",
-      "emulatorVideo": "Emulator video options",
-      "emulatorInput": "Emulator control options",
-      "noOptions": "No options",
-      "noOptionsHint": "This emulator has no settings.",
-      "defaults": "Defaults",
-      "resetOptions": "Back to the original options",
-      "resetOptionsHint": "The values the emulator itself picks.",
-      "own": "Settings for this game only",
-      "ownOn": "This game has its own settings: they do not change the console's.",
-      "ownOff": "This game follows its console's settings ({{name}}). Turn this on to give it its own."
-    },
-    "options": {
-      "on": "On",
-      "off": "Off"
-    }
   },
   "overlay": {
     "title": "Game menu",

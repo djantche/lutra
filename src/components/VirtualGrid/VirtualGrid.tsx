@@ -23,7 +23,7 @@ function scrollParent(node: HTMLElement | null): HTMLElement | null {
 }
 
 /**
- * A grid that only mounts the rows on screen. A library of thousands of games (a ROM folder)
+ * A grid that only mounts the rows on screen. A library of thousands of games
  * would otherwise mount thousands of cards, each loading its artwork, which WebKitGTK cannot
  * draw. Every item must have the same height; it is measured on the first one.
  */

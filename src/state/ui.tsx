@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useTranslation } from "react-i18next";
-import { onTrayBigPicture, setTrayLabels, setUiLanguage } from "../lib/backend";
+import { onTrayBigPicture, setTrayLabels } from "../lib/backend";
 
 export type UiMode = "classic" | "bigpicture";
 
@@ -23,10 +23,6 @@ interface UiContextValue {
   /** The "add a game" dialog of the desktop mode. */
   addGameOpen: boolean;
   setAddGameOpen: (open: boolean) => void;
-  /** When the dialog opens on the console flow, and for which system, if known. */
-  addRomSystem: string | null | undefined;
-  /** Opens the "add a game" dialog on the console flow. */
-  openAddRom: (system: string | null) => void;
   /** Game whose settings window is open. */
   configureGameId: string | null;
   setConfigureGameId: (id: string | null) => void;
@@ -39,16 +35,7 @@ const UiContext = createContext<UiContextValue | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<UiMode>(readStoredMode);
-  const [addGameOpen, setAddGameOpenState] = useState(false);
-  const [addRomSystem, setAddRomSystem] = useState<string | null | undefined>(undefined);
-  const setAddGameOpen = useCallback((open: boolean) => {
-    setAddRomSystem(undefined);
-    setAddGameOpenState(open);
-  }, []);
-  const openAddRom = useCallback((system: string | null) => {
-    setAddRomSystem(system);
-    setAddGameOpenState(true);
-  }, []);
+  const [addGameOpen, setAddGameOpen] = useState(false);
   const [configureGameId, setConfigureGameId] = useState<string | null>(null);
   const [removeGameId, setRemoveGameId] = useState<string | null>(null);
 
@@ -67,8 +54,6 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   useEffect(() => {
     setTrayLabels({ open: t("tray.open"), bigPicture: t("nav.bigPicture"), quit: t("tray.quit") }).catch(() => {});
-    // Emulators that are translated speak it too.
-    setUiLanguage(i18n.resolvedLanguage ?? i18n.language).catch(() => {});
   }, [t, i18n.language]);
   useEffect(() => {
     const stop = onTrayBigPicture(() => setMode("bigpicture"));
@@ -100,14 +85,12 @@ export function UiProvider({ children }: { children: ReactNode }) {
       toggleMode,
       addGameOpen,
       setAddGameOpen,
-      addRomSystem,
-      openAddRom,
       configureGameId,
       setConfigureGameId,
       removeGameId,
       setRemoveGameId,
     }),
-    [mode, setMode, toggleMode, addGameOpen, setAddGameOpen, addRomSystem, openAddRom, configureGameId, removeGameId],
+    [mode, setMode, toggleMode, addGameOpen, configureGameId, removeGameId],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }

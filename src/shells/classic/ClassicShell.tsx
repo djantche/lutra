@@ -3,17 +3,13 @@ import { useUi } from "../../state/ui";
 import { useInputAction } from "../../input/useInputAction";
 import { SettingsView } from "../../views/SettingsView";
 import { ControllersView } from "../../views/controllers/ControllersView";
-import { EmulationView } from "../../views/emulation/EmulationView";
-import type { Game } from "../../types/game";
 import { RemoveGameDialog } from "../../components/RemoveGameDialog/RemoveGameDialog";
-import { VirtualGrid } from "../../components/VirtualGrid/VirtualGrid";
 import { ContextMenuHost } from "../../components/ContextMenu/ContextMenuHost";
 import { ToastHost } from "../../components/Toast/ToastHost";
 import { usePageMenu } from "../../hooks/useGameMenu";
 import { useLibraryStore } from "../../state/library";
 import { AddGameDialog } from "./AddGameDialog";
 import { GameConfigDialog } from "./config/GameConfigDialog";
-import { GameCard } from "./GameCard";
 import { GamePage } from "./GamePage";
 import { HomePage } from "./HomePage";
 import { LaunchToast } from "./LaunchToast";
@@ -27,8 +23,6 @@ export function ClassicShell() {
   const {
     addGameOpen,
     setAddGameOpen,
-    addRomSystem,
-    openAddRom,
     configureGameId,
     setConfigureGameId,
     removeGameId,
@@ -93,27 +87,6 @@ export function ClassicShell() {
     content = <LibraryPage filter={page.filter} onOpenGame={openGame} />;
   } else if (page.name === "game") {
     content = <GamePage id={page.id} onOpenGame={openGame} onRemoved={back} />;
-  } else if (page.name === "emulation") {
-    content = (
-      <div className={styles.settings}>
-        <EmulationView
-          system={page.system ?? null}
-          onSystem={(system) => (system ? navigate({ name: "emulation", system }) : back())}
-          renderGames={(games: Game[]) => (
-            <VirtualGrid
-              items={games}
-              getKey={(game) => game.id}
-              minColumnWidth={170}
-              columnGap={20}
-              rowGap={32}
-              renderItem={(game) => <GameCard game={game} onOpen={openGame} showSource={false} />}
-            />
-          )}
-          onAddRom={openAddRom}
-          onOpenSettings={() => navigate({ name: "settings", section: "emulation" })}
-        />
-      </div>
-    );
   } else if (page.name === "controllers") {
     content = (
       <div className={styles.settings}>
@@ -151,7 +124,7 @@ export function ClassicShell() {
         </div>
       </div>
       {addGameOpen && (
-        <AddGameDialog romSystem={addRomSystem} onClose={() => setAddGameOpen(false)} onAdded={openGame} />
+        <AddGameDialog onClose={() => setAddGameOpen(false)} onAdded={openGame} />
       )}
       {configureGameId && <GameConfigDialog gameId={configureGameId} onClose={() => setConfigureGameId(null)} />}
       {removing && <RemoveGameDialog game={removing} onClose={() => setRemoveGameId(null)} />}

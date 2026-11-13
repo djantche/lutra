@@ -1,75 +1,71 @@
-# Plan de travail (session autonome)
+# Work plan
 
-Ordre fixé par les priorités : d'abord que Wine et le natif marchent parfaitement, puis l'émulation, puis l'overlay.
-Chaque étape se termine par des tests (`cargo test`, `cargo clippy`, `pnpm build`) ; si quelque chose casse, on corrige avant de continuer.
-Cet état d'avancement est mis à jour au fil des étapes.
+Priorities: Windows (Wine / Proton) and native games first, then the in-game overlay.
+Every step ends with tests (`cargo test`, `cargo clippy`, `pnpm build`); if something breaks, fix it before moving on.
+This progress report is updated as steps are completed.
 
-## 1. Lancement réel (fin du faux chargement)
+## 1. Real launch (no fake loading)
 
-Aujourd'hui `launchingId` retombe après un minuteur de 3,2 s : c'est du décor.
+- The backend emits `launch-progress { id, stage, step, steps, label }` at every **real** step: config check → prefix creation (if missing, detected through `system.reg`) → process start → game running.
+- "Game running" is not declared at `spawn`: we wait for the game process to really exist (`/proc`, the executable appears in a command line of the process group), or for the launcher process to exit (failure).
+- Interface: a circular progress ring (`LaunchRing`) whose segments match the finished steps; the last step (waiting for the game window) is indeterminate, since we cannot know how long it takes.
+- Failure: the "launching" state stops immediately, with the end of the log in a notification.
 
-- Le backend émet `launch-progress { id, stage, step, steps, label }` à chaque étape **réelle** :
-  vérification de la config → manette virtuelle → création du préfixe (si absent, détecté par `system.reg`) → démarrage du processus → jeu en cours.
-- « Jeu en cours » n'est pas déclaré au `spawn` : on attend que le processus du jeu existe vraiment (`/proc`, l'exécutable apparaît dans une ligne de commande du groupe de processus), ou que le processus lanceur sorte (échec).
-- Interface : un anneau de progression circulaire (`LaunchRing`) dont les segments correspondent aux étapes terminées ; la dernière étape (attente de la fenêtre du jeu) est indéterminée, puisqu'on ne sait pas combien de temps elle prend.
-- Échec : l'état « lancement » s'arrête immédiatement avec la fin du log en notification.
+## 2. Wine / Proton: efficient configurations (like Lutris)
 
-## 2. Wine / Proton : configurations efficaces (comme Lutris)
+- **Hardware detection** (`hardware.rs`): GPUs present (Intel / AMD / NVIDIA, hybrid laptop), `/dev/ntsync`, kernel version, GameMode, MangoHud, gamescope, umu.
+- **Recommended profile** computed from it, applied when a game is added and offered in one click afterwards: suitable sync (ntsync > fsync > esync), `__GL_THREADED_OPTIMIZATIONS`, `__GL_SHADER_DISK_CACHE`, `mesa_glthread`, `WINE_LARGE_ADDRESS_AWARE`, `STAGING_SHARED_MEMORY`, NVAPI on NVIDIA (Proton), PRIME offload to the chosen GPU.
+- **GPU choice** from a list of the GPUs really detected (no free input).
+- Exposed options: FPS limit (`DXVK_FRAME_RATE`), DXVK HUD, gamescope (resolution / FSR), native Wayland for Proton, HDR, DXVK / VKD3D / WineD3D graphics layer, DXVK-NVAPI.
+- **Prefixes**: list of existing prefixes (Lutra + Steam `compatdata`), with type (Wine / Proton), architecture and the games using them. A prefix incompatible with the chosen runner is refused with the reason, never accepted only to crash later.
+- Bare Wine: installing DXVK / VKD3D-Proton in the prefix (verified download, DLL copy, overrides) in one action.
 
-- **Détection du matériel** (`hardware.rs`) : GPU présents (Intel / AMD / NVIDIA, laptop hybride), `/dev/ntsync`, version du noyau, GameMode, MangoHud, gamescope, umu.
-- **Profil recommandé** calculé à partir de ça, appliqué à l'ajout d'un jeu et proposé en un clic ensuite : sync adapté (ntsync > fsync > esync), `__GL_THREADED_OPTIMIZATIONS`, `__GL_SHADER_DISK_CACHE`, `mesa_glthread`, `WINE_LARGE_ADDRESS_AWARE`, `STAGING_SHARED_MEMORY`, NVAPI si NVIDIA (Proton), offload PRIME vers le GPU choisi.
-- **Choix du GPU** dans une liste des GPU réellement détectés (pas de saisie libre).
-- Options exposées : limite de FPS (`DXVK_FRAME_RATE`), HUD DXVK, gamescope (résolution / FSR), Wayland natif Proton, HDR, couche graphique DXVK / VKD3D / WineD3D, DXVK-NVAPI.
-- **Préfixes** : liste des préfixes existants (Lutra + Steam `compatdata`), avec type (Wine / Proton), architecture et jeux qui l'utilisent. Un préfixe incompatible avec le runner choisi est refusé avec la raison, jamais accepté pour planter plus tard.
-- Wine nu : installation de DXVK / VKD3D-Proton dans le préfixe (téléchargement vérifié, copie des DLL, overrides) en une action.
+## 3. Installing from an executable
 
-## 3. Installer depuis un exécutable
+- `install_from_installer`: creates (or reuses) a prefix, runs the installer tracked like a game (log, can be stopped), then, when it closes, compares the prefix's `.exe` files before / after.
+- Candidates are ranked (`unins*`, redistributables, crash handlers... are dropped), the user picks the game's executable, the entry is created.
 
-- `install_from_installer` : crée (ou réutilise) un préfixe, lance l'installeur suivi comme un jeu (log, arrêt possible), puis, à sa fermeture, compare les `.exe` du préfixe avant / après.
-- Les candidats sont classés (on écarte `unins*`, redistribuables, crash handlers…), l'utilisateur choisit l'exécutable du jeu, la fiche est créée.
+## 4. Native Linux games
 
-## 4. Jeux natifs Linux
+- New `native` source: ELF executable, shell script, AppImage. A missing execute bit is offered as a fix.
+- Same launch configuration as Wine (arguments, folder, variables, GameMode, MangoHud, GPU, gamescope), without Wine-specific options.
+- Same tracking (playtime, stop, logs, controller).
 
-- Nouvelle source `native` : exécutable ELF, script shell, AppImage. Le bit d'exécution manquant est proposé en correction.
-- Même configuration de lancement que Wine (arguments, dossier, variables, GameMode, MangoHud, GPU, gamescope), sans les options propres à Wine.
-- Même suivi (temps de jeu, arrêt, logs, manette).
+## 5. Game logs
 
-## 5. Logs du jeu
+- Logs are those of the **launched game**: the process's standard output and error, plus the Proton / DXVK log when debug mode is on (`PROTON_LOG`, `DXVK_LOG_PATH`).
+- The last two runs are kept (`<id>.log`, `<id>.prev.log`). Live follow, filter, colors, reachable from the game's page and while it runs.
 
-- Les logs sont ceux du **jeu lancé** : sortie standard et d'erreur du processus, plus le log Proton / DXVK quand le mode debug est actif (`PROTON_LOG`, `DXVK_LOG_PATH`).
-- Les deux dernières exécutions sont conservées (`<id>.log`, `<id>.prev.log`). Suivi en direct, filtre, couleurs, accessible depuis la fiche du jeu et pendant qu'il tourne.
+## 6. Adding a game with metadata
 
-## 6. Ajout d'un jeu avec métadonnées
+- Source: [LizardByte GameDB](https://github.com/LizardByte/GameDB) (IGDB), served as static JSON: prefix search (`buckets/<first 2 characters>.json`) then entry (`games/<id>.json`) with name, summary, genres, developer, release date, platforms, cover.
+- When adding, after choosing the executable: proposed matches (ranked by name similarity), the user's choice, every field stays editable (real name, date, developer, genres, description). Nothing is written without validation.
+- Fields are stored in the database (`meta_json` column) and take precedence over any later fetch.
 
-- Source : [LizardByte GameDB](https://github.com/LizardByte/GameDB) (IGDB), servie en JSON statique : recherche par préfixe (`buckets/<2 premiers caractères>.json`) puis fiche (`games/<id>.json`) avec nom, résumé, genres, développeur, date de sortie, plateformes, couverture.
-- Dans l'ajout, après le choix de l'exécutable : proposition de correspondances (classées par similarité du nom), choix de l'utilisateur, tous les champs restent modifiables (vrai nom, date, développeur, genres, description). Rien n'est écrit sans validation.
-- Les champs sont stockés dans la base (colonne `meta_json`) et priment sur toute récupération ultérieure.
+## 7. In-game overlay
 
-## 7. Émulation
+- Opened by the Guide button while a game runs, in the style of Steam's Big Picture overlay: menu column with the game's logo (Resume, Controller, Details, Logs, Quit game) and a content pane on the right, over a darkened background.
+- Dedicated Tauri window, borderless, on top. While it is open, the game's virtual pad is neutralized and navigation actions go to the overlay.
 
-Voir [EMULATION.md](EMULATION.md) : décisions, architecture, phases.
+## 8. Big Picture and the Guide button
 
-## 8. Overlay en jeu
+- **Guide on release**: the action fires on **release**: in Desktop mode it switches to Big Picture, in Big Picture it opens the side menu. **Held ~2 s, it turns the pad off** (Bluetooth disconnect; no effect over USB) and nothing else fires. Going back to Desktop mode is done from the side menu (and F11 on the keyboard).
+- **Big Picture side menu**: settings (controllers included) leave the top bar and live in a side pane opened with the Guide.
+- **Options / Select on a game**: opens its configuration from Big Picture, in an adapted design (big rows, values changed with the pad, no free text field when a list exists).
 
-- Ouvert par le bouton Guide (appui long) pendant qu'un jeu tourne, dans le style de l'overlay Big Picture de Steam : colonne de menu avec logo du jeu (Reprendre, Manette, Détails, Logs, Quitter le jeu) et volet de contenu à droite, sur un fond assombri.
-- Fenêtre Tauri dédiée, sans bordure, au premier plan. Pendant qu'elle est ouverte, la manette virtuelle du jeu est neutralisée et les actions de navigation vont à l'overlay.
+## 9. Removed: emulation
 
-## 9. Big Picture et bouton Guide (retours en cours de route)
+Lutra used to ship an emulation module (libretro cores, BIOS, ROMs, its own player, RetroArch fallback). It was removed to focus on PC games. Games that were added as ROMs are dropped from the database on first start (database version 7).
 
-- **Guide au relâchement** : l'action part au **relâchement** : en mode Bureau il passe en Big Picture, en Big Picture il ouvre le menu latéral. **Maintenu ~2 s, il éteint la manette** (déconnexion Bluetooth ; sans effet en USB) et rien d'autre ne se déclenche. Le retour au mode Bureau se fait depuis le menu latéral (et F11 au clavier).
-- **Menu latéral Big Picture** : les réglages (dont les manettes) quittent la barre du haut et vivent dans un volet latéral qui s'ouvre avec le Guide.
-- **Options / Select sur un jeu** : ouvre sa configuration depuis Big Picture, dans un design adapté (grandes lignes, valeurs qui se changent à la manette, pas de champ texte libre quand une liste existe).
+## Status
 
-## État
-
-| Étape | État |
+| Step | Status |
 | --- | --- |
-| 1. Lancement réel | fait : événements `launch-progress`, anneau `LaunchRing`, détection du processus via `/proc` (vérifiée avec un vrai Wine) |
-| 2. Config Wine / Proton | fait : matériel, profil recommandé, GPU par liste, préfixes sûrs. **Pas fait** : installation de DXVK / VKD3D dans un préfixe Wine nu |
-| 3. Installation depuis un exécutable | fait côté Rust (testé) et interface ; l'installeur réel n'a pas été exercé de bout en bout |
-| 4. Natif Linux | fait : source `native`, vérification de l'exécutable, mêmes options et logs |
-| 5. Logs du jeu | fait : sortie du jeu, exécution précédente, logs Proton / DXVK / VKD3D en debug |
-| 6. Métadonnées | fait : GameDB (testé en réel), détails modifiables à l'ajout et dans la config |
-| 7. Émulation | fait : cœurs, BIOS, ROM, vignettes, lancement via RetroArch piloté par Lutra (testé avec le vrai RetroArch). Voir EMULATION.md |
-| 8. Overlay | fait côté code ; **non vérifié sur le compositeur réel** (fenêtre au-dessus d'un jeu plein écran) |
-| 9. Big Picture / Guide | fait : Guide au relâchement, extinction par maintien, menu latéral, réglages d'un jeu |
+| 1. Real launch | done: `launch-progress` events, `LaunchRing`, process detection through `/proc` (verified with a real Wine) |
+| 2. Wine / Proton config | done: hardware, recommended profile, GPU from a list, safe prefixes. **Not done**: installing DXVK / VKD3D in a bare Wine prefix |
+| 3. Install from an executable | done on the Rust side (tested) and in the interface; a real installer has not been exercised end to end |
+| 4. Native Linux | done: `native` source, executable check, same options and logs |
+| 5. Game logs | done: game output, previous run, Proton / DXVK / VKD3D logs in debug |
+| 6. Metadata | done: GameDB (tested for real), editable details when adding and in the config |
+| 7. Overlay | done on the code side and verified on a real fullscreen game under Hyprland |
+| 8. Big Picture / Guide | done: Guide on release, hold to power off, side menu, per-game settings |

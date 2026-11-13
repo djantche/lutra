@@ -20,7 +20,10 @@ pub fn available() -> bool {
 }
 
 fn hyprctl_json(what: &str) -> Option<Value> {
-    let output = Command::new("hyprctl").args(["-j", what]).output().ok()?;
+    let output = crate::wine::host_env(&mut Command::new("hyprctl"))
+        .args(["-j", what])
+        .output()
+        .ok()?;
     output
         .status
         .success()
@@ -29,7 +32,7 @@ fn hyprctl_json(what: &str) -> Option<Value> {
 }
 
 fn dispatch(lua: &str) -> bool {
-    Command::new("hyprctl")
+    crate::wine::host_env(&mut Command::new("hyprctl"))
         .args(["dispatch", lua])
         .output()
         .is_ok_and(|output| {
