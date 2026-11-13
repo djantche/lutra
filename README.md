@@ -7,11 +7,35 @@ A unified game library and launcher for Linux, in the spirit of [Lutris](https:/
 ## Features
 
 - **One library** for Steam (local libraries, all disks included), Windows games (Wine / Proton) and native Linux games.
-- **Windows games**: Wine prefixes managed by Lutra, Wine and Proton detection (Steam, GE-Proton, `umu-run`), per-game configuration (environment variables, DLLs, esync/fsync, DXVK/VKD3D, FSR, gamescope, GameMode, MangoHud, GPU choice on hybrid laptops...), installers followed from start to finish.
+- **Windows games**: Wine prefixes managed by Lutra, Wine and Proton detection (Steam, GE-Proton, `umu-run`) plus **built-in downloads** of GE-Proton, Wine and Wine Staging (progress, checksum, log), per-game configuration (environment variables, DLLs, esync/fsync, DXVK/VKD3D, FSR, gamescope, GameMode, MangoHud, GPU choice on hybrid laptops...), installers followed from start to finish.
 - **Controller driver**, Steam Input style: hot-plugging, dead zones, curves, remapping, conversion to keyboard / mouse, per-game profiles, virtual Xbox 360 or DualShock 4 (HID) pad, rumble, in-game overlay.
 - **Artwork**: covers, banners, heroes and logos from Steam and [SteamGridDB](https://www.steamgriddb.com/) (personal API key), cached on disk.
 - **Two interfaces**: a modern desktop mode (light / dark theme) and a fullscreen **Big Picture** mode built for gamepads.
 - **Notification area**, start minimized, built-in logs, interface in English and French, and short console-like interface sounds.
+
+## Screenshots
+
+Taken on a real library: games installed through Steam and Wine / Proton, with their official artwork.
+
+**Desktop mode**: a modern desktop app, light or dark.
+
+![Home: the game to pick up again, recently played and favorites](docs/screenshots/desktop-home.webp)
+
+| | |
+| --- | --- |
+| ![The library as a grid of covers](docs/screenshots/desktop-library.webp) | ![A game's page](docs/screenshots/desktop-game.webp) |
+
+**Big Picture mode**: fullscreen, built for a gamepad, with the game's artwork as the background and a search bar with an on-screen keyboard.
+
+| | |
+| --- | --- |
+| ![Big Picture home](docs/screenshots/bigpicture-home.webp) | ![Big Picture library](docs/screenshots/bigpicture-library.webp) |
+
+![Big Picture search with the on-screen keyboard](docs/screenshots/bigpicture-search.webp)
+
+**Runners**: download Wine and Proton versions from the settings, with a real progress bar, checksum verification and a log.
+
+![Settings, Runners tab, with GE-Proton downloading](docs/screenshots/settings-runners.webp)
 
 ## Install
 
