@@ -1,7 +1,6 @@
-import type { CSSProperties, ReactElement } from "react";
+import type { PadSnapshot } from "../../lib/controllers";
 import { useTranslation } from "react-i18next";
-import type { ControllerButton, PadSnapshot } from "../../lib/controllers";
-import { cx } from "../../lib/cx";
+import { padParts, PlayStationSymbol, PLAYSTATION_COLORS } from "./padParts";
 import styles from "./ControllerSvg.module.scss";
 
 // A DualShock 4 drawn as line art (80 × 80 units, from `controller.svg`). Each part below is one of
@@ -11,75 +10,20 @@ import styles from "./ControllerSvg.module.scss";
 /** How far a stick cap travels from its centre, in drawing units (the well is about 7 wide). */
 const STICK_TRAVEL = 2.3;
 
-/** The symbol of each face button, drawn small and dim inside it. */
-const FACE: Record<"north" | "west" | "east" | "south", { x: number; y: number; color: string }> = {
-  north: { x: 63.89, y: 24.57, color: "#4ad8b5" },
-  west: { x: 58.71, y: 29.85, color: "#ff8bd1" },
-  east: { x: 69.27, y: 29.9, color: "#ff6b78" },
-  south: { x: 63.99, y: 35.26, color: "#6aa8ff" },
-};
+/** Where each face button is, for its symbol. */
+const FACE = {
+  north: { x: 63.89, y: 24.57 },
+  west: { x: 58.71, y: 29.85 },
+  east: { x: 69.27, y: 29.9 },
+  south: { x: 63.99, y: 35.26 },
+} as const;
 
-const FACE_COLOR: Partial<Record<ControllerButton, string>> = {
-  north: FACE.north.color,
-  west: FACE.west.color,
-  east: FACE.east.color,
-  south: FACE.south.color,
-};
-
-/** The controller, live: pressed buttons fill, sticks move, triggers fill with their pull. */
+/** The DualShock 4, live when given a state: pressed buttons fill, sticks move, triggers fill with their pull. */
 export function ControllerSvg({ state }: { state: PadSnapshot | null }) {
   const { t } = useTranslation();
-  const pressed = (button: ControllerButton) => state?.pressed.includes(button) ?? false;
-
-  /** A button's shape, filled while pressed (in its own color for the face buttons). */
-  const part = (button: ControllerButton, shape: ReactElement) => (
-    <g
-      key={button}
-      className={cx(styles.part, pressed(button) && styles.on)}
-      style={FACE_COLOR[button] ? ({ "--pad-on": FACE_COLOR[button] } as CSSProperties) : undefined}
-    >
-      {shape}
-    </g>
-  );
-
-  const stick = (button: "l3" | "r3", x: number, y: number, caps: ReactElement) => {
-    // A stick pushed past the circle (corners of the square range) stays inside the well.
-    const length = Math.hypot(x, y);
-    const scale = length > 1 ? 1 / length : 1;
-    return (
-      <g
-        className={cx(styles.stick, pressed(button) && styles.on)}
-        style={{ transform: `translate(${x * scale * STICK_TRAVEL}px, ${y * scale * STICK_TRAVEL}px)` }}
-      >
-        {caps}
-      </g>
-    );
-  };
-
-  const trigger = (button: "l2" | "r2", value: number, d: string) => (
-    <path
-      d={d}
-      strokeWidth={0.4831}
-      className={cx(styles.trigger, pressed(button) && styles.on)}
-      style={{ "--pull": value } as CSSProperties}
-    />
-  );
-
-  const symbol = (button: keyof typeof FACE) => {
-    const { x, y, color } = FACE[button];
-    const r = 1.05;
-    const common = { stroke: color, strokeWidth: 0.34, fill: "none", strokeLinecap: "round" as const, strokeLinejoin: "round" as const, opacity: 0.85 };
-    switch (button) {
-      case "north":
-        return <path d={`M${x} ${y - r} L${x + r * 0.95} ${y + r * 0.7} H${x - r * 0.95} Z`} {...common} />;
-      case "west":
-        return <rect x={x - r * 0.85} y={y - r * 0.85} width={r * 1.7} height={r * 1.7} {...common} />;
-      case "east":
-        return <circle cx={x} cy={y} r={r} {...common} />;
-      case "south":
-        return <path d={`M${x - r * 0.85} ${y - r * 0.85} L${x + r * 0.85} ${y + r * 0.85} M${x + r * 0.85} ${y - r * 0.85} L${x - r * 0.85} ${y + r * 0.85}`} {...common} />;
-    }
-  };
+  const { part, stick: moveStick, trigger } = padParts(state, PLAYSTATION_COLORS);
+  const stick = (button: "l3" | "r3", x: number, y: number, caps: React.ReactElement) =>
+    moveStick(button, x, y, STICK_TRAVEL, caps);
 
   return (
     <svg className={styles.pad} viewBox="0 9 80 60" role="img" aria-label={t("controllers.liveView")}>
@@ -136,7 +80,7 @@ export function ControllerSvg({ state }: { state: PadSnapshot | null }) {
       </g>
 
       {(Object.keys(FACE) as (keyof typeof FACE)[]).map((button) => (
-        <g key={button}>{symbol(button)}</g>
+        <PlayStationSymbol key={button} button={button} x={FACE[button].x} y={FACE[button].y} color={PLAYSTATION_COLORS[button]} />
       ))}
 
       <g className={styles.line}>

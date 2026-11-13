@@ -1099,6 +1099,7 @@ mod ignore_tests {
             vendor,
             product,
             family: Family::from_vendor(vendor),
+            model: codes::PadModel::from_ids(vendor, product),
             bus: "bluetooth",
         }
     }

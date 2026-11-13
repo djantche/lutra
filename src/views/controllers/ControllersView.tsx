@@ -8,7 +8,7 @@ import { ControllerList } from "./ControllerList";
 import { ControllerNotice } from "./ControllerNotice";
 import { LiveTester } from "./LiveTester";
 import { ProfileEditor } from "./ProfileEditor";
-import { useControllerProfile, useControllerStatus, useLivePad } from "./useControllers";
+import { useControllerProfile, useControllerStatus } from "./useControllers";
 import styles from "./Controllers.module.scss";
 
 /** The controller driver's home: connected controllers, live test, and the default profile. */
@@ -20,7 +20,6 @@ export function ControllersView() {
 
   const controllers = status?.controllers ?? [];
   const selected = controllers.find((controller) => controller.id === selectedId) ?? controllers[0] ?? null;
-  const live = useLivePad(selected?.id ?? null);
 
   useEffect(() => {
     if (selected && selected.id !== selectedId) setSelectedId(selected.id);
@@ -40,7 +39,7 @@ export function ControllersView() {
           {controllers.length > 1 && (
             <ControllerList controllers={controllers} selectedId={selected.id} onSelect={setSelectedId} />
           )}
-          <LiveTester controller={selected} state={live} status={status} profile={profile} />
+          <LiveTester controller={selected} status={status} profile={profile} />
           <div className={styles.groups}>
             <SettingsGroup title={t("controllers.everywhere")}>
               <SettingsRow title={t("controllers.system")} description={t("controllers.systemHint")}>

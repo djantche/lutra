@@ -83,7 +83,7 @@ export function ControllerTestScreen({ controller, profile, onClose }: Controlle
       <div className={styles.stage}>
         <ButtonCallouts side="left" buttons={LEFT} profile={profile} family={controller.family} pressed={raw?.pressed ?? []} />
         <div className={styles.pad}>
-          <GamepadVisual state={raw} family={controller.family} />
+          <GamepadVisual state={raw} family={controller.family} model={controller.model} />
         </div>
         <ButtonCallouts side="right" buttons={RIGHT} profile={profile} family={controller.family} pressed={raw?.pressed ?? []} />
       </div>

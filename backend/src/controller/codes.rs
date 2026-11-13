@@ -57,12 +57,37 @@ pub enum Family {
     Generic,
 }
 
+/// Which physical controller it is, to show the right picture of it. `Family` says how its
+/// buttons are named; this says what it looks like.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PadModel {
+    DualShock4,
+    DualSense,
+    SteamDeck,
+    Other,
+}
+
+impl PadModel {
+    pub fn from_ids(vendor: u16, product: u16) -> Self {
+        match (vendor, product) {
+            // DualSense and DualSense Edge.
+            (0x054c, 0x0ce6 | 0x0df2) => PadModel::DualSense,
+            (0x054c, _) => PadModel::DualShock4,
+            (0x28de, 0x1205) => PadModel::SteamDeck,
+            _ => PadModel::Other,
+        }
+    }
+}
+
 impl Family {
     pub fn from_vendor(vendor: u16) -> Self {
         match vendor {
             0x045e => Family::Xbox,
             0x054c => Family::PlayStation,
             0x057e => Family::Nintendo,
+            // Valve's pads (Steam Deck, Steam Controller) use the Xbox layout and prompts.
+            0x28de => Family::Xbox,
             _ => Family::Generic,
         }
     }
@@ -411,6 +436,18 @@ pub fn diff(kind: OutputKind, previous: &PadState, next: &PadState) -> Vec<(u16,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn controllers_are_told_apart_by_their_ids() {
+        use super::{Family, PadModel};
+        assert_eq!(PadModel::from_ids(0x054c, 0x09cc), PadModel::DualShock4);
+        assert_eq!(PadModel::from_ids(0x054c, 0x05c4), PadModel::DualShock4);
+        assert_eq!(PadModel::from_ids(0x054c, 0x0ce6), PadModel::DualSense);
+        assert_eq!(PadModel::from_ids(0x054c, 0x0df2), PadModel::DualSense);
+        assert_eq!(PadModel::from_ids(0x28de, 0x1205), PadModel::SteamDeck);
+        assert_eq!(PadModel::from_ids(0x045e, 0x028e), PadModel::Other);
+        assert_eq!(Family::from_vendor(0x28de), Family::Xbox);
+    }
+
     use super::*;
 
     fn ds4_ranges(axis: u16) -> Option<Range> {

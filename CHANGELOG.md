@@ -4,6 +4,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Added
+
+- Two more controllers get their own line drawing: the DualSense (PlayStation 5) and the Steam Deck, picked from the controller's USB ids. On the test and remap screens they light up like the DualShock 4 does: pressed buttons fill, sticks move, triggers fill with their pull. The Steam Deck's buttons are named like an Xbox pad's.
+
+### Changed
+
+- The controller on the Controllers page is a plain picture of the selected controller: it no longer lights up when you press a button (the test screen is for that). The whole card is an item of the page like the settings rows: the keyboard or the pad selects it and confirming opens the test.
+
+### Fixed
+
+- The interface adapts to the window. Lutra asked for a window of at least 960 px, which a tiled window manager can make narrower: the page then laid out wider than the window and its right side was cut off. The minimum is gone, the sidebar becomes a rail of icons in a narrow window, and the home page, the library toolbar, the Controllers page, the Big Picture top bar and the search filters wrap instead of overflowing.
+
 ## [0.5.0] - 2026-11-13
 
 ### Added

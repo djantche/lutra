@@ -57,6 +57,9 @@ export interface ControllerBattery {
   charging: boolean;
 }
 
+/** What a controller looks like, to show its picture. */
+export type PadModel = "dualshock4" | "dualsense" | "steamdeck" | "other";
+
 export interface ControllerInfo {
   id: string;
   name: string;
@@ -64,6 +67,7 @@ export interface ControllerInfo {
   vendor: number;
   product: number;
   family: ControllerFamily;
+  model: PadModel;
   bus: "usb" | "bluetooth" | "other";
   battery?: ControllerBattery | null;
 }
@@ -137,6 +141,12 @@ export const DEFAULT_PROFILE: ControllerProfile = {
 
 // ---- browser preview ----
 
+/** `?pad=dualsense` or `?pad=steamdeck` in the browser preview shows another controller. */
+function mockModel(): PadModel {
+  const asked = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("pad");
+  return asked === "dualsense" || asked === "steamdeck" ? asked : "dualshock4";
+}
+
 const MOCK_CONTROLLER: ControllerInfo = {
   id: "b7:a4:0b:54:ed:e9",
   name: "Wireless Controller",
@@ -144,6 +154,7 @@ const MOCK_CONTROLLER: ControllerInfo = {
   vendor: 0x054c,
   product: 0x09cc,
   family: "playstation",
+  model: mockModel(),
   bus: "bluetooth",
   battery: { percent: 64, charging: false },
 };

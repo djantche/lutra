@@ -140,20 +140,47 @@
 
 // ---- live tester
 
-// The controller on the left, who drives it and the way into the test on the right.
+// The controller's picture on the left, who drives it and the way into the test on the right; they
+// stack when the window is narrow. A row of the page: selecting it outlines the whole card.
 .tester {
-  display: grid;
-  grid-template-columns: minmax(12em, 22em) minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1.8em;
+  gap: 1.4em 1.8em;
   padding: 1.4em 1.8em;
   border: 1px solid var(--color-border);
   border-radius: 1.1em;
   background: var(--color-surface);
+  scroll-margin-block: 1.6em;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    background: var(--color-surface-hover);
+    box-shadow: 0 0 0 3px var(--row-focus, var(--color-accent));
+  }
+}
+
+:global([data-input="nav"]) .tester:focus {
+  background: var(--color-surface-hover);
+  box-shadow: 0 0 0 3px var(--row-focus, var(--color-accent));
+}
+
+.picture {
+  flex: 1 1 14em;
+  min-width: 0;
+  max-width: 22em;
+  margin-inline: auto;
 }
 
 .session {
   display: flex;
+  flex: 1 1 16em;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.9em 1.2em;
@@ -175,7 +202,7 @@
 
 .sessionText {
   display: flex;
-  flex: 1;
+  flex: 1 1 10em;
   flex-direction: column;
   min-width: 0;
 

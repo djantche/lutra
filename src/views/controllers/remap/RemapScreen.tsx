@@ -174,7 +174,7 @@ export function RemapScreen({ controller, profile, onChange, onClose }: RemapScr
           onPick={(button) => setMode({ kind: "one", button })}
         />
         <div className={testStyles.pad}>
-          <GamepadVisual state={preview?.raw ?? null} family={family} />
+          <GamepadVisual state={preview?.raw ?? null} family={family} model={controller?.model} />
         </div>
         <ButtonCallouts
           side="right"

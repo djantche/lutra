@@ -8,7 +8,6 @@ import {
   type ControllerInfo,
   type ControllerProfile,
   type ControllerStatus,
-  type PadSnapshot,
 } from "../../lib/controllers";
 import { useLibraryStore } from "../../state/library";
 import { ControllerTestScreen } from "./test/ControllerTestScreen";
@@ -16,13 +15,16 @@ import styles from "./Controllers.module.scss";
 
 interface LiveTesterProps {
   controller: ControllerInfo;
-  state: PadSnapshot | null;
   status: ControllerStatus;
   profile: ControllerProfile;
 }
 
-/** The controller drawn live, who currently drives it, and the way into the test screen. */
-export function LiveTester({ controller, state, status, profile }: LiveTesterProps) {
+/**
+ * The selected controller (a picture of it, not a live view: the test screen is for that), who
+ * currently drives it, and the way into the test screen. A row of the page like any other: the
+ * keyboard or the pad selects it, and confirming opens the test.
+ */
+export function LiveTester({ controller, status, profile }: LiveTesterProps) {
   const { t } = useTranslation();
   const [testing, setTesting] = useState(false);
   const session = status.session;
@@ -32,8 +34,10 @@ export function LiveTester({ controller, state, status, profile }: LiveTesterPro
   const idle = !status.system || !status.uinput ? "idle" : status.steam ? "steam" : "system";
 
   return (
-    <section className={styles.tester}>
-      <GamepadVisual state={state} family={controller.family} />
+    <section className={styles.tester} data-nav-row tabIndex={-1}>
+      <div className={styles.picture}>
+        <GamepadVisual state={null} family={controller.family} model={controller.model} />
+      </div>
 
       <div className={styles.session}>
         <span className={styles.dot} data-active={inGame || idle === "system"} />

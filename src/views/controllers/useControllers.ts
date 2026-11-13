@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   DEFAULT_PROFILE,
   controllerProfile,
-  controllerState,
   controllerStatus,
   onControllersChanged,
   resetControllerProfile,
@@ -11,13 +10,11 @@ import {
   type ControllerFamily,
   type ControllerProfile,
   type ControllerStatus,
-  type PadSnapshot,
 } from "../../lib/controllers";
 import i18n from "../../i18n";
 import { reportError } from "../../state/toasts";
 
 const STATUS_REFRESH_MS = 2000;
-const LIVE_REFRESH_MS = 50;
 const SAVE_DELAY_MS = 350;
 
 /** Connected controllers and who holds them, kept fresh while the screen is open. */
@@ -80,28 +77,6 @@ export function useControllerBatteries(): ControllerCharge[] {
   }, []);
 
   return batteries;
-}
-
-/** A controller's physical state, refreshed fast enough to follow it live. */
-export function useLivePad(id: string | null): PadSnapshot | null {
-  const [state, setState] = useState<PadSnapshot | null>(null);
-
-  useEffect(() => {
-    setState(null);
-    if (!id) return;
-    let current = true;
-    const timer = window.setInterval(() => {
-      controllerState(id)
-        .then((next) => current && setState(next))
-        .catch(() => {});
-    }, LIVE_REFRESH_MS);
-    return () => {
-      current = false;
-      window.clearInterval(timer);
-    };
-  }, [id]);
-
-  return state;
 }
 
 /**

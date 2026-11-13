@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use evdev::{AbsoluteAxisCode, BusType, Device, KeyCode};
 use serde::Serialize;
 
-use super::codes::{Family, abs, key};
+use super::codes::{Family, PadModel, abs, key};
 
 /// Steam's virtual gamepads (`28de:11ff`): reading them would echo Steam Input back into Lutra.
 const STEAM_VIRTUAL: (u16, u16) = (0x28de, 0x11ff);
@@ -20,6 +20,8 @@ pub struct ControllerInfo {
     pub vendor: u16,
     pub product: u16,
     pub family: Family,
+    /// What the controller looks like (for its picture).
+    pub model: PadModel,
     /// `usb`, `bluetooth` or `other`.
     pub bus: &'static str,
 }
@@ -102,6 +104,7 @@ pub fn describe(path: &Path, device: &Device) -> ControllerInfo {
         vendor: id.vendor(),
         product: id.product(),
         family: Family::from_vendor(id.vendor()),
+        model: PadModel::from_ids(id.vendor(), id.product()),
         bus: match id.bus_type() {
             BusType::BUS_USB => "usb",
             BusType::BUS_BLUETOOTH => "bluetooth",

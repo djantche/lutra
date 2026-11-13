@@ -1,23 +1,30 @@
 import { useTranslation } from "react-i18next";
 import { buttonLabel } from "../../lib/buttonLabels";
-import type { ControllerButton, ControllerFamily, PadSnapshot } from "../../lib/controllers";
+import type { ControllerButton, ControllerFamily, PadModel, PadSnapshot } from "../../lib/controllers";
 import { cx } from "../../lib/cx";
 import { ControllerSvg } from "./ControllerSvg";
+import { DualSenseSvg } from "./DualSenseSvg";
+import { SteamDeckSvg } from "./SteamDeckSvg";
 import styles from "./GamepadVisual.module.scss";
 
 const STICK_TRAVEL = 11;
 
 interface GamepadVisualProps {
+  /** What is pressed, or null for the controller at rest (a plain picture). */
   state: PadSnapshot | null;
   family: ControllerFamily;
+  /** Which controller it looks like; the ones without a drawing get a schematic. */
+  model?: PadModel;
 }
 
 /**
  * The controller drawn live: what is pressed lights up, sticks and triggers move.
- * PlayStation controllers get a line drawing of a DualShock 4; others a schematic until they have one too.
+ * The DualShock 4, DualSense and Steam Deck have a line drawing; others a schematic until they do too.
  */
-export function GamepadVisual({ state, family }: GamepadVisualProps) {
-  if (family === "playstation") return <ControllerSvg state={state} />;
+export function GamepadVisual({ state, family, model }: GamepadVisualProps) {
+  if (model === "dualsense") return <DualSenseSvg state={state} />;
+  if (model === "steamdeck") return <SteamDeckSvg state={state} />;
+  if (model === "dualshock4" || (model === undefined && family === "playstation")) return <ControllerSvg state={state} />;
   return <SchematicPad state={state} family={family} />;
 }
 
