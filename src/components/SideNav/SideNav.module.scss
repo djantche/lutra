@@ -1,0 +1,49 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  height: 2.6em;
+  padding: 0 0.9em;
+  border: 0;
+  border-radius: 0.7em;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+
+  span {
+    flex: 1;
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+}
+
+.active,
+.active:hover {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+  font-weight: 600;
+
+  svg {
+    color: var(--color-accent);
+  }
+}
+
+.badge {
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: var(--color-accent);
+}

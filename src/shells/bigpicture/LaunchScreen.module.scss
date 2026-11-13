@@ -1,0 +1,75 @@
+.launch {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: #000;
+  animation: launch 300ms var(--ease-out) both;
+}
+
+@keyframes launch {
+  from {
+    opacity: 0;
+  }
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  animation: settle 1.6s var(--ease-out) both;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 20%, rgb(0 0 0 / 0.85) 80%);
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: scale(1.2);
+    filter: blur(12px);
+  }
+
+  to {
+    transform: scale(1.02);
+    filter: blur(0);
+  }
+}
+
+.center {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  color: hsl(var(--hue) 90% 72%);
+  text-align: center;
+  animation: rise 900ms var(--ease-out) 200ms both;
+
+  p {
+    color: rgb(255 255 255 / 0.65);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+}
+
+.logo {
+  --logo-width: min(34rem, 70vw);
+  --logo-height: clamp(7rem, 16vh, 11rem);
+  --logo-align: center;
+  --logo-text-align: center;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+}

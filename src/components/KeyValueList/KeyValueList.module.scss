@@ -1,0 +1,38 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  width: 100%;
+}
+
+.key {
+  flex: 1;
+}
+
+.value {
+  flex: 1.5;
+}
+
+.remove {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2em;
+  height: 2em;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+
+  &:hover {
+    background: var(--color-surface-active);
+    color: var(--color-text);
+  }
+}

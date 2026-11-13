@@ -1,0 +1,164 @@
+// The overlay window is transparent, so the dimmed game shows through.
+:global(html[data-overlay]),
+:global(html[data-overlay] body) {
+  background: transparent;
+}
+
+.root {
+  // Always dark, whatever the system theme says.
+  --color-bg: #05060a;
+  --color-bg-elevated: #14161f;
+  --color-surface: rgb(255 255 255 / 0.06);
+  --color-surface-hover: rgb(255 255 255 / 0.1);
+  --color-surface-active: rgb(255 255 255 / 0.16);
+  --color-border: rgb(255 255 255 / 0.1);
+  --color-border-strong: rgb(255 255 255 / 0.18);
+  --color-text: #ffffff;
+  --color-text-muted: rgb(255 255 255 / 0.62);
+  --color-text-subtle: rgb(255 255 255 / 0.4);
+  --color-accent: #7b8cff;
+  --color-accent-soft: rgb(123 140 255 / 0.2);
+  color-scheme: dark;
+
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 30vw) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  isolation: isolate;
+  background: rgb(5 6 10 / 0.82);
+  color: var(--color-text);
+  animation: in 220ms var(--ease-out) both;
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+  }
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.25;
+  filter: blur(6px);
+}
+
+.clock {
+  grid-column: 2;
+  justify-self: end;
+  padding: 28px 48px 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.menu {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: 56px 28px 40px 48px;
+  border-right: 1px solid var(--color-border-strong);
+  background: linear-gradient(180deg, rgb(18 20 30 / 0.96), rgb(8 9 14 / 0.96));
+
+  ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.logo {
+  --logo-width: min(20rem, 100%);
+  --logo-height: clamp(3.5rem, 7vh, 5rem);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 15px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.72);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-base) var(--ease-spring);
+
+  &:focus {
+    outline: none;
+    background: #fff;
+    color: #05060a;
+    transform: translateX(6px);
+  }
+}
+
+.current:not(:focus) {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+// Settings components are sized in em: a bigger base size makes them console-sized.
+.pane {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+  padding: 24px 48px 40px;
+  overflow-y: auto;
+  font-size: 1.15rem;
+
+  [data-focusable]:focus:not(input):not(textarea) {
+    outline: none;
+    box-shadow: 0 0 0 3px #fff;
+  }
+}
+
+.description {
+  max-width: 720px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  padding: 14px 20px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 0.07);
+
+  span {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+
+  strong {
+    font-size: 1.15rem;
+    font-weight: 650;
+  }
+}

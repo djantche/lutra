@@ -1,0 +1,35 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-size: 0.9em;
+
+  &[data-found="true"] svg {
+    color: #3ddc97;
+  }
+
+  &[data-found="false"] svg {
+    color: var(--color-text-subtle);
+  }
+}
+
+.name {
+  min-width: 8em;
+  font-weight: 600;
+}
+
+.detail {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,41 @@
+.shell {
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr);
+  height: 100%;
+  background: var(--color-bg);
+}
+
+.main {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.scroll {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.page {
+  min-height: 100%;
+  padding: 76px var(--space-10) var(--space-10);
+  animation: page-in 280ms var(--ease-out) both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.settings {
+  font-size: 0.95rem;
+  padding-top: var(--space-4);
+}
+
+// Where dialogs are rendered. It must not take part in the shell's layout.
+.overlayRoot {
+  display: contents;
+}

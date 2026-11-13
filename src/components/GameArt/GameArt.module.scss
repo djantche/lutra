@@ -1,0 +1,41 @@
+.art {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  container-type: size;
+  background: #0b0c12;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fadeIn {
+  animation: image-in 400ms var(--ease-out) both;
+}
+
+@keyframes image-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.title {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 40% 9% 9%;
+  font-size: clamp(11px, 12cqw, 40px);
+  --logo-height: 3em;
+  background: linear-gradient(0deg, rgb(5 6 10 / 0.8), transparent);
+}

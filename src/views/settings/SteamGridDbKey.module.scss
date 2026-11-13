@@ -1,0 +1,53 @@
+.key {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+}
+
+.input {
+  flex: 1;
+  min-width: 14em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.35em 0.9em;
+  border-radius: 999px;
+  background: rgb(61 220 151 / 0.14);
+  color: #3ddc97;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.error {
+  color: #e5484d;
+  font-size: 0.88em;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent, #fff);
+  font-size: 0.9em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

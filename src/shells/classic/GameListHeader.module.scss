@@ -1,0 +1,29 @@
+.header {
+  position: sticky;
+  top: 60px;
+  z-index: 2;
+  padding: 6px var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.column,
+.static {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-subtle);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.column:hover,
+.active {
+  color: var(--color-text);
+}

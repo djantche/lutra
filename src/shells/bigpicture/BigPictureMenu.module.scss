@@ -1,0 +1,101 @@
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(5 6 10 / 0.62);
+  animation: fade 240ms var(--ease-out) both;
+  cursor: default;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: min(30vw, 440px);
+  min-width: 320px;
+  padding: 40px 24px 32px;
+  border-right: 1px solid var(--color-border-strong);
+  background: linear-gradient(180deg, rgb(20 22 32 / 0.98), rgb(10 11 17 / 0.98));
+  box-shadow: 30px 0 80px -30px rgb(0 0 0 / 0.8);
+  animation: slide 320ms var(--ease-out) both;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+
+  img {
+    border-radius: 10px;
+  }
+}
+
+.list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.7);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-base) var(--ease-spring);
+
+  &:focus {
+    outline: none;
+    background: #fff;
+    color: #05060a;
+    transform: translateX(6px);
+  }
+}
+
+.current:not(:focus) {
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+.exit {
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 18px 18px;
+  padding-top: 22px;
+}

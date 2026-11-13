@@ -1,0 +1,33 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1.2em;
+  padding: 1.4em 1.6em;
+  border: 1px solid var(--color-border);
+  border-radius: 1.2em;
+  background: linear-gradient(135deg, var(--color-accent-soft), var(--color-surface) 70%);
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+  }
+
+  strong {
+    font-family: var(--font-display);
+    font-size: 1.6em;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--color-text-muted);
+    font-size: 0.9em;
+  }
+
+  p {
+    max-width: 34em;
+    margin-top: 0.4em;
+    color: var(--color-text-muted);
+    font-size: 0.9em;
+  }
+}

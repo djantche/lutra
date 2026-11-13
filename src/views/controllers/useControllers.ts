@@ -1,0 +1,123 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  DEFAULT_PROFILE,
+  controllerProfile,
+  controllerState,
+  controllerStatus,
+  onControllersChanged,
+  resetControllerProfile,
+  saveControllerProfile,
+  type ControllerProfile,
+  type ControllerStatus,
+  type PadSnapshot,
+} from "../../lib/controllers";
+import i18n from "../../i18n";
+import { reportError } from "../../state/toasts";
+
+const STATUS_REFRESH_MS = 2000;
+const LIVE_REFRESH_MS = 50;
+const SAVE_DELAY_MS = 350;
+
+/** Connected controllers and who holds them, kept fresh while the screen is open. */
+export function useControllerStatus() {
+  const [status, setStatus] = useState<ControllerStatus | null>(null);
+
+  const refresh = useCallback(() => {
+    controllerStatus()
+      .then(setStatus)
+      .catch((error) => console.error("Reading controllers failed:", error));
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    const timer = window.setInterval(refresh, STATUS_REFRESH_MS);
+    const stop = onControllersChanged(refresh);
+    return () => {
+      window.clearInterval(timer);
+      void stop.then((unlisten) => unlisten());
+    };
+  }, [refresh]);
+
+  return { status, refresh };
+}
+
+/** A controller's physical state, refreshed fast enough to follow it live. */
+export function useLivePad(id: string | null): PadSnapshot | null {
+  const [state, setState] = useState<PadSnapshot | null>(null);
+
+  useEffect(() => {
+    setState(null);
+    if (!id) return;
+    let current = true;
+    const timer = window.setInterval(() => {
+      controllerState(id)
+        .then((next) => current && setState(next))
+        .catch(() => {});
+    }, LIVE_REFRESH_MS);
+    return () => {
+      current = false;
+      window.clearInterval(timer);
+    };
+  }, [id]);
+
+  return state;
+}
+
+/**
+ * The default profile (`game: null`) or a game's own. Every change is saved on its own after a
+ * short pause, so there is no Save button to forget.
+ */
+export function useControllerProfile(game: string | null) {
+  const [profile, setProfile] = useState<ControllerProfile | null>(null);
+  const [custom, setCustom] = useState(false);
+  const pending = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    let current = true;
+    controllerProfile(game)
+      .then((loaded) => {
+        if (!current) return;
+        setProfile(loaded.profile);
+        setCustom(loaded.custom);
+      })
+      .catch((error) => reportError(i18n.t("errors.save"), error));
+    return () => {
+      current = false;
+    };
+  }, [game]);
+
+  useEffect(() => () => window.clearTimeout(pending.current), []);
+
+  const update = useCallback(
+    (patch: Partial<ControllerProfile>) => {
+      setProfile((current) => {
+        const next = { ...(current ?? DEFAULT_PROFILE), ...patch };
+        window.clearTimeout(pending.current);
+        pending.current = window.setTimeout(() => {
+          saveControllerProfile(game, next).catch((error) => reportError(i18n.t("errors.save"), error));
+        }, SAVE_DELAY_MS);
+        return next;
+      });
+    },
+    [game],
+  );
+
+  /** For a game: start its own profile from the current one, or go back to the default. */
+  const setGameCustom = useCallback(
+    (enabled: boolean) => {
+      if (!game || !profile) return;
+      setCustom(enabled);
+      if (enabled) {
+        saveControllerProfile(game, profile).catch((error) => reportError(i18n.t("errors.save"), error));
+      } else {
+        resetControllerProfile(game)
+          .then(() => controllerProfile(game))
+          .then((loaded) => setProfile(loaded.profile))
+          .catch((error) => reportError(i18n.t("errors.save"), error));
+      }
+    },
+    [game, profile],
+  );
+
+  return { profile, custom, update, setGameCustom };
+}

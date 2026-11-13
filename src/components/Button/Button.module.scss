@@ -1,0 +1,92 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out);
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-accent, #fff);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.45;
+    box-shadow: none;
+  }
+}
+
+.md {
+  height: 38px;
+  padding: 0 18px;
+  font-size: 0.9rem;
+}
+
+.lg {
+  height: 50px;
+  padding: 0 28px;
+  font-size: 1.02rem;
+}
+
+.iconOnly {
+  padding: 0;
+  aspect-ratio: 1;
+}
+
+.primary {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  box-shadow: 0 8px 24px -8px var(--color-accent);
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+    box-shadow: 0 12px 30px -8px var(--color-accent);
+  }
+}
+
+.secondary {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-active);
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+  }
+}
+
+// For buttons sitting on top of artwork, whatever the theme.
+.glass {
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.24);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--color-favorite);
+  }
+}

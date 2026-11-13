@@ -1,0 +1,12 @@
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+
+  i {
+    flex: none;
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 50%;
+  }
+}

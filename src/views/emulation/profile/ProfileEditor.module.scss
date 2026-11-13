@@ -1,0 +1,11 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  padding: 2em 0;
+}

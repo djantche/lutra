@@ -1,0 +1,61 @@
+.pad {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  overflow: visible;
+}
+
+.body {
+  fill: var(--color-surface-hover);
+  stroke: var(--color-border-strong);
+  stroke-width: 1.5;
+}
+
+.well {
+  fill: var(--color-surface-active);
+}
+
+.button,
+.stick {
+  fill: var(--color-bg-elevated, #222);
+  stroke: var(--color-border-strong);
+  stroke-width: 1.2;
+  transition:
+    fill 80ms linear,
+    stroke 80ms linear;
+}
+
+.stick {
+  transition: none;
+}
+
+.on {
+  fill: var(--color-accent, #fff);
+  stroke: var(--color-accent, #fff);
+}
+
+.fill {
+  fill: var(--color-accent, #fff);
+  opacity: 0.85;
+}
+
+.glyph,
+.tiny {
+  fill: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.glyph {
+  font-size: 10px;
+}
+
+.tiny {
+  font-size: 8px;
+}
+
+.lit {
+  fill: #fff;
+}

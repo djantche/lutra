@@ -1,0 +1,39 @@
+.field {
+  min-width: 0;
+  padding: 0.7em 1em;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 1.2em;
+  background: var(--color-surface);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out);
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  &:focus-within {
+    border-color: var(--color-accent, #fff);
+    background: var(--color-bg-elevated);
+    box-shadow: 0 0 0 0.25em var(--color-accent-soft, rgb(255 255 255 / 0.18));
+  }
+}
+
+.input {
+  display: block;
+  box-shadow: none !important;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  line-height: 1.5;
+  resize: none;
+
+  &::placeholder {
+    color: var(--color-text-subtle);
+  }
+}

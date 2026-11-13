@@ -1,0 +1,137 @@
+.home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+// Soft glow tinted by the featured game, bleeding behind the hero.
+.ambient {
+  position: absolute;
+  inset: -140px -40px auto;
+  height: 620px;
+  background:
+    radial-gradient(50% 55% at 25% 40%, hsl(var(--hue) 85% 55% / 0.28), transparent 70%),
+    radial-gradient(40% 50% at 80% 30%, hsl(calc(var(--hue) + 40) 85% 55% / 0.16), transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+  transition: background var(--duration-slow) var(--ease-out);
+}
+
+.hero {
+  position: relative;
+  height: clamp(340px, 48vh, 500px);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--shadow-lg);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgb(5 6 10 / 0.88) 0%, rgb(5 6 10 / 0.45) 45%, transparent 75%),
+      linear-gradient(0deg, rgb(5 6 10 / 0.55), transparent 55%);
+    pointer-events: none;
+  }
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  transition: transform 6s var(--ease-out);
+
+  .hero:hover & {
+    transform: scale(1.04);
+  }
+}
+
+.heroContent {
+  position: absolute;
+  left: 48px;
+  right: 40%;
+  bottom: 44px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: #fff;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.heroLogo {
+  --logo-width: min(22rem, 60%);
+  --logo-height: clamp(4rem, 8vw, 6rem);
+  font-size: clamp(2.2rem, 4vw, 3.6rem);
+}
+
+.heroMeta {
+  display: flex;
+  gap: var(--space-2);
+  color: rgb(255 255 255 / 0.75);
+  font-size: 0.9rem;
+
+  span + span::before {
+    content: "·";
+    margin-right: var(--space-2);
+  }
+}
+
+.heroActions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+}
+
+.wideGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.coverGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--space-6) var(--space-5);
+}

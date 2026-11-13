@@ -1,0 +1,123 @@
+.shell {
+  // Big Picture is always dark, whatever the system theme says.
+  --color-bg: #05060a;
+  --color-bg-elevated: #14161f;
+  --color-surface: rgb(255 255 255 / 0.06);
+  --color-surface-hover: rgb(255 255 255 / 0.1);
+  --color-surface-active: rgb(255 255 255 / 0.16);
+  --color-border: rgb(255 255 255 / 0.1);
+  --color-text: #ffffff;
+  --color-text-muted: rgb(255 255 255 / 0.62);
+  --color-text-subtle: rgb(255 255 255 / 0.4);
+  --color-favorite: #ffc94d;
+  // Big Picture draws its own white selection on every element.
+  --focus-ring: none;
+  --gutter: clamp(40px, 5vw, 80px);
+  color-scheme: dark;
+
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  user-select: none;
+
+  &[data-idle],
+  &[data-idle] * {
+    cursor: none !important;
+  }
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgb(5 6 10 / 0.7) 0%, transparent 22%),
+      linear-gradient(90deg, rgb(5 6 10 / 0.9) 0%, rgb(5 6 10 / 0.35) 50%, transparent 80%),
+      linear-gradient(0deg, rgb(5 6 10 / 0.9) 0%, transparent 50%);
+    transition: background var(--duration-slow) var(--ease-out);
+  }
+}
+
+.dim::after {
+  background: rgb(5 6 10 / 0.9);
+}
+
+.backdropLayer {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+  animation:
+    fade 700ms var(--ease-out) both,
+    drift 30s ease-in-out infinite alternate;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: scale(1.04);
+  }
+
+  to {
+    transform: scale(1.14) translate(-2%, -1%);
+  }
+}
+
+.chrome {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+
+.content {
+  display: flex;
+  min-height: 0;
+}
+
+.view {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  animation: view-in 360ms var(--ease-out) both;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.settings {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  padding: var(--space-8) var(--gutter);
+  overflow-y: auto;
+  font-size: 1.2rem;
+
+  // Text fields show their focus on their rounded frame, not on the bare input inside.
+  [data-focusable]:focus:not(input) {
+    outline: none;
+    box-shadow: 0 0 0 3px #fff;
+  }
+}
+
+// Where dialogs are rendered. It must not take part in the shell's layout.
+.overlayRoot {
+  display: contents;
+}

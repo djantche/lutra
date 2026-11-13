@@ -1,0 +1,44 @@
+.ring {
+  display: inline-block;
+  flex: none;
+  width: 1.4em;
+  height: 1.4em;
+  transform: rotate(-90deg);
+}
+
+.arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  transition: opacity 240ms var(--ease-out);
+}
+
+.todo {
+  opacity: 0.2;
+}
+
+.done {
+  opacity: 1;
+}
+
+.current {
+  animation: pulse 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.25;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .current {
+    animation: none;
+    opacity: 0.6;
+  }
+}

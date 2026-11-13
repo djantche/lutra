@@ -1,0 +1,40 @@
+.ok {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.warn {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.folders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.4em 0.4em 0.4em 1em;
+    border-radius: 0.8em;
+    background: var(--color-surface);
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}

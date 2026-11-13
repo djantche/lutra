@@ -1,0 +1,241 @@
+// Sized in em so each shell can scale the whole view through its own font-size.
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6em;
+  width: 100%;
+}
+
+.header {
+  h1 {
+    font-family: var(--font-display);
+    font-size: 2em;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin-top: 0.2em;
+    color: var(--color-text-muted);
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+  gap: 2em;
+  align-items: start;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.side,
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4em;
+  min-width: 0;
+}
+
+.side {
+  position: sticky;
+  top: 0;
+}
+
+.scope {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+// ---- notices
+
+.notice {
+  display: flex;
+  gap: 0.9em;
+  padding: 1em 1.2em;
+  border: 1px solid var(--color-border);
+  border-radius: 1em;
+  background: var(--color-surface);
+
+  > svg {
+    flex: none;
+    color: var(--color-accent, #fff);
+  }
+
+  &[data-kind="warning"] {
+    border-color: rgb(255 201 77 / 0.5);
+
+    > svg {
+      color: #ffc94d;
+    }
+  }
+
+  p {
+    margin-top: 0.2em;
+    color: var(--color-text-muted);
+    font-size: 0.9em;
+  }
+
+  code {
+    display: block;
+    margin-top: 0.7em;
+    padding: 0.6em 0.8em;
+    border-radius: 0.6em;
+    background: #0a0b10;
+    color: #c9cde0;
+    font-size: 0.78em;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+}
+
+// ---- controller list
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+.device {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: 0.7em 0.9em;
+  border: 1px solid var(--color-border);
+  border-radius: 1em;
+  background: var(--color-surface);
+  text-align: left;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+.selected {
+  border-color: var(--color-accent, #fff);
+  background: var(--color-surface-hover);
+}
+
+.deviceIcon {
+  display: grid;
+  place-items: center;
+  width: 2.4em;
+  height: 2.4em;
+  border-radius: 0.7em;
+  background: var(--color-accent-soft, rgb(255 255 255 / 0.1));
+  color: var(--color-accent, #fff);
+}
+
+.deviceText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  small {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ---- live tester
+
+.tester {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1em;
+  padding: 1.2em;
+  border: 1px solid var(--color-border);
+  border-radius: 1.1em;
+  background: var(--color-surface);
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  width: 100%;
+}
+
+.dot {
+  flex: none;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--color-text-subtle);
+
+  &[data-active="true"] {
+    background: #3ddc97;
+    box-shadow: 0 0 0 0.25em rgb(61 220 151 / 0.2);
+  }
+}
+
+.sessionText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+
+  small {
+    color: var(--color-text-muted);
+    font-size: 0.82em;
+  }
+}
+
+// ---- remapping
+
+.remap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.remapRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.3em 0.5em;
+  border-radius: 0.7em;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.held {
+  background: var(--color-accent-soft, rgb(255 255 255 / 0.12));
+}
+
+.physical {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  min-width: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92em;
+
+  kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.4em;
+    height: 1.9em;
+    padding: 0 0.5em;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 0.5em;
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 700;
+  }
+}
+
+.remapSelect {
+  flex: none;
+  width: 15em;
+}

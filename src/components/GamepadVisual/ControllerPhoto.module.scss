@@ -1,0 +1,30 @@
+.photo {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+// Light that sits on the pressed part, readable on the black plastic in both themes.
+.pressed {
+  fill: var(--color-accent, #8aa6ff);
+  fill-opacity: 0.45;
+  stroke: var(--color-accent, #8aa6ff);
+  stroke-width: 6;
+}
+
+.trigger {
+  fill: var(--color-accent, #8aa6ff);
+}
+
+.vector {
+  stroke: var(--color-accent, #8aa6ff);
+  stroke-width: 8;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+
+.tip {
+  fill: #fff;
+  stroke: var(--color-accent, #8aa6ff);
+  stroke-width: 6;
+}

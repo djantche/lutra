@@ -1,0 +1,265 @@
+.screen {
+  // Always dark, like a console overlay, whatever the theme.
+  --color-text: #f4f5fb;
+  --color-text-muted: rgb(255 255 255 / 0.6);
+  --color-border-strong: rgb(255 255 255 / 0.18);
+  --color-surface-hover: rgb(255 255 255 / 0.07);
+  --color-surface-active: rgb(255 255 255 / 0.12);
+  --color-bg-elevated: #1a1c27;
+
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 1.5em;
+  padding: 2em 3em 1.6em;
+  background: radial-gradient(ellipse at center, #1a1d33 0%, #07080d 75%);
+  color: var(--color-text);
+  font-size: 16px;
+  animation: in var(--duration-base) var(--ease-out) both;
+}
+
+@keyframes in {
+  from {
+    opacity: 0;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.8em;
+    font-weight: 700;
+  }
+
+  p {
+    color: var(--color-text-muted);
+  }
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  color: var(--color-text);
+
+  &:hover {
+    background: rgb(255 255 255 / 0.16);
+  }
+}
+
+// ---- controller and its callouts
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2.2fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 2em;
+  min-height: 0;
+}
+
+.pad {
+  display: grid;
+  place-items: center;
+
+  svg {
+    max-width: 760px;
+  }
+}
+
+.callouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.right {
+  align-items: flex-end;
+}
+
+.callout {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.3em 0.7em 0.3em 0.35em;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  transition:
+    background 80ms linear,
+    color 80ms linear;
+
+  kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.2em;
+    height: 1.9em;
+    padding: 0 0.45em;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.08);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.85em;
+    font-weight: 700;
+  }
+}
+
+.lit {
+  background: var(--color-accent);
+  color: #fff;
+
+  kbd {
+    background: rgb(255 255 255 / 0.25);
+  }
+}
+
+.arrow {
+  opacity: 0.5;
+}
+
+.target {
+  font-size: 0.92em;
+  font-weight: 600;
+}
+
+.changed {
+  color: #ffc94d;
+
+  .lit & {
+    color: #fff;
+  }
+}
+
+// ---- sticks and triggers
+
+.analog {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3em;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+
+  figcaption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.82em;
+    font-weight: 600;
+
+    small {
+      color: var(--color-text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+
+.plot {
+  width: 120px;
+  height: 120px;
+}
+
+.ring {
+  fill: rgb(255 255 255 / 0.04);
+  stroke: rgb(255 255 255 / 0.18);
+}
+
+.deadzone {
+  fill: rgb(255 201 77 / 0.12);
+  stroke: rgb(255 201 77 / 0.5);
+  stroke-dasharray: 3 3;
+}
+
+.axis {
+  stroke: rgb(255 255 255 / 0.08);
+}
+
+.rawDot {
+  fill: rgb(255 255 255 / 0.35);
+}
+
+.outDot {
+  fill: var(--color-accent);
+}
+
+.trigger {
+  position: relative;
+  width: 26px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.06);
+
+  span {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+  }
+}
+
+.triggerRaw {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.triggerOut {
+  background: var(--color-accent);
+}
+
+// ---- hold to exit
+
+.exit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.exitRing {
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+}
+
+.exitTrack {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.12);
+  stroke-width: 4;
+}
+
+.exitFill {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.exitGlyph {
+  fill: #fff;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+  // Counter the ring's rotation so the glyph stays upright.
+  transform: rotate(90deg);
+  transform-origin: 26px 26px;
+}

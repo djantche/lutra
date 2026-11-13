@@ -1,0 +1,196 @@
+import { useEffect, useState, type CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
+import { GameLogo } from "../../components/GameLogo/GameLogo";
+import { GameArt } from "../../components/GameArt/GameArt";
+import { Icon, type IconName } from "../../components/Icon/Icon";
+import { Spinner } from "../../components/Spinner/Spinner";
+import { useEmulatorSettings } from "../../hooks/useEmulatorSettings";
+import { useGameSettings } from "../../hooks/useGameSettings";
+import { hoverFocus } from "../../input/hoverFocus";
+import { useAutofocus } from "../../input/useAutofocus";
+import { useInputAction } from "../../input/useInputAction";
+import { cx } from "../../lib/cx";
+import type { Game } from "../../types/game";
+import { ArtworkTab } from "../classic/config/artwork/ArtworkTab";
+import { ControllerTab } from "../classic/config/ControllerTab";
+import { DetailsTab } from "../classic/config/DetailsTab";
+import { EmulatorTab } from "../classic/config/EmulatorTab";
+import { GameProfileTab } from "../../views/emulation/profile/GameProfileTab";
+import { GeneralTab } from "../classic/config/GeneralTab";
+import { LaunchTab } from "../classic/config/LaunchTab";
+import { LogsTab } from "../classic/config/LogsTab";
+import { PerformanceTab } from "../classic/config/PerformanceTab";
+import { WineTab } from "../classic/config/WineTab";
+import styles from "./GameSettings.module.scss";
+
+type Section =
+  | "general"
+  | "details"
+  | "wine"
+  | "performance"
+  | "launch"
+  | "video"
+  | "controls"
+  | "emulator"
+  | "controller"
+  | "artwork"
+  | "logs";
+
+/** How long after the last change the settings are written: one write for a burst of edits. */
+const AUTOSAVE_MS = 700;
+
+interface SectionItem {
+  value: Section;
+  icon: IconName;
+}
+
+/**
+ * A game's settings in Big Picture: full screen, sections down the left, big controls on the
+ * right. There is no Save button: every change is written a moment after it is made, as on a console.
+ */
+export function GameSettings({ game, onClose }: { game: Game; onClose: () => void }) {
+  const { t } = useTranslation();
+  const isManual = game.source === "wine" || game.source === "native";
+  const isNative = game.source === "native";
+  const isEmulator = game.source === "emulator";
+  const ref = useAutofocus<HTMLDivElement>();
+  const [section, setSection] = useState<Section>(isManual || isEmulator ? "general" : "artwork");
+  const { settings, details, setDetails, runners, tools, dirty, valid, change, changeConfig, save } = useGameSettings(
+    game.id,
+    isManual,
+    onClose,
+  );
+  const emulator = useEmulatorSettings(game.id, isEmulator, onClose);
+  const pending = isEmulator ? emulator.dirty : dirty;
+  const pendingValid = isEmulator ? true : valid;
+  const writePending = isEmulator ? emulator.save : save;
+
+  // The tile that opened the settings gets the focus back.
+  useEffect(() => {
+    const opener = document.activeElement;
+    return () => {
+      if (opener instanceof HTMLElement) opener.focus({ preventScroll: true });
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pending || !pendingValid) return;
+    const timer = window.setTimeout(writePending, AUTOSAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [pending, pendingValid, writePending, settings, details, emulator.settings]);
+
+  // Leaving writes what is pending first, so nothing typed a moment ago is lost.
+  const leave = () => {
+    if (pending && pendingValid) writePending();
+    onClose();
+  };
+
+  useInputAction((action) => {
+    if (action === "back" || action === "options") {
+      leave();
+      return true;
+    }
+  });
+
+  const sections: SectionItem[] = isEmulator
+    ? [
+        { value: "general", icon: "info" },
+        { value: "video", icon: "monitor" },
+        { value: "controls", icon: "gamepad" },
+        { value: "emulator", icon: "console" },
+        { value: "controller", icon: "settings" },
+        { value: "artwork", icon: "image" },
+        { value: "logs", icon: "terminal" },
+      ]
+    : isManual
+    ? [
+        { value: "general", icon: "info" },
+        { value: "details", icon: "info" },
+        ...(isNative ? [] : [{ value: "wine" as const, icon: "settings" as const }]),
+        { value: "performance", icon: "settings" },
+        { value: "launch", icon: "play" },
+        { value: "controller", icon: "gamepad" },
+        { value: "artwork", icon: "image" },
+        { value: "logs", icon: "terminal" },
+      ]
+    : [{ value: "artwork", icon: "image" }];
+  const label = (value: Section) =>
+    t(`config.tab${value === "wine" ? "Wine" : value[0].toUpperCase() + value.slice(1)}`);
+
+  return (
+    <div
+      ref={ref}
+      className={styles.root}
+      style={{ "--hue": game.hue } as CSSProperties}
+      role="dialog"
+      aria-modal="true"
+      aria-label={game.title}
+      data-nav-trap
+    >
+      <div className={styles.art} aria-hidden="true">
+        <GameArt game={game} kind="hero" />
+      </div>
+
+      <aside className={styles.side}>
+        <button type="button" data-focusable className={styles.back} aria-label={t("common.back")} onClick={leave} {...hoverFocus}>
+          <Icon name="arrowLeft" size={24} />
+        </button>
+        <GameLogo game={game} className={styles.logo} />
+        <nav className={styles.sections} aria-label={t("config.sections")}>
+          {sections.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              data-focusable
+              data-autofocus={item.value === section ? "" : undefined}
+              className={cx(styles.section, item.value === section && styles.current)}
+              aria-current={item.value === section ? "page" : undefined}
+              onClick={() => setSection(item.value)}
+              {...hoverFocus}
+            >
+              <Icon name={item.icon} size={24} />
+              {label(item.value)}
+            </button>
+          ))}
+        </nav>
+        <p className={styles.state} aria-live="polite">
+          {pending ? t("config.saving") : t("config.saved")}
+        </p>
+      </aside>
+
+      <main className={styles.content}>
+        {(isManual && !settings) || (isEmulator && !emulator.settings) ? <Spinner /> : null}
+        {emulator.settings && section === "general" && (
+          <EmulatorTab
+            settings={emulator.settings}
+            cores={emulator.cores}
+            onChange={emulator.change}
+            onConfig={emulator.changeConfig}
+          />
+        )}
+        {emulator.settings && (section === "video" || section === "controls" || section === "emulator") && (
+          <GameProfileTab
+            section={section}
+            settings={emulator.settings}
+            consoleProfile={emulator.consoleProfile}
+            onConfig={emulator.changeConfig}
+          />
+        )}
+        {settings && section === "general" && <GeneralTab settings={settings} runners={runners} onChange={change} />}
+        {details && section === "details" && (
+          <DetailsTab title={settings?.title ?? game.title} details={details} onChange={setDetails} />
+        )}
+        {settings && section === "wine" && <WineTab settings={settings} onConfig={changeConfig} />}
+        {settings && section === "performance" && (
+          <PerformanceTab config={settings.config} runnerKind={settings.runnerKind} onConfig={changeConfig} />
+        )}
+        {settings && section === "launch" && (
+          <LaunchTab config={settings.config} tools={tools} native={isNative} onConfig={changeConfig} />
+        )}
+        {section === "controller" && <ControllerTab gameId={game.id} />}
+        {section === "artwork" && <ArtworkTab game={game} />}
+        {section === "logs" && <LogsTab gameId={game.id} />}
+      </main>
+    </div>
+  );
+}

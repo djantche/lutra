@@ -1,0 +1,26 @@
+.controls {
+  display: flex;
+  gap: 2px;
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 32px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text-muted);
+    transition: background var(--duration-fast) var(--ease-out);
+
+    &:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text);
+    }
+  }
+
+  .close:hover {
+    background: #e5484d;
+    color: #fff;
+  }
+}

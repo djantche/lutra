@@ -1,0 +1,64 @@
+.splash {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at center, #1b1f45 0%, #05060a 70%);
+  pointer-events: none;
+  animation: splash 1.7s var(--ease-out) forwards;
+}
+
+@keyframes splash {
+  0%,
+  65% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: mark 1.7s var(--ease-out) both;
+
+  img {
+    border-radius: 24px;
+    box-shadow: 0 0 80px rgb(124 156 255 / 0.45);
+  }
+
+  span {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    // Keeps the tracked text optically centred.
+    margin-right: -0.35em;
+  }
+}
+
+@keyframes mark {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+    filter: blur(10px);
+  }
+
+  35%,
+  65% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}

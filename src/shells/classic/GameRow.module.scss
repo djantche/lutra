@@ -1,0 +1,150 @@
+// Shared by the rows and the header, so columns always line up.
+.columns {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 150px 90px 130px 190px;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.row {
+  @extend .columns;
+  position: relative;
+  padding: 8px var(--space-3);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+
+  &:hover,
+  &:focus-within {
+    background: var(--color-surface-hover);
+  }
+}
+
+.running {
+  background: linear-gradient(90deg, hsl(var(--hue) 70% 50% / 0.12), transparent 60%);
+}
+
+.cover {
+  display: block;
+  aspect-ratio: 2 / 3;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 6px 14px -6px rgb(0 0 0 / 0.45);
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  text-align: left;
+
+  strong,
+  small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  small {
+    min-height: 1.2em;
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+
+  &:focus-visible {
+    box-shadow: none;
+  }
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3ddc97;
+  font-weight: 600;
+
+  &::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.cell {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.number {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-subtle);
+  opacity: 0;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+
+  .row:hover &,
+  .row:focus-within & {
+    opacity: 1;
+  }
+
+  &:hover {
+    background: var(--color-surface-active);
+    color: var(--color-text);
+  }
+}
+
+// A starred game keeps its star visible.
+.starred {
+  color: var(--color-favorite);
+  opacity: 1;
+}
+
+.play {
+  margin-left: 6px;
+  opacity: 0;
+  transform: translateX(6px);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-base) var(--ease-out);
+
+  .row:hover &,
+  .row:focus-within &,
+  .running & {
+    opacity: 1;
+    transform: none;
+  }
+}
