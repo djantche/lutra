@@ -1,0 +1,57 @@
+// The page itself reuses the test screen's layout (`../test/ControllerTestScreen.module.scss`).
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1em 2em;
+  min-height: 5.5em;
+  padding: 1em 1.4em;
+  border-radius: 1.2em;
+  background: rgb(255 255 255 / 0.06);
+  animation: rise 240ms var(--ease-out) both;
+}
+
+.prompt {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+
+  strong {
+    font-size: 1.1em;
+  }
+
+  p {
+    margin: 0.1em 0 0;
+    color: var(--color-text-muted);
+  }
+}
+
+.choices {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+
+.keyPick {
+  min-width: 14em;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

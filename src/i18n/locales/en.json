@@ -153,7 +153,9 @@
     "trayStart": "Start minimized",
     "trayStartHint": "Lutra starts in the notification area without opening its window.",
     "trayMissing": "No notification area",
-    "trayMissingHint": "Your desktop does not show one: Lutra's window is never hidden, so it stays reachable."
+    "trayMissingHint": "Your desktop does not show one: Lutra's window is never hidden, so it stays reachable.",
+    "sounds": "Interface sounds",
+    "soundsHint": "Short sounds when you move through menus, confirm, go back or switch a setting."
   },
   "bigPicture": {
     "exit": "Desktop mode",
@@ -372,8 +374,6 @@
     "swapFaceHint": "Swaps A/B and X/Y, for controllers that print them the other way round.",
     "remap": "Remap buttons",
     "remapHint": "Choose what the game receives for each button: another button, or a key or mouse button. Press a button on your controller to find its line.",
-    "remapFor": "What {{button}} does",
-    "same": "{{button}} (unchanged)",
     "disabled": "Disabled",
     "buttons": {
       "south": "Bottom button",
@@ -469,7 +469,25 @@
     "system": "Drive controllers outside games",
     "systemHint": "Like Steam: applications and games launched outside Lutra see a corrected controller (dead zones, drift recentring, remapped buttons). Lutra steps aside while Steam is open.",
     "noUhid": "Games will show Xbox buttons for the PlayStation 4 controller",
-    "noUhidHint": "For games to treat the virtual PS4 controller as a real one (PlayStation buttons), Lutra must be able to create HID devices. Run this once in a terminal:"
+    "noUhidHint": "For games to treat the virtual PS4 controller as a real one (PlayStation buttons), Lutra must be able to create HID devices. Run this once in a terminal:",
+    "remapOpen": "Remap buttons",
+    "remapCount_one": "{{count}} button changed",
+    "remapCount_other": "{{count}} buttons changed",
+    "remapScreen": {
+      "title": "Remap buttons",
+      "all": "Remap all",
+      "reset": "Reset all",
+      "step": "Button {{current}} of {{total}}",
+      "one": "Remapping one button",
+      "press": "Press the button that {{button}} should act as.",
+      "choose": "Choose what this button does.",
+      "key": "A key or mouse button…",
+      "disable": "Disable",
+      "skip": "Skip",
+      "cancel": "Cancel",
+      "hint": "Click a button, then press the one it should act as. Or remap them all in turn.",
+      "noController": "Connect a controller to press its buttons, or pick what each one does from the list."
+    }
   },
   "details": {
     "fromGameDb": "Details found online",

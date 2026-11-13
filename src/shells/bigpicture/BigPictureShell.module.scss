@@ -13,6 +13,9 @@
   // Big Picture draws its own white selection on every element.
   --focus-ring: none;
   --row-focus: #fff;
+  // A focused tab is a white pill, like every selection in Big Picture.
+  --tab-focus-bg: #fff;
+  --tab-focus-text: #05060a;
   --gutter: clamp(40px, 5vw, 80px);
   color-scheme: dark;
 

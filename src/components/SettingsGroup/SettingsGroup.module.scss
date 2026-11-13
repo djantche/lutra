@@ -58,6 +58,12 @@
   }
 }
 
+// After a click, a row the keyboard or the pad lands on is not "focus-visible" to the browser.
+:global([data-input="nav"]) .row:focus {
+  background: var(--color-surface-hover);
+  box-shadow: 0 0 0 3px var(--row-focus, var(--color-accent));
+}
+
 @keyframes rise {
   from {
     opacity: 0;

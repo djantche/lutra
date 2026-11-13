@@ -217,6 +217,38 @@ export function mappedButton(profile: ControllerProfile, button: ControllerButto
   return mapped === undefined ? physical : mapped;
 }
 
+/** What a physical button becomes: nothing changed, nothing, another button, or a key / mouse button. */
+export type Assignment =
+  | { kind: "same" }
+  | { kind: "off" }
+  | { kind: "button"; button: ControllerButton }
+  | { kind: "key"; key: string };
+
+/** The profile's `remap` and `keys` once `button` is given `to`. Everything else is left alone. */
+export function assignButton(
+  profile: ControllerProfile,
+  button: ControllerButton,
+  to: Assignment,
+): Pick<ControllerProfile, "remap" | "keys"> {
+  const remap = { ...profile.remap };
+  const keys = { ...profile.keys };
+  delete remap[button];
+  delete keys[button];
+  if (to.kind === "key") keys[button] = to.key;
+  else if (to.kind === "off") remap[button] = null;
+  else if (to.kind === "button" && to.button !== button) remap[button] = to.button;
+  return { remap, keys };
+}
+
+/** What a physical button is set to now. */
+export function assignmentOf(profile: ControllerProfile, button: ControllerButton): Assignment {
+  const key = profile.keys[button];
+  if (key) return { kind: "key", key };
+  const mapped = profile.remap[button];
+  if (mapped === undefined) return { kind: "same" };
+  return mapped === null ? { kind: "off" } : { kind: "button", button: mapped };
+}
+
 const MOCK_KEYS: KeyInfo[] = [
   ..."abcdefghijklmnopqrstuvwxyz".split("").map((name) => ({ name, group: "letters" as const })),
   ...["enter", "escape", "space", "tab", "up", "down", "left", "right"].map((name) => ({ name, group: "control" as const })),

@@ -1,15 +1,15 @@
 import { useTranslation } from "react-i18next";
 import { cx } from "../../lib/cx";
-import { SOURCE_COLOR } from "../../lib/sources";
+import { SourceIcon } from "../SourceIcon/SourceIcon";
 import type { GameSource } from "../../types/game";
 import styles from "./SourceLabel.module.scss";
 
-/** A source's name preceded by its color dot. */
+/** A source's name preceded by its logo. */
 export function SourceLabel({ source, className }: { source: GameSource; className?: string }) {
   const { t } = useTranslation();
   return (
     <span className={cx(styles.label, className)}>
-      <i style={{ background: SOURCE_COLOR[source] }} />
+      <SourceIcon source={source} size={14} />
       {t(`sources.${source}`)}
     </span>
   );

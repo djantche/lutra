@@ -4,9 +4,9 @@
   display: flex;
   flex: none;
   gap: 0.3em;
-  // Room for the focus ring, which the horizontal scroll would otherwise cut.
+  // Room for the pill while the horizontal scroll would otherwise cut it.
   margin: -4px;
-  padding: 4px;
+  padding: 4px 4px 8px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -14,17 +14,35 @@
 // Slides under the current tab. Only `transform` and `width` change, never a layout property.
 .indicator {
   position: absolute;
-  bottom: 0;
+  bottom: 2px;
   left: 0;
   width: var(--tab-w, 0);
   height: 3px;
-  border-radius: 3px 3px 0 0;
+  border-radius: 3px;
   background: var(--color-accent);
   transform: translateX(var(--tab-x, 0));
   transition:
     transform var(--duration-base) var(--ease-spring),
-    width var(--duration-base) var(--ease-out);
+    width var(--duration-base) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
   pointer-events: none;
+}
+
+// The selected tab is a filled pill already: the underline would say the same thing twice.
+.bar:has(.active:focus-visible) .indicator,
+:global([data-input="nav"]) .bar:has(.active:focus) .indicator {
+  opacity: 0;
+}
+
+@mixin selected-tab {
+  outline: none;
+  box-shadow: none !important;
+  background: var(--tab-focus-bg, var(--color-surface-active));
+  color: var(--tab-focus-text, var(--color-text));
+
+  svg {
+    color: inherit;
+  }
 }
 
 .tab {
@@ -48,6 +66,17 @@
     background: var(--color-surface-hover);
     color: var(--color-text);
   }
+
+  // Selection by keyboard or controller: a filled pill, never an outline. Big Picture makes it white.
+  &:focus-visible,
+  &:focus-visible:hover {
+    @include selected-tab;
+  }
+}
+
+:global([data-input="nav"]) .tab:focus,
+:global([data-input="nav"]) .tab:focus:hover {
+  @include selected-tab;
 }
 
 .active,
@@ -67,7 +96,7 @@
   background: var(--color-accent);
 }
 
-// Big Picture: bigger, and the focused tab is a white pill like everything else there.
+// Big Picture: bigger tabs.
 .large {
   gap: 0.5em;
 
@@ -82,20 +111,19 @@
     font-size: 1.15rem;
     font-weight: 600;
 
-    &:focus {
-      outline: none;
-      background: #fff;
-      color: #05060a;
-      box-shadow: none;
-
-      svg {
-        color: inherit;
-      }
+    // Its text must follow the pill, which is white here.
+    &:focus-visible,
+    &:focus-visible:hover {
+      color: var(--tab-focus-text, var(--color-text));
     }
   }
 
-  .active:not(:focus) {
-    background: rgb(255 255 255 / 0.12);
+  .active:not(:focus-visible) {
     color: #fff;
   }
+}
+
+:global([data-input="nav"]) .large .tab:focus,
+:global([data-input="nav"]) .large .tab:focus:hover {
+  color: var(--tab-focus-text, var(--color-text));
 }

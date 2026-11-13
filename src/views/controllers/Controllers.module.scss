@@ -20,28 +20,20 @@
   }
 }
 
-.columns {
-  display: grid;
-  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
-  gap: 2em;
-  align-items: start;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.side,
-.main {
+// A single column, like the settings: the controller on top, then groups of options.
+.page {
   display: flex;
   flex-direction: column;
-  gap: 1.4em;
+  gap: 1.8em;
+  width: 100%;
+  max-width: 56em;
   min-width: 0;
 }
 
-.side {
-  position: sticky;
-  top: 0;
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8em;
 }
 
 .scope {
@@ -95,8 +87,8 @@
 
 .list {
   display: flex;
-  flex-direction: column;
-  gap: 0.4em;
+  flex-wrap: wrap;
+  gap: 0.5em;
 }
 
 .device {
@@ -147,12 +139,13 @@
 
 // ---- live tester
 
+// The controller on the left, who drives it and the way into the test on the right.
 .tester {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(12em, 22em) minmax(0, 1fr);
   align-items: center;
-  gap: 1em;
-  padding: 1.2em;
+  gap: 1.8em;
+  padding: 1.4em 1.8em;
   border: 1px solid var(--color-border);
   border-radius: 1.1em;
   background: var(--color-surface);
@@ -161,8 +154,9 @@
 .session {
   display: flex;
   align-items: center;
-  gap: 0.8em;
-  width: 100%;
+  flex-wrap: wrap;
+  gap: 0.9em 1.2em;
+  min-width: 0;
 }
 
 .dot {
@@ -188,54 +182,4 @@
     color: var(--color-text-muted);
     font-size: 0.82em;
   }
-}
-
-// ---- remapping
-
-.remap {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.remapRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1em;
-  padding: 0.3em 0.5em;
-  border-radius: 0.7em;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-
-.held {
-  background: var(--color-accent-soft, rgb(255 255 255 / 0.12));
-}
-
-.physical {
-  display: flex;
-  align-items: center;
-  gap: 0.7em;
-  min-width: 0;
-  color: var(--color-text-muted);
-  font-size: 0.92em;
-
-  kbd {
-    display: inline-grid;
-    place-items: center;
-    min-width: 2.4em;
-    height: 1.9em;
-    padding: 0 0.5em;
-    border: 1px solid var(--color-border-strong);
-    border-radius: 0.5em;
-    background: var(--color-surface-hover);
-    color: var(--color-text);
-    font: inherit;
-    font-weight: 700;
-  }
-}
-
-.remapSelect {
-  flex: none;
-  width: 15em;
 }

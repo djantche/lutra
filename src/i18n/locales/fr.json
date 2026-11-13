@@ -153,7 +153,9 @@
     "trayStart": "Démarrer réduit",
     "trayStartHint": "Lutra démarre dans la zone de notification, sans ouvrir sa fenêtre.",
     "trayMissing": "Pas de zone de notification",
-    "trayMissingHint": "Ton bureau n'en affiche pas : la fenêtre de Lutra n'est jamais cachée, pour rester accessible."
+    "trayMissingHint": "Ton bureau n'en affiche pas : la fenêtre de Lutra n'est jamais cachée, pour rester accessible.",
+    "sounds": "Sons de l'interface",
+    "soundsHint": "De courts sons quand on se déplace dans les menus, qu'on confirme, qu'on revient en arrière ou qu'on change un réglage."
   },
   "bigPicture": {
     "exit": "Mode bureau",
@@ -372,8 +374,6 @@
     "swapFaceHint": "Échange A/B et X/Y, pour les manettes qui les impriment dans l'autre sens.",
     "remap": "Remapper les boutons",
     "remapHint": "Choisis ce que le jeu reçoit pour chaque bouton : un autre bouton, ou une touche ou un bouton de souris. Appuie sur un bouton de ta manette pour trouver sa ligne.",
-    "remapFor": "Ce que fait {{button}}",
-    "same": "{{button}} (inchangé)",
     "disabled": "Désactivé",
     "buttons": {
       "south": "Bouton du bas",
@@ -469,7 +469,25 @@
     "system": "Piloter les manettes en dehors des jeux",
     "systemHint": "Comme Steam : les applications et les jeux lancés hors de Lutra voient une manette corrigée (zones mortes, recentrage du drift, boutons remappés). Lutra s'efface quand Steam est ouvert.",
     "noUhid": "Les jeux afficheront les touches Xbox pour la manette PlayStation 4",
-    "noUhidHint": "Pour que les jeux reconnaissent la manette PS4 virtuelle comme une vraie (touches PlayStation), Lutra doit pouvoir créer des périphériques HID. Lance ceci une fois dans un terminal :"
+    "noUhidHint": "Pour que les jeux reconnaissent la manette PS4 virtuelle comme une vraie (touches PlayStation), Lutra doit pouvoir créer des périphériques HID. Lance ceci une fois dans un terminal :",
+    "remapOpen": "Remapper les boutons",
+    "remapCount_one": "{{count}} bouton modifié",
+    "remapCount_other": "{{count}} boutons modifiés",
+    "remapScreen": {
+      "title": "Remapper les boutons",
+      "all": "Tout remapper",
+      "reset": "Tout réinitialiser",
+      "step": "Bouton {{current}} sur {{total}}",
+      "one": "Remappage d'un bouton",
+      "press": "Appuie sur le bouton dont {{button}} doit prendre la fonction.",
+      "choose": "Choisis ce que fait ce bouton.",
+      "key": "Une touche ou un bouton de souris…",
+      "disable": "Désactiver",
+      "skip": "Passer",
+      "cancel": "Annuler",
+      "hint": "Clique sur un bouton, puis appuie sur celui qui doit le remplacer. Ou remappe-les tous à la suite.",
+      "noController": "Branche une manette pour appuyer sur ses boutons, ou choisis dans la liste ce que fait chacun."
+    }
   },
   "details": {
     "fromGameDb": "Informations trouvées en ligne",

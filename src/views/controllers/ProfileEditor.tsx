@@ -4,21 +4,25 @@ import { SettingsGroup, SettingsRow } from "../../components/SettingsGroup/Setti
 import { Slider } from "../../components/Slider/Slider";
 import { Switch } from "../../components/Switch/Switch";
 import { Select } from "../../components/Select/Select";
-import type { ControllerButton, ControllerFamily, ControllerProfile, OutputKind, StickMode } from "../../lib/controllers";
-import { RemapList } from "./RemapList";
+import type { ControllerInfo, ControllerProfile, OutputKind, StickMode } from "../../lib/controllers";
+import { useState } from "react";
+import { Button } from "../../components/Button/Button";
+import { RemapScreen } from "./remap/RemapScreen";
 
 const percent = (value: number) => `${Math.round(value * 100)} %`;
 
 interface ProfileEditorProps {
   profile: ControllerProfile;
-  family: ControllerFamily;
-  pressed: ControllerButton[];
+  /** The controller the buttons are remapped on; without one, they are chosen from lists. */
+  controller: ControllerInfo | null;
   onChange: (patch: Partial<ControllerProfile>) => void;
 }
 
 /** Everything a profile controls: what the game sees, sticks, triggers, vibrations and buttons. */
-export function ProfileEditor({ profile, family, pressed, onChange }: ProfileEditorProps) {
+export function ProfileEditor({ profile, controller, onChange }: ProfileEditorProps) {
   const { t } = useTranslation();
+  const [remapping, setRemapping] = useState(false);
+  const remapped = Object.keys(profile.remap).length + Object.keys(profile.keys).length;
   const passthrough = profile.output === "none";
   const keyboardOnly = profile.output === "keyboard";
   const usesMouse = profile.leftStick === "mouse" || profile.rightStick === "mouse";
@@ -157,11 +161,20 @@ export function ProfileEditor({ profile, family, pressed, onChange }: ProfileEdi
             <SettingsRow title={t("controllers.swapFace")} description={t("controllers.swapFaceHint")}>
               <Switch ariaLabel={t("controllers.swapFace")} checked={profile.swapFace} onChange={(swapFace) => onChange({ swapFace })} />
             </SettingsRow>
-            <SettingsRow stacked title={t("controllers.remap")} description={t("controllers.remapHint")}>
-              <RemapList profile={profile} family={family} pressed={pressed} onChange={onChange} />
+            <SettingsRow
+              title={t("controllers.remap")}
+              description={remapped > 0 ? t("controllers.remapCount", { count: remapped }) : t("controllers.remapHint")}
+            >
+              <Button variant="secondary" icon="gamepad" onClick={() => setRemapping(true)}>
+                {t("controllers.remapOpen")}
+              </Button>
             </SettingsRow>
           </SettingsGroup>
         </>
+      )}
+
+      {remapping && (
+        <RemapScreen controller={controller} profile={profile} onChange={onChange} onClose={() => setRemapping(false)} />
       )}
     </>
   );

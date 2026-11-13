@@ -18,6 +18,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 app.commandLine.appendSwitch("ozone-platform-hint", "auto");
+// Interface sounds play without waiting for a click first.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 Menu.setApplicationMenu(null);
 
 /** @type {import('electron').BrowserWindow | null} */

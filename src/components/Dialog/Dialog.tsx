@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cx } from "../../lib/cx";
+import { playSound } from "../../lib/sounds";
 import { useAutofocus } from "../../input/useAutofocus";
 import { useInputAction } from "../../input/useInputAction";
 import styles from "./Dialog.module.scss";
@@ -23,6 +24,8 @@ interface DialogProps {
 export function Dialog({ title, description, onClose, busy = false, size = "md", media, children, footer }: DialogProps) {
   const ref = useAutofocus<HTMLDivElement>();
 
+  useEffect(() => playSound("open"), []);
+
   useInputAction((action) => {
     if (action === "back" && !busy) {
       onClose();
@@ -35,7 +38,11 @@ export function Dialog({ title, description, onClose, busy = false, size = "md",
   const host = document.querySelector("[data-overlay-root]") ?? document.body;
 
   return createPortal(
-    <div className={styles.overlay} onMouseDown={(event) => event.target === event.currentTarget && !busy && onClose()}>
+    <div className={styles.overlay} onMouseDown={(event) => {
+      if (event.target !== event.currentTarget || busy) return;
+      playSound("close");
+      onClose();
+    }}>
       <div ref={ref} className={cx(styles.dialog, size === "lg" && styles.large, size === "xl" && styles.xl)} role="dialog" aria-modal="true" aria-label={title} data-nav-trap>
         <header className={cx(media !== undefined && styles.withMedia)}>
           {media}

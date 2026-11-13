@@ -1,8 +1,19 @@
+import { playSound } from "../lib/sounds";
 import type { InputAction } from "./actions";
 
 type Direction = "up" | "down" | "left" | "right";
 
 const FOCUSABLE = "[data-focusable]:not([disabled])";
+
+// What moved the selection last: the keyboard or the pad (`nav`), or the pointer. A focus given by a
+// script after a click is not "focus-visible" to the browser, so styles follow this instead.
+const setInput = (kind: "nav" | null) => {
+  if (kind) document.documentElement.dataset.input = kind;
+  else delete document.documentElement.dataset.input;
+};
+if (typeof window !== "undefined") {
+  window.addEventListener("pointerdown", () => setInput(null), true);
+}
 
 /** A row of a menu: one item to move across, which acts on the control inside it. */
 export const ROW = "[data-nav-row]";
@@ -102,7 +113,9 @@ function moveFocus(direction: Direction): void {
     return;
   }
 
+  setInput("nav");
   best.focus({ preventScroll: true });
+  playSound("move");
   best.scrollIntoView({
     block: "nearest",
     inline: (best.dataset.scrollInline as ScrollLogicalPosition | undefined) ?? "nearest",
@@ -143,6 +156,8 @@ export function handleDefaultAction(action: InputAction): void {
       const control = active.matches(ROW) ? active.querySelector<HTMLElement>(FOCUSABLE) : active;
       if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) control.focus();
       else control?.click();
+      // A switch makes its own sound.
+      if (control?.getAttribute("role") !== "switch") playSound("confirm");
       break;
     }
     case "back": {
@@ -152,6 +167,7 @@ export function handleDefaultAction(action: InputAction): void {
       const row = active.closest<HTMLElement>(ROW);
       if (row) row.focus({ preventScroll: true });
       else active.blur();
+      playSound("back");
       break;
     }
   }

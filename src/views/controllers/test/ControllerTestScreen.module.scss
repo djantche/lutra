@@ -263,3 +263,46 @@
   transform: rotate(90deg);
   transform-origin: 26px 26px;
 }
+
+// ---- a line that can be clicked (remapping)
+
+.pickable {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: rgb(255 255 255 / 0.08);
+  }
+
+  &:focus-visible {
+    outline: none;
+    background: #fff;
+    color: #05060a;
+
+    kbd {
+      background: rgb(0 0 0 / 0.12);
+      color: #05060a;
+    }
+  }
+}
+
+.picking,
+.picking:hover {
+  background: var(--color-accent);
+  color: #fff;
+  animation: picking 1s ease-in-out infinite alternate;
+}
+
+@keyframes picking {
+  from {
+    box-shadow: 0 0 0 0 rgb(255 255 255 / 0.5);
+  }
+
+  to {
+    box-shadow: 0 0 0 6px rgb(255 255 255 / 0);
+  }
+}

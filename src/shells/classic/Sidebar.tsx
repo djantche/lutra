@@ -2,7 +2,9 @@ import { useTranslation } from "react-i18next";
 import { Icon, type IconName } from "../../components/Icon/Icon";
 import { cx } from "../../lib/cx";
 import { filterGames, type LibraryFilter } from "../../lib/library";
-import { SOURCES, SOURCE_COLOR } from "../../lib/sources";
+import { SourceIcon } from "../../components/SourceIcon/SourceIcon";
+import { SOURCES } from "../../lib/sources";
+import type { GameSource } from "../../types/game";
 import { useLibrary } from "../../state/library";
 import { useUi } from "../../state/ui";
 import type { Page } from "./navigation";
@@ -13,11 +15,12 @@ interface NavItemProps {
   active: boolean;
   onClick: () => void;
   icon?: IconName;
-  dotColor?: string;
+  /** A game source: its logo takes the place of an icon. */
+  source?: GameSource;
   count?: number;
 }
 
-function NavItem({ label, active, onClick, icon, dotColor, count }: NavItemProps) {
+function NavItem({ label, active, onClick, icon, source, count }: NavItemProps) {
   return (
     <button
       type="button"
@@ -27,7 +30,7 @@ function NavItem({ label, active, onClick, icon, dotColor, count }: NavItemProps
       onClick={onClick}
     >
       {icon && <Icon name={icon} size={18} />}
-      {dotColor && <span className={styles.dot} style={{ background: dotColor }} />}
+      {source && <SourceIcon source={source} size={18} />}
       <span className={styles.label}>{label}</span>
       {count !== undefined && <span className={styles.count}>{count}</span>}
     </button>
@@ -72,7 +75,7 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
           <NavItem
             key={source}
             label={t(`sources.${source}`)}
-            dotColor={SOURCE_COLOR[source]}
+            source={source}
             count={filterGames(games, source).length}
             active={isLibrary(source)}
             onClick={library(source)}

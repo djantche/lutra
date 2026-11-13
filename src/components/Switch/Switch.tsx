@@ -1,3 +1,4 @@
+import { playSound } from "../../lib/sounds";
 import styles from "./Switch.module.scss";
 
 interface SwitchProps {
@@ -18,7 +19,10 @@ export function Switch({ checked, onChange, ariaLabel, disabled = false }: Switc
       data-focusable
       className={styles.track}
       disabled={disabled}
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        playSound(checked ? "off" : "on");
+        onChange(!checked);
+      }}
     >
       <span className={styles.thumb} />
     </button>

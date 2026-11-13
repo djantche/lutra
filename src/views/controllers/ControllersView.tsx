@@ -36,10 +36,12 @@ export function ControllersView() {
       {status && <ControllerNotice status={status} />}
 
       {status && selected && profile && (
-        <div className={styles.columns}>
-          <div className={styles.side}>
+        <div className={styles.page}>
+          {controllers.length > 1 && (
             <ControllerList controllers={controllers} selectedId={selected.id} onSelect={setSelectedId} />
-            <LiveTester controller={selected} state={live} status={status} profile={profile} />
+          )}
+          <LiveTester controller={selected} state={live} status={status} profile={profile} />
+          <div className={styles.groups}>
             <SettingsGroup title={t("controllers.everywhere")}>
               <SettingsRow title={t("controllers.system")} description={t("controllers.systemHint")}>
                 <Switch
@@ -69,10 +71,8 @@ export function ControllersView() {
             </SettingsGroup>
           </div>
 
-          <div className={styles.main}>
-            <p className={styles.scope}>{t("controllers.defaultScope")}</p>
-            <ProfileEditor profile={profile} family={selected.family} pressed={live?.pressed ?? []} onChange={update} />
-          </div>
+          <p className={styles.scope}>{t("controllers.defaultScope")}</p>
+          <ProfileEditor profile={profile} controller={selected} onChange={update} />
         </div>
       )}
     </div>

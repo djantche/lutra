@@ -11,7 +11,7 @@ A unified game library and launcher for Linux, in the spirit of [Lutris](https:/
 - **Controller driver**, Steam Input style: hot-plugging, dead zones, curves, remapping, conversion to keyboard / mouse, per-game profiles, virtual Xbox 360 or DualShock 4 (HID) pad, rumble, in-game overlay.
 - **Artwork**: covers, banners, heroes and logos from Steam and [SteamGridDB](https://www.steamgriddb.com/) (personal API key), cached on disk.
 - **Two interfaces**: a modern desktop mode (light / dark theme) and a fullscreen **Big Picture** mode built for gamepads.
-- **Notification area**, start minimized, built-in logs, interface in English and French.
+- **Notification area**, start minimized, built-in logs, interface in English and French, and short console-like interface sounds.
 
 ## Install
 
@@ -57,6 +57,12 @@ The Rust backend (`backend/`) handles everything that touches the system and run
 ## Contributing
 
 Commits are small and focused, written in English. Rust code must pass `cargo fmt` and `cargo clippy`, TypeScript is strict, and every user-facing text goes through i18n (English and French).
+
+## Credits
+
+- Interface sounds: [Interface Sounds](https://opengameart.org/content/interface-sounds) by [Kenney](https://www.kenney.nl), CC0 (`src/assets/sounds/CREDITS.md`).
+- Source logos: [Simple Icons](https://simpleicons.org), CC0.
+- Controller artwork: see `src/assets/controllers/CREDITS.md`.
 
 ## License
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Switch } from "../../components/Switch/Switch";
 import { setTraySettings, traySettings, type TraySettings } from "../../lib/backend";
+import { setSoundsEnabled, soundsEnabled } from "../../lib/sounds";
 import { reportError } from "../../state/toasts";
 import { Select } from "../../components/Select/Select";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
@@ -14,6 +15,7 @@ export function GeneralSection() {
   const { t, i18n } = useTranslation();
   const { mode, setMode } = useUi();
   const [tray, setTray] = useState<TraySettings | null>(null);
+  const [sounds, setSounds] = useState(soundsEnabled);
 
   useEffect(() => {
     traySettings()
@@ -52,6 +54,17 @@ export function GeneralSection() {
           ]}
           value={mode}
           onChange={setMode}
+        />
+      </SettingsRow>
+
+      <SettingsRow title={t("settings.sounds")} description={t("settings.soundsHint")}>
+        <Switch
+          ariaLabel={t("settings.sounds")}
+          checked={sounds}
+          onChange={(enabled) => {
+            setSounds(enabled);
+            setSoundsEnabled(enabled);
+          }}
         />
       </SettingsRow>
     </SettingsGroup>

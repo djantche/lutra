@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { playSound } from "../lib/sounds";
 import { logFrontend } from "../lib/backend";
 
 export interface Toast {
@@ -29,6 +30,7 @@ export const useToastStore = create<ToastState>((set, get) => ({
 /** Shows a failure to the user, whatever the backend or the browser threw. */
 export function reportError(context: string, error: unknown): void {
   console.error(context, error);
+  playSound("error");
   const detail = error instanceof Error ? error.message : String(error);
   useToastStore.getState().notify("error", `${context} ${detail}`);
   void logFrontend("error", `${context} ${detail}`).catch(() => {});

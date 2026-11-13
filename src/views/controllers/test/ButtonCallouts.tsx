@@ -17,10 +17,14 @@ interface ButtonCalloutsProps {
   profile: ControllerProfile;
   family: ControllerFamily;
   pressed: ControllerButton[];
+  /** When given, each line is a button that picks its physical button. */
+  onPick?: (button: ControllerButton) => void;
+  /** The button being remapped right now. */
+  active?: ControllerButton | null;
 }
 
 /** For each button: its name on the controller, and what the game receives (lit while pressed). */
-export function ButtonCallouts({ side, buttons, profile, family, pressed }: ButtonCalloutsProps) {
+export function ButtonCallouts({ side, buttons, profile, family, pressed, onPick, active = null }: ButtonCalloutsProps) {
   const { t } = useTranslation();
 
   return (
@@ -29,8 +33,8 @@ export function ButtonCallouts({ side, buttons, profile, family, pressed }: Butt
         const target = profile.output === "none" ? button : mappedButton(profile, button);
         const key = profile.output === "none" ? undefined : keyFor(profile, button);
         const changed = key !== undefined || target !== button;
-        return (
-          <li key={button} className={cx(styles.callout, pressed.includes(button) && styles.lit)}>
+        const content = (
+          <>
             <ButtonGlyph button={button} family={family} />
             <span className={styles.arrow}>→</span>
             <span className={cx(styles.target, changed && styles.changed)}>
@@ -40,6 +44,18 @@ export function ButtonCallouts({ side, buttons, profile, family, pressed }: Butt
                   ? t("controllers.disabled")
                   : outputLabel(target, profile.output, t)}
             </span>
+          </>
+        );
+        const classes = cx(styles.callout, pressed.includes(button) && styles.lit, active === button && styles.picking);
+        return (
+          <li key={button}>
+            {onPick ? (
+              <button type="button" data-focusable className={cx(classes, styles.pickable)} onClick={() => onPick(button)}>
+                {content}
+              </button>
+            ) : (
+              <div className={classes}>{content}</div>
+            )}
           </li>
         );
       })}

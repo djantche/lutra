@@ -3,7 +3,7 @@ import { SettingsGroup, SettingsRow } from "../../../components/SettingsGroup/Se
 import { Spinner } from "../../../components/Spinner/Spinner";
 import { Switch } from "../../../components/Switch/Switch";
 import { ProfileEditor } from "../../../views/controllers/ProfileEditor";
-import { useControllerProfile, useControllerStatus, useLivePad } from "../../../views/controllers/useControllers";
+import { useControllerProfile, useControllerStatus } from "../../../views/controllers/useControllers";
 
 /** The controller profile this game plays with: the default one, or its own. */
 export function ControllerTab({ gameId }: { gameId: string }) {
@@ -11,7 +11,6 @@ export function ControllerTab({ gameId }: { gameId: string }) {
   const { profile, custom, update, setGameCustom } = useControllerProfile(gameId);
   const { status } = useControllerStatus();
   const controller = status?.controllers[0] ?? null;
-  const live = useLivePad(controller?.id ?? null);
 
   if (!profile) return <Spinner />;
 
@@ -24,12 +23,7 @@ export function ControllerTab({ gameId }: { gameId: string }) {
       </SettingsGroup>
 
       {custom && (
-        <ProfileEditor
-          profile={profile}
-          family={controller?.family ?? "generic"}
-          pressed={live?.pressed ?? []}
-          onChange={update}
-        />
+        <ProfileEditor profile={profile} controller={controller} onChange={update} />
       )}
     </>
   );

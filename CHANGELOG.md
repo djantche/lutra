@@ -2,6 +2,20 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Interface sounds, short and soft like a console's menus: the cursor moving, confirming, going back, switches, windows opening, errors. They come from Kenney's Interface Sounds (CC0) and can be turned off in the general settings.
+- Real logos for the game sources (Steam, GOG, Epic, Wine, Linux) in the sidebar and on the game cards, from Simple Icons (CC0), instead of colored dots.
+- A page of its own to remap buttons, laid out like the controller test: the controller in the middle and what each button does on the sides. Click a button, then press the one it should act as on the controller; "Remap all" goes through every button in turn, and Escape or Cancel stops at any moment. A button can also be sent to a key or a mouse button, or disabled.
+
+### Changed
+
+- The Controllers page is a single column, like the settings: the controller and its state on top, then groups of options. The side column is gone.
+- The selected tab of a menu is a filled pill (white in Big Picture) instead of an outline plus an underline.
+- The selection of a menu row and of a tab shows when it comes from the keyboard or the pad even right after a mouse click.
+
 ## [0.2.1] - 2026-11-13
 
 ### Changed
