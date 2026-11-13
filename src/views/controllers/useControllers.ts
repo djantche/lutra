@@ -7,6 +7,7 @@ import {
   onControllersChanged,
   resetControllerProfile,
   saveControllerProfile,
+  type ControllerBattery,
   type ControllerProfile,
   type ControllerStatus,
   type PadSnapshot,
@@ -39,6 +40,35 @@ export function useControllerStatus() {
   }, [refresh]);
 
   return { status, refresh };
+}
+
+const BATTERY_REFRESH_MS = 15000;
+
+/** The charge of every connected controller that reports one, for a corner of the screen. */
+export function useControllerBatteries(): { id: string; battery: ControllerBattery }[] {
+  const [batteries, setBatteries] = useState<{ id: string; battery: ControllerBattery }[]>([]);
+
+  useEffect(() => {
+    const read = () =>
+      controllerStatus()
+        .then((status) =>
+          setBatteries(
+            status.controllers.flatMap((controller) =>
+              controller.battery ? [{ id: controller.id, battery: controller.battery }] : [],
+            ),
+          ),
+        )
+        .catch(() => {});
+    read();
+    const timer = window.setInterval(read, BATTERY_REFRESH_MS);
+    const stop = onControllersChanged(read);
+    return () => {
+      window.clearInterval(timer);
+      void stop.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  return batteries;
 }
 
 /** A controller's physical state, refreshed fast enough to follow it live. */

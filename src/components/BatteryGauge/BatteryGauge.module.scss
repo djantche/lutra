@@ -9,6 +9,11 @@
   white-space: nowrap;
 }
 
+// On a dark screen such as Big Picture's, where the muted color is too faint.
+.light {
+  color: #fff;
+}
+
 .fill {
   fill: var(--color-success);
   transition:

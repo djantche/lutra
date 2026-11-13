@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BatteryGauge } from "../../components/BatteryGauge/BatteryGauge";
 import { Icon } from "../../components/Icon/Icon";
 import { hoverFocus } from "../../input/hoverFocus";
 import { cx } from "../../lib/cx";
+import { useControllerBatteries } from "../../views/controllers/useControllers";
 import styles from "./TopBar.module.scss";
 
 /** Every page of Big Picture. */
@@ -22,6 +24,7 @@ function useClock(language: string): string {
 export function TopBar({ tab, onTab, onMenu }: { tab: Tab; onTab: (tab: Tab) => void; onMenu: () => void }) {
   const { t, i18n } = useTranslation();
   const clock = useClock(i18n.language);
+  const batteries = useControllerBatteries();
 
   return (
     <header className={styles.bar}>
@@ -54,6 +57,11 @@ export function TopBar({ tab, onTab, onMenu }: { tab: Tab; onTab: (tab: Tab) => 
       </div>
 
       <div className={styles.right}>
+        {batteries.map(({ id, battery }) => (
+          <span key={id} className={styles.battery}>
+            <BatteryGauge battery={battery} light />
+          </span>
+        ))}
         <time className={styles.clock}>{clock}</time>
       </div>
     </header>

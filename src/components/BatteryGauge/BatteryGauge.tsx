@@ -4,14 +4,14 @@ import { cx } from "../../lib/cx";
 import styles from "./BatteryGauge.module.scss";
 
 /** A controller's charge: a small battery that fills, the percentage, and a bolt while charging. */
-export function BatteryGauge({ battery }: { battery: ControllerBattery }) {
+export function BatteryGauge({ battery, light = false }: { battery: ControllerBattery; light?: boolean }) {
   const { t } = useTranslation();
   const level = battery.percent <= 15 ? "critical" : battery.percent <= 30 ? "low" : "ok";
   const label = `${battery.charging ? t("controllers.battery.charging") : t("controllers.battery.label")}: ${battery.percent} %`;
 
   return (
     <span
-      className={cx(styles.gauge, styles[level])}
+      className={cx(styles.gauge, light && styles.light, styles[level])}
       role="img"
       aria-label={label}
       title={label}

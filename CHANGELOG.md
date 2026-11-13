@@ -2,6 +2,12 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- The charge of each controller is also shown next to the clock at the top of Big Picture.
+
 ## [0.3.0] - 2026-11-13
 
 ### Added
