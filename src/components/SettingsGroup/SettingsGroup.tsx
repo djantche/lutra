@@ -22,7 +22,7 @@ interface SettingsRowProps {
 
 export function SettingsRow({ title, description, stacked = false, children }: SettingsRowProps) {
   return (
-    <div className={cx(styles.row, stacked && styles.stacked)}>
+    <div className={cx(styles.row, stacked && styles.stacked)} data-nav-row tabIndex={-1}>
       <div className={styles.text}>
         <h3>{title}</h3>
         {description && <p>{description}</p>}

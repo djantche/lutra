@@ -57,6 +57,11 @@ p {
   box-shadow: var(--focus-ring);
 }
 
+// Keyboard and pad navigation never leaves the selected item flush against the edge.
+* {
+  scroll-padding-block: 1.5rem;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;

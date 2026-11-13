@@ -4,6 +4,19 @@ type Direction = "up" | "down" | "left" | "right";
 
 const FOCUSABLE = "[data-focusable]:not([disabled])";
 
+/** A row of a menu: one item to move across, which acts on the control inside it. */
+export const ROW = "[data-nav-row]";
+
+/**
+ * What navigation lands on for a focusable: its row when that row holds a single control (a
+ * toggle, a list, a field), like the lines of a game's menu; the control itself otherwise (a row
+ * of several choices keeps one stop per choice).
+ */
+function stop(el: HTMLElement): HTMLElement {
+  const row = el.closest<HTMLElement>(ROW);
+  return row && row.querySelectorAll(FOCUSABLE).length === 1 ? row : el;
+}
+
 /** The innermost modal container if any, otherwise the whole document. */
 function navigationRoot(): ParentNode {
   const traps = document.querySelectorAll("[data-nav-trap]");
@@ -59,11 +72,12 @@ function score(direction: Direction, from: DOMRect, to: DOMRect): number {
 
 function moveFocus(direction: Direction): void {
   const root = navigationRoot();
-  const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(isVisible);
+  const items = [...new Set(Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).map(stop))].filter(isVisible);
   if (items.length === 0) return;
 
   const active = document.activeElement;
-  const current = active instanceof HTMLElement && items.includes(active) ? active : null;
+  const here = active instanceof HTMLElement ? stop(active) : null;
+  const current = here && items.includes(here) ? here : null;
   if (!current) {
     (root.querySelector<HTMLElement>("[data-autofocus]") ?? items[0]).focus();
     return;
@@ -80,15 +94,38 @@ function moveFocus(direction: Direction): void {
       bestScore = s;
     }
   }
-  if (!best) return;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
+  if (!best) {
+    // Nothing left to select that way: the list still shows what is past its last item.
+    scrollToEdge(current, direction, behavior);
+    return;
+  }
 
   best.focus({ preventScroll: true });
-  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   best.scrollIntoView({
     block: "nearest",
     inline: (best.dataset.scrollInline as ScrollLogicalPosition | undefined) ?? "nearest",
-    behavior: reduceMotion ? "auto" : "smooth",
+    behavior,
   });
+}
+
+/** The nearest ancestor that scrolls vertically. */
+function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+    const { overflowY } = getComputedStyle(parent);
+    if ((overflowY === "auto" || overflowY === "scroll") && parent.scrollHeight > parent.clientHeight) return parent;
+  }
+  return null;
+}
+
+/** Down at the last item goes to the end of the list, up at the first one to its start. */
+function scrollToEdge(from: HTMLElement, direction: Direction, behavior: ScrollBehavior): void {
+  if (direction !== "up" && direction !== "down") return;
+  const parent = scrollParent(from);
+  if (!parent) return;
+  const top = direction === "down" ? parent.scrollHeight - parent.clientHeight : 0;
+  if (Math.abs(parent.scrollTop - top) > 1) parent.scrollTo({ top, behavior });
 }
 
 /** Default behaviour when no screen consumed the action. */
@@ -100,11 +137,22 @@ export function handleDefaultAction(action: InputAction): void {
     case "right":
       moveFocus(action);
       break;
-    case "confirm":
-      if (document.activeElement instanceof HTMLElement) document.activeElement.click();
+    case "confirm": {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement)) break;
+      const control = active.matches(ROW) ? active.querySelector<HTMLElement>(FOCUSABLE) : active;
+      if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) control.focus();
+      else control?.click();
       break;
-    case "back":
-      if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
+    }
+    case "back": {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLInputElement)) break;
+      // Leaving a field goes back to its row, so navigation carries on from there.
+      const row = active.closest<HTMLElement>(ROW);
+      if (row) row.focus({ preventScroll: true });
+      else active.blur();
       break;
+    }
   }
 }

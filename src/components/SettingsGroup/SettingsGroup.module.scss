@@ -37,10 +37,24 @@
   padding: 1em 1.3em;
   border-radius: 0.55em;
   background: var(--color-surface);
-  transition: background var(--duration-fast) var(--ease-out);
+  // Room above and below when navigation scrolls a row into view.
+  scroll-margin-block: 1.6em;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-surface-hover);
+  }
+
+  // The whole line is selected, not the control inside it. Big Picture makes this ring white.
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    background: var(--color-surface-hover);
+    box-shadow: 0 0 0 3px var(--row-focus, var(--color-accent));
   }
 }
 

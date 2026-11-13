@@ -2,6 +2,18 @@
 
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follow [SemVer](https://semver.org/).
 
+## [0.2.1] - 2026-11-13
+
+### Changed
+
+- Menus select a whole row, like the menu of a game: up and down move from row to row, Enter (or the controller's confirm button) acts on the row's setting, and Escape leaves a text field back to its row. A row of several choices keeps one stop per choice. The selected row has a white outline in Big Picture.
+
+### Fixed
+
+- The keyboard got stuck in a text field (up and down did nothing there), so the rest of a settings page could not be reached. Up and down now leave a single-line field.
+- Down on the last item of a page now scrolls to the end of the page, so what lies past it can be read.
+- The choices of a segmented control (such as the controller type a game sees) no longer overflow their card: they wrap onto a second line.
+
 ## [0.2.0] - 2026-11-13
 
 ### Changed
