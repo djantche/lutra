@@ -1,0 +1,26 @@
+.cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+// One controller: its icon, its name when there are several, and its charge.
+.pad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.name {
+  color: rgb(255 255 255 / 0.75);
+  font-size: 0.9em;
+  font-weight: 600;
+}
+
+.clock {
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

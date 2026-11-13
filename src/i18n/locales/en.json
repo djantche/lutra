@@ -165,7 +165,11 @@
     "exit": "Desktop mode",
     "menu": "Menu",
     "minimize": "Minimize",
-    "quit": "Quit Lutra"
+    "quit": "Quit Lutra",
+    "searchOpen": "Search",
+    "searchPlaceholder": "Search for games…",
+    "searchFilters": "Filters",
+    "searchEmpty": "No game found"
   },
   "empty": {
     "title": "No games yet",
@@ -631,5 +635,14 @@
     "contrastHint": "Make text, buttons and icons more distinct from the background.",
     "motion": "Reduce motion",
     "motionHint": "Disable animations, effects and transitions to reduce movement on screen."
+  },
+  "keyboard": {
+    "label": "On-screen keyboard",
+    "backspace": "Backspace",
+    "clear": "Clear",
+    "shift": "Shift",
+    "space": "Space",
+    "search": "Search",
+    "hide": "Hide the keyboard"
   }
 }

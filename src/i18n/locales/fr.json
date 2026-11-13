@@ -165,7 +165,11 @@
     "exit": "Mode bureau",
     "menu": "Menu",
     "minimize": "Réduire",
-    "quit": "Quitter Lutra"
+    "quit": "Quitter Lutra",
+    "searchOpen": "Rechercher",
+    "searchPlaceholder": "Rechercher des jeux…",
+    "searchFilters": "Filtres",
+    "searchEmpty": "Aucun jeu trouvé"
   },
   "empty": {
     "title": "Aucun jeu pour l'instant",
@@ -631,5 +635,14 @@
     "contrastHint": "Rend le texte, les boutons et les icônes plus distincts du fond.",
     "motion": "Réduire les animations",
     "motionHint": "Désactive les animations, effets et transitions pour limiter les mouvements à l'écran."
+  },
+  "keyboard": {
+    "label": "Clavier à l'écran",
+    "backspace": "Effacer",
+    "clear": "Tout effacer",
+    "shift": "Maj",
+    "space": "Espace",
+    "search": "Chercher",
+    "hide": "Masquer le clavier"
   }
 }

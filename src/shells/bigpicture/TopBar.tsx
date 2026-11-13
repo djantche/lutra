@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BatteryGauge } from "../../components/BatteryGauge/BatteryGauge";
 import { Icon } from "../../components/Icon/Icon";
+import { useRef } from "react";
 import { hoverFocus } from "../../input/hoverFocus";
 import { cx } from "../../lib/cx";
-import { useControllerBatteries } from "../../views/controllers/useControllers";
+import { useInputAction } from "../../input/useInputAction";
+import { StatusCluster } from "./StatusCluster";
 import styles from "./TopBar.module.scss";
 
 /** Every page of Big Picture. */
@@ -12,33 +12,49 @@ export type Tab = "home" | "library" | "controllers" | "settings";
 /** The pages in the top bar; the others (controllers, settings) live in the side menu. */
 export const TABS: Tab[] = ["home", "library"];
 
-function useClock(language: string): string {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(id);
-  }, []);
-  return new Intl.DateTimeFormat(language, { hour: "2-digit", minute: "2-digit" }).format(now);
+interface TopBarProps {
+  tab: Tab;
+  onTab: (tab: Tab) => void;
+  onMenu: () => void;
+  onSearch: () => void;
 }
 
-export function TopBar({ tab, onTab, onMenu }: { tab: Tab; onTab: (tab: Tab) => void; onMenu: () => void }) {
-  const { t, i18n } = useTranslation();
-  const clock = useClock(i18n.language);
-  const batteries = useControllerBatteries();
+export function TopBar({ tab, onTab, onMenu, onSearch }: TopBarProps) {
+  const { t } = useTranslation();
+  const bar = useRef<HTMLElement>(null);
+
+  // Nothing is above the top bar: going up from it opens the search, as on a console.
+  useInputAction((action) => {
+    if (action !== "up" || !bar.current?.contains(document.activeElement)) return;
+    onSearch();
+    return true;
+  });
 
   return (
-    <header className={styles.bar}>
+    <header ref={bar} className={styles.bar}>
       <div className={styles.left}>
-        <button
-          type="button"
-          data-focusable
-          className={styles.menu}
-          aria-label={t("bigPicture.menu")}
-          onClick={onMenu}
-          {...hoverFocus}
-        >
-          <Icon name="menu" size={24} />
-        </button>
+        <div className={styles.buttons}>
+          <button
+            type="button"
+            data-focusable
+            className={styles.menu}
+            aria-label={t("bigPicture.menu")}
+            onClick={onMenu}
+            {...hoverFocus}
+          >
+            <Icon name="menu" size={24} />
+          </button>
+          <button
+            type="button"
+            data-focusable
+            className={styles.menu}
+            aria-label={t("bigPicture.searchOpen")}
+            onClick={onSearch}
+            {...hoverFocus}
+          >
+            <Icon name="search" size={24} />
+          </button>
+        </div>
         <nav className={styles.tabs}>
           {TABS.map((item) => (
             <button
@@ -57,12 +73,7 @@ export function TopBar({ tab, onTab, onMenu }: { tab: Tab; onTab: (tab: Tab) => 
       </div>
 
       <div className={styles.right}>
-        {batteries.map(({ id, battery }) => (
-          <span key={id} className={styles.battery}>
-            <BatteryGauge battery={battery} light />
-          </span>
-        ))}
-        <time className={styles.clock}>{clock}</time>
+        <StatusCluster />
       </div>
     </header>
   );

@@ -13,6 +13,13 @@
   gap: 32px;
 }
 
+// The two round buttons: menu and search.
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
@@ -82,15 +89,4 @@
     color: #05060a;
     transform: scale(1.1);
   }
-}
-
-// The charge of each controller, right before the time.
-.battery {
-  font-size: 1.15rem;
-}
-
-.clock {
-  font-size: 1.4rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }

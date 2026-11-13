@@ -17,6 +17,7 @@ import { GameSettings } from "./GameSettings";
 import { HomeView } from "./HomeView";
 import { LaunchScreen } from "./LaunchScreen";
 import { LibraryView } from "./LibraryView";
+import { SearchOverlay } from "./SearchOverlay";
 import { Splash } from "./Splash";
 import { TopBar, TABS, type Tab } from "./TopBar";
 import styles from "./BigPictureShell.module.scss";
@@ -47,6 +48,7 @@ export function BigPictureShell() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [hubId, setHubId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const { setMode } = useUi();
   const idle = useIdleCursor();
@@ -78,15 +80,15 @@ export function BigPictureShell() {
         return true;
       }
     },
-    hub === null && launching === null && !menuOpen && settingsGame === null,
+    hub === null && launching === null && !menuOpen && !searchOpen && settingsGame === null,
   );
 
   return (
     <div className={styles.shell} data-idle={idle || undefined}>
       <Backdrop game={focused} dim={tab !== "home"} />
 
-      <div className={styles.chrome} inert={hub !== null || menuOpen || settingsGame !== null}>
-        <TopBar tab={tab} onTab={setTab} onMenu={() => setMenuOpen(true)} />
+      <div className={styles.chrome} inert={hub !== null || menuOpen || searchOpen || settingsGame !== null}>
+        <TopBar tab={tab} onTab={setTab} onMenu={() => setMenuOpen(true)} onSearch={() => setSearchOpen(true)} />
         <main className={styles.content}>
           <div key={tab} className={styles.view}>
             {tab === "home" && (
@@ -111,6 +113,18 @@ export function BigPictureShell() {
           </div>
         </main>
       </div>
+
+      {searchOpen && (
+        <SearchOverlay
+          games={games}
+          onClose={() => setSearchOpen(false)}
+          onFocusGame={setFocusedId}
+          onOpenGame={(game) => {
+            setSearchOpen(false);
+            openGame(game);
+          }}
+        />
+      )}
 
       {menuOpen && (
         <BigPictureMenu

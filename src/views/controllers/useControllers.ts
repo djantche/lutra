@@ -8,6 +8,7 @@ import {
   resetControllerProfile,
   saveControllerProfile,
   type ControllerBattery,
+  type ControllerFamily,
   type ControllerProfile,
   type ControllerStatus,
   type PadSnapshot,
@@ -44,9 +45,17 @@ export function useControllerStatus() {
 
 const BATTERY_REFRESH_MS = 15000;
 
+/** A controller whose charge is known, with what is needed to tell it from the others. */
+export interface ControllerCharge {
+  id: string;
+  name: string;
+  family: ControllerFamily;
+  battery: ControllerBattery;
+}
+
 /** The charge of every connected controller that reports one, for a corner of the screen. */
-export function useControllerBatteries(): { id: string; battery: ControllerBattery }[] {
-  const [batteries, setBatteries] = useState<{ id: string; battery: ControllerBattery }[]>([]);
+export function useControllerBatteries(): ControllerCharge[] {
+  const [batteries, setBatteries] = useState<ControllerCharge[]>([]);
 
   useEffect(() => {
     const read = () =>
@@ -54,7 +63,9 @@ export function useControllerBatteries(): { id: string; battery: ControllerBatte
         .then((status) =>
           setBatteries(
             status.controllers.flatMap((controller) =>
-              controller.battery ? [{ id: controller.id, battery: controller.battery }] : [],
+              controller.battery
+                ? [{ id: controller.id, name: controller.name, family: controller.family, battery: controller.battery }]
+                : [],
             ),
           ),
         )

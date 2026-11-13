@@ -1,0 +1,76 @@
+// A fourteen-unit grid, like a real keyboard's rows, on a rounded panel like the rest of Big Picture.
+// Always as wide as the screen allows: the dock is the size reference, and every measure of the
+// keyboard (keys, gaps, text, corners) is a share of its width, so it scales as a whole.
+.dock {
+  container-type: inline-size;
+  margin: 0 var(--gutter, 48px) var(--space-6, 24px);
+}
+
+.keyboard {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 0.45cqw;
+  padding: 0.8cqw;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 1.6cqw;
+  background: rgb(14 17 27 / 0.94);
+  box-shadow: 0 -18px 50px -20px rgb(0 0 0 / 0.7);
+  animation: rise 240ms var(--ease-out) both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+.key {
+  min-width: 0;
+  height: 3.5cqw;
+  padding: 0;
+  border: 0;
+  border-radius: 0.9cqw;
+  background: rgb(255 255 255 / 0.09);
+  color: #fff;
+  font-size: 1.4cqw;
+  font-weight: 500;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-base) var(--ease-spring);
+
+  // The selected key is white and a little larger, like every selection in Big Picture.
+  &:focus {
+    outline: none;
+    background: #fff;
+    color: #05060a;
+    transform: scale(1.07);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.function {
+  background: rgb(255 255 255 / 0.05);
+  color: rgb(255 255 255 / 0.82);
+  font-size: 0.95cqw;
+  font-weight: 600;
+}
+
+// Shift is armed for the next character.
+.on {
+  background: var(--color-accent, #7b8cff);
+  color: #fff;
+}
+
+.submit {
+  background: var(--color-accent, #7b8cff);
+  color: #fff;
+}
+
+// Glyphs follow the key's size too.
+.key svg {
+  width: 1.7cqw;
+  height: 1.7cqw;
+}
