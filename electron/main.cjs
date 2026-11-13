@@ -159,8 +159,10 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 960,
-    minHeight: 600,
+    // Small on purpose: a tiling window manager decides the size, and a bigger minimum would
+    // make the page lay out wider than the window shows, cutting its right side.
+    minWidth: 420,
+    minHeight: 320,
     show: false,
     frame: false,
     title: "Lutra",

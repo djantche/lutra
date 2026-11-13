@@ -27,6 +27,8 @@ function NavItem({ label, active, onClick, icon, source, count }: NavItemProps) 
       data-focusable
       className={cx(styles.item, active && styles.active)}
       aria-current={active ? "page" : undefined}
+      aria-label={label}
+      title={label}
       onClick={onClick}
     >
       {icon && <Icon name={icon} size={18} />}
@@ -50,7 +52,7 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
     <aside className={styles.sidebar}>
       <div className={styles.brand} data-drag-region>
         <img src="/lutra.svg" alt="" width={28} height={28} />
-        <span>Lutra</span>
+        <span className={styles.brandName}>Lutra</span>
       </div>
 
       <nav className={styles.nav}>
@@ -97,7 +99,14 @@ export function Sidebar({ page, onNavigate }: { page: Page; onNavigate: (page: P
           active={page.name === "settings"}
           onClick={() => onNavigate({ name: "settings" })}
         />
-        <button type="button" data-focusable className={styles.bigPicture} onClick={() => setMode("bigpicture")}>
+        <button
+          type="button"
+          data-focusable
+          className={styles.bigPicture}
+          aria-label={t("nav.bigPicture")}
+          title={t("nav.bigPicture")}
+          onClick={() => setMode("bigpicture")}
+        >
           <span className={styles.bigPictureIcon}>
             <Icon name="gamepad" size={20} />
           </span>

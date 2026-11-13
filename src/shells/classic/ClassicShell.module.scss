@@ -5,6 +5,25 @@
   background: var(--color-bg);
 }
 
+// A narrow window keeps only the icons of the sidebar.
+$rail: 820px;
+
+@media (max-width: $rail) {
+  .shell {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .page {
+    padding: 72px var(--space-5) var(--space-6);
+  }
+}
+
+@media (max-width: 520px) {
+  .page {
+    padding: 68px var(--space-4) var(--space-5);
+  }
+}
+
 .main {
   position: relative;
   min-width: 0;

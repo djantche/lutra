@@ -3,7 +3,9 @@
   z-index: 2;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 12px 24px;
   padding: 32px var(--gutter) 8px;
 }
 
@@ -11,6 +13,10 @@
   display: flex;
   align-items: center;
   gap: 32px;
+
+  @media (max-width: 720px) {
+    gap: 16px;
+  }
 }
 
 // The two round buttons: menu and search.
@@ -30,6 +36,12 @@
   padding: 8px 20px;
   border: 0;
   border-radius: 999px;
+  white-space: nowrap;
+
+  @media (max-width: 720px) {
+    padding: 8px 12px;
+    font-size: 1.05rem;
+  }
   background: transparent;
   color: rgb(255 255 255 / 0.55);
   font-size: 1.2rem;

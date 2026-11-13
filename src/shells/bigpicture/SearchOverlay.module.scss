@@ -20,6 +20,7 @@
 .header {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-6) var(--gutter) 0;
@@ -28,7 +29,7 @@
 // The search bar is a pill that lights up white when selected.
 .bar {
   display: flex;
-  flex: 1;
+  flex: 1 1 14em;
   align-items: center;
   gap: var(--space-4);
   height: 64px;
@@ -105,6 +106,7 @@
 .filters {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   gap: var(--space-3);
   padding: var(--space-5) var(--gutter) var(--space-3);
 }

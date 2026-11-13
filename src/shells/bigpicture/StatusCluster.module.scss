@@ -1,7 +1,9 @@
 .cluster {
   display: flex;
+  flex: none;
   align-items: center;
   gap: var(--space-6);
+  white-space: nowrap;
 }
 
 // One controller: its icon, its name when there are several, and its charge.

@@ -164,3 +164,52 @@
     opacity: 0.75;
   }
 }
+
+// Narrow window: the sidebar is a rail of icons (same breakpoint as the shell's grid).
+@media (max-width: 820px) {
+  .sidebar {
+    align-items: center;
+    padding: var(--space-4) var(--space-2);
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .brandName,
+  .label,
+  .count,
+  .bigPictureText,
+  .bigPicture > svg:last-child {
+    display: none;
+  }
+
+  .nav,
+  .footer {
+    align-items: center;
+    width: 100%;
+  }
+
+  .item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  // The "Sources" title becomes a thin divider.
+  .sectionTitle {
+    width: 24px;
+    height: 1px;
+    margin: var(--space-3) 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--color-border-strong);
+    font-size: 0;
+  }
+
+  .bigPicture {
+    justify-content: center;
+    width: 100%;
+    padding: var(--space-2) 0;
+  }
+}
