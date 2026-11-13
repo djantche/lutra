@@ -2564,10 +2564,46 @@ async fn set_tray_settings(app: AppHandle, settings: tray::TraySettings) -> Resu
 }
 
 /// Starts the backend: sets everything up, then serves the shell's requests until it goes away.
+/// Exit code of a backend that found another Lutra using the same data folder.
+pub const ALREADY_RUNNING: i32 = 75;
+
+/// Takes the lock that lets only one Lutra use a data folder. Two of them would fight over the
+/// controllers (each grabbing the pads the other created) and over the database. The lock lives
+/// as long as the returned file, and the system drops it when the process ends, however it ends.
+fn single_instance(dir: &Path) -> Result<File, std::io::Error> {
+    use std::fs::TryLockError;
+
+    fs::create_dir_all(dir)?;
+    let file = File::options()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(dir.join("lutra.lock"))?;
+    match file.try_lock() {
+        Ok(()) => Ok(file),
+        Err(TryLockError::WouldBlock) => Err(std::io::Error::new(
+            std::io::ErrorKind::WouldBlock,
+            "another Lutra is already running",
+        )),
+        Err(TryLockError::Error(error)) => Err(error),
+    }
+}
+
 pub fn run() {
     let Some(dir) = data_dir_early() else {
         eprintln!("HOME is not set");
         std::process::exit(1);
+    };
+    let _lock = match single_instance(&dir) {
+        Ok(lock) => lock,
+        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+            eprintln!("{error}");
+            std::process::exit(ALREADY_RUNNING);
+        }
+        Err(error) => {
+            eprintln!("could not lock the data folder: {error}");
+            std::process::exit(1);
+        }
     };
     let app = AppHandle::new(dir.clone());
     if let Err(error) = setup(&app, &dir) {
@@ -2660,3 +2696,21 @@ fn watch_batteries(app: &AppHandle) {
 }
 
 include!("rpc_dispatch.rs");
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_one_lutra_can_use_a_data_folder() {
+        let dir = tempfile::tempdir().unwrap();
+        let first = single_instance(dir.path()).unwrap();
+        let second = single_instance(dir.path()).unwrap_err();
+        assert_eq!(second.kind(), std::io::ErrorKind::WouldBlock);
+        drop(first);
+        assert!(
+            single_instance(dir.path()).is_ok(),
+            "the lock is free again once the first one ends"
+        );
+    }
+}

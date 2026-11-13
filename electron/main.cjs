@@ -7,6 +7,8 @@ const path = require("node:path");
 const readline = require("node:readline");
 const { pathToFileURL } = require("node:url");
 
+/** The backend's exit code when another Lutra uses the same data folder (`ALREADY_RUNNING`). */
+const ALREADY_RUNNING = 75;
 const DEV_URL = process.env.LUTRA_DEV_URL; // the Vite server, when developing the interface
 const ICON = path.join(__dirname, "icon.png");
 const DIST = path.join(__dirname, "..", "dist");
@@ -56,7 +58,10 @@ function startBackend() {
   backend = spawn(backendPath(), flags, { stdio: ["pipe", "pipe", "inherit"] });
   backend.on("error", (error) => fail(`The backend could not start: ${error.message}`));
   backend.on("exit", (code) => {
-    if (!quitting) fail(`The backend stopped unexpectedly (code ${code}).`);
+    if (quitting) return;
+    // Another Lutra holds this data folder: only one runs at a time.
+    if (code === ALREADY_RUNNING) fail("Lutra is already running.");
+    else fail(`The backend stopped unexpectedly (code ${code}).`);
   });
   readline.createInterface({ input: backend.stdout }).on("line", onBackendLine);
 }
@@ -306,7 +311,11 @@ if (!app.requestSingleInstanceLock()) {
   // Another Lutra is running: it comes to the front, and this one is not needed.
   app.quit();
 } else {
-  app.on("second-instance", showMain);
+  app.on("second-instance", (_event, argv) => {
+    showMain();
+    // `lutra --big-picture` on a running Lutra switches it to Big Picture.
+    if (argv.includes("--big-picture") && mainWindow) mainWindow.webContents.send("ev:tray-big-picture", null);
+  });
 
   app.whenReady().then(async () => {
     protocol.handle("lutra", (request) => {
