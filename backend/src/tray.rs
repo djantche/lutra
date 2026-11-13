@@ -102,9 +102,7 @@ pub fn save_settings(app: &AppHandle, settings: &TraySettings) -> Result<(), Str
 /// A game started or ended: the window steps aside while games run, and comes back after.
 /// The shell remembers whether it was the one that hid the window.
 pub fn on_game(app: &AppHandle, any_running: bool) {
-    let hide = any_running
-        && app.state::<Tray>().available
-        && flag(app, HIDE_DURING_GAMES, true);
+    let hide = any_running && app.state::<Tray>().available && flag(app, HIDE_DURING_GAMES, true);
     let _ = app.emit(
         "host:game",
         json!({ "anyRunning": any_running, "hide": hide }),

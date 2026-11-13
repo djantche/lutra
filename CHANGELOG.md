@@ -10,8 +10,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 - Real logos for the game sources (Steam, GOG, Epic, Wine, Linux) in the sidebar and on the game cards, from Simple Icons (CC0), instead of colored dots.
 - A page of its own to remap buttons, laid out like the controller test: the controller in the middle and what each button does on the sides. Click a button, then press the one it should act as on the controller; "Remap all" goes through every button in turn, and Escape or Cancel stops at any moment. A button can also be sent to a key or a mouse button, or disabled.
 
+- The battery of a wireless controller: its charge (and a bolt while charging) next to the controller on the Controllers page, when the system reports it. Lutra warns when it drops to 30 % and again to 15 %, with a message in the app and a system notification that also shows while the window is in the notification area.
+
 ### Changed
 
+- A page of options is a centered column on the desktop (equal space left and right) and uses the whole width in Big Picture, instead of sitting on the left.
+- Pages always keep a margin under their last row, in Big Picture too, where the last row used to touch the bottom of the screen.
 - The Controllers page is a single column, like the settings: the controller and its state on top, then groups of options. The side column is gone.
 - The selected tab of a menu is a filled pill (white in Big Picture) instead of an outline plus an underline.
 - The selection of a menu row and of a tab shows when it comes from the keyboard or the pad even right after a mouse click.

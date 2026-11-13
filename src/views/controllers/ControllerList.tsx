@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { BatteryGauge } from "../../components/BatteryGauge/BatteryGauge";
 import { Icon } from "../../components/Icon/Icon";
 import type { ControllerInfo } from "../../lib/controllers";
 import { cx } from "../../lib/cx";
@@ -34,6 +35,7 @@ export function ControllerList({ controllers, selectedId, onSelect }: Controller
               {controller.name} · {t(`controllers.bus.${controller.bus}`)}
             </small>
           </span>
+          {controller.battery && <BatteryGauge battery={controller.battery} />}
         </button>
       ))}
     </div>

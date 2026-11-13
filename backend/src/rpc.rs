@@ -96,6 +96,10 @@ mod tests {
         let args = json!({ "id": "steam:1" });
         assert_eq!(arg::<Option<u64>>(&args, "sgdbGame").unwrap(), None);
         assert_eq!(arg::<String>(&args, "id").unwrap(), "steam:1");
-        assert!(arg::<String>(&args, "missing").unwrap_err().contains("missing"));
+        assert!(
+            arg::<String>(&args, "missing")
+                .unwrap_err()
+                .contains("missing")
+        );
     }
 }

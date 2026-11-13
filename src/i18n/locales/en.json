@@ -487,6 +487,13 @@
       "cancel": "Cancel",
       "hint": "Click a button, then press the one it should act as. Or remap them all in turn.",
       "noController": "Connect a controller to press its buttons, or pick what each one does from the list."
+    },
+    "battery": {
+      "label": "Battery",
+      "charging": "Charging",
+      "lowTitle": "Controller battery low",
+      "criticalTitle": "Controller battery very low",
+      "alert": "{{name}} is at {{percent}} %. Plug it in soon."
     }
   },
   "details": {

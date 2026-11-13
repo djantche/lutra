@@ -1,0 +1,31 @@
+.gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  color: var(--color-text-muted);
+  font-size: 0.88em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fill {
+  fill: var(--color-success);
+  transition:
+    width var(--duration-slow) var(--ease-out),
+    fill var(--duration-base) var(--ease-out);
+}
+
+.low {
+  .fill {
+    fill: var(--color-warning);
+  }
+}
+
+.critical {
+  color: var(--color-danger);
+
+  .fill {
+    fill: var(--color-danger);
+  }
+}

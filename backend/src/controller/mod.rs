@@ -3,6 +3,7 @@
 //! the game's profile; otherwise, system-wide, the default profile (so a drifting stick or a
 //! remapped button is fixed everywhere). Controllers also navigate Lutra's menus.
 
+pub mod battery;
 pub mod codes;
 pub mod convert;
 pub(crate) mod device;

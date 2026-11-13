@@ -4,7 +4,9 @@
   flex-direction: column;
   gap: 1.8em;
   width: 100%;
-  max-width: 56em;
+  // A column in the middle of the window: the space left and right is the same.
+  max-width: var(--page-width, 56em);
+  margin-inline: auto;
 }
 
 .top {

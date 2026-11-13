@@ -51,6 +51,12 @@ export interface KeyInfo {
   group: "letters" | "digits" | "control" | "function" | "mouse";
 }
 
+/** A wireless controller's charge, when the system reports it. */
+export interface ControllerBattery {
+  percent: number;
+  charging: boolean;
+}
+
 export interface ControllerInfo {
   id: string;
   name: string;
@@ -59,6 +65,7 @@ export interface ControllerInfo {
   product: number;
   family: ControllerFamily;
   bus: "usb" | "bluetooth" | "other";
+  battery?: ControllerBattery | null;
 }
 
 /** Physical state: sticks from -1 to 1 (Y grows downwards), triggers from 0 to 1. */
@@ -138,6 +145,7 @@ const MOCK_CONTROLLER: ControllerInfo = {
   product: 0x09cc,
   family: "playstation",
   bus: "bluetooth",
+  battery: { percent: 64, charging: false },
 };
 const mockProfiles = new Map<string, ControllerProfile>();
 let mockSession: ControllerStatus["session"] = null;
@@ -316,6 +324,14 @@ const noop: UnlistenFn = () => {};
 
 export const onControllersChanged = (callback: () => void): Promise<UnlistenFn> =>
   hasBackend() ? listen("controllers-changed", () => callback()) : Promise.resolve(noop);
+
+/** A controller's battery dropped to 30 % or 15 %. */
+export const onControllerBattery = (
+  callback: (alert: { id: string; name: string; percent: number; level: number }) => void,
+): Promise<UnlistenFn> =>
+  hasBackend()
+    ? listen<{ id: string; name: string; percent: number; level: number }>("controller-battery", (event) => callback(event.payload))
+    : Promise.resolve(noop);
 
 /** Menu actions sent by the controller driver while no game runs. */
 export const onControllerAction = (callback: (action: string) => void): Promise<UnlistenFn> =>

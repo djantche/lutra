@@ -4,6 +4,8 @@
   flex-direction: column;
   gap: 1.6em;
   width: 100%;
+  max-width: var(--page-width, 56em);
+  margin-inline: auto;
 }
 
 .header {
@@ -26,7 +28,6 @@
   flex-direction: column;
   gap: 1.8em;
   width: 100%;
-  max-width: 56em;
   min-width: 0;
 }
 

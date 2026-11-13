@@ -26,9 +26,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
+use host::{AppHandle, State};
 use serde::Serialize;
 use serde_json::json;
-use host::{AppHandle, State};
 
 use artwork::Error as ArtError;
 use controller::model::{OutputKind, PadSnapshot, Profile, apply};
@@ -2233,7 +2233,7 @@ struct ControllerSession {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ControllerStatus {
-    controllers: Vec<ControllerInfo>,
+    controllers: Vec<ControllerView>,
     /// Whether virtual controllers can be created at all.
     uinput: bool,
     /// Whether HID controllers can be created: a PlayStation 4 controller needs it for games to
@@ -2247,12 +2247,27 @@ struct ControllerStatus {
     steam: bool,
 }
 
+/// A connected controller, with its battery when it has one.
+#[derive(Serialize)]
+struct ControllerView {
+    #[serde(flatten)]
+    info: ControllerInfo,
+    battery: Option<controller::battery::Battery>,
+}
+
 // @rpc
 async fn controller_status(
     service: State<'_, ControllerService>,
 ) -> Result<ControllerStatus, String> {
     Ok(ControllerStatus {
-        controllers: service.controllers(),
+        controllers: service
+            .controllers()
+            .into_iter()
+            .map(|info| ControllerView {
+                battery: controller::battery::read(Path::new(&info.path)),
+                info,
+            })
+            .collect(),
         uinput: controller::uinput_available(),
         uhid: controller::uhid_available(),
         session: service
@@ -2498,7 +2513,43 @@ fn setup(app: &AppHandle, dir: &Path) -> Result<(), Box<dyn std::error::Error>> 
         }),
     ));
     tray::announce(app);
+
+    let watcher = app.clone();
+    std::thread::spawn(move || watch_batteries(&watcher));
     Ok(())
+}
+
+/// How often the controllers' batteries are looked at.
+const BATTERY_CHECK: Duration = Duration::from_secs(20);
+
+/// Tells the interface when a controller's battery runs low (30 %, then 15 %), even while the
+/// window is hidden in the notification area.
+fn watch_batteries(app: &AppHandle) {
+    let mut alerts = controller::battery::Alerts::default();
+    std::thread::sleep(Duration::from_secs(3));
+    loop {
+        for info in app.state::<ControllerService>().controllers() {
+            let Some(battery) = controller::battery::read(Path::new(&info.path)) else {
+                continue;
+            };
+            if let Some(level) = alerts.check(&info.id, battery) {
+                applog::info(format!(
+                    "{} battery at {} % (alert at {level} %)",
+                    info.name, battery.percent
+                ));
+                let _ = app.emit(
+                    "controller-battery",
+                    json!({
+                        "id": info.id,
+                        "name": info.name,
+                        "percent": battery.percent,
+                        "level": level,
+                    }),
+                );
+            }
+        }
+        std::thread::sleep(BATTERY_CHECK);
+    }
 }
 
 include!("rpc_dispatch.rs");

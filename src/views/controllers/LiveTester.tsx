@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BatteryGauge } from "../../components/BatteryGauge/BatteryGauge";
 import { Button } from "../../components/Button/Button";
 import { GamepadVisual } from "../../components/GamepadVisual/GamepadVisual";
 import {
@@ -46,6 +47,7 @@ export function LiveTester({ controller, state, status, profile }: LiveTesterPro
             {inGame ? t("controllers.forGame", { title: owner?.title ?? session.owner }) : t(`controllers.state.${idle}Hint`)}
           </small>
         </div>
+        {controller.battery && <BatteryGauge battery={controller.battery} />}
         <Button variant="primary" icon="gamepad" disabled={inGame} onClick={() => setTesting(true)}>
           {t("controllers.test.open")}
         </Button>

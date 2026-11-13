@@ -487,6 +487,13 @@
       "cancel": "Annuler",
       "hint": "Clique sur un bouton, puis appuie sur celui qui doit le remplacer. Ou remappe-les tous à la suite.",
       "noController": "Branche une manette pour appuyer sur ses boutons, ou choisis dans la liste ce que fait chacun."
+    },
+    "battery": {
+      "label": "Batterie",
+      "charging": "En charge",
+      "lowTitle": "Batterie de la manette faible",
+      "criticalTitle": "Batterie de la manette très faible",
+      "alert": "{{name}} est à {{percent}} %. Pense à la brancher bientôt."
     }
   },
   "details": {

@@ -107,10 +107,16 @@
 }
 
 .settings {
+  // A page of options uses the whole width on a console; the desktop keeps a centered column.
+  --page-width: none;
+
   display: flex;
   flex: 1;
   justify-content: center;
-  padding: var(--space-8) var(--gutter);
+  // The page keeps its own height instead of stretching to the window: otherwise the padding
+  // below would end up under its overflow, and the last row would touch the screen's edge.
+  align-items: flex-start;
+  padding: var(--space-8) var(--gutter) calc(var(--space-10) * 2);
   overflow-y: auto;
   font-size: 1.2rem;
 

@@ -102,9 +102,7 @@ pub fn show_overlay(pid: i64, title: &'static str) {
         let placement = loop {
             let found = hyprctl_json("clients")
                 .zip(hyprctl_json("monitors"))
-                .and_then(|(clients, monitors)| {
-                    plan(&clients, &monitors, pid, title)
-                });
+                .and_then(|(clients, monitors)| plan(&clients, &monitors, pid, title));
             if let Some(found) = found {
                 break found;
             }
