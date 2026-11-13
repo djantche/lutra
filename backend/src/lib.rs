@@ -2551,6 +2551,33 @@ async fn set_controller_system(
     Ok(())
 }
 
+/// The controller the power menu would switch off, and whether that is possible (not on a cable).
+// @rpc
+async fn controller_power_target(
+    service: State<'_, ControllerService>,
+) -> Result<Option<serde_json::Value>, String> {
+    Ok(service
+        .power_target()
+        .map(|info| json!({ "id": info.id, "name": info.name, "wired": info.bus == "usb" })))
+}
+
+/// Switches a controller off for real (ends its Bluetooth link). Fails with `wired` on a cable,
+/// or with Bluetooth's own message.
+// @rpc
+async fn power_off_controller(
+    service: State<'_, ControllerService>,
+    id: Option<String>,
+) -> Result<(), String> {
+    let target = match id {
+        Some(id) => service.controllers().into_iter().find(|info| info.id == id),
+        None => service.power_target(),
+    }
+    .ok_or("no controller is connected")?;
+    host::async_runtime::spawn_blocking(move || controller::power_off(&target))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 // @rpc
 async fn tray_settings(app: AppHandle) -> Result<tray::TraySettings, String> {
     Ok(tray::settings(&app))

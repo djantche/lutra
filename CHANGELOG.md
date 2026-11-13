@@ -4,6 +4,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Changed
+
+- Holding the controller's Guide button for 3 seconds opens a power menu, like a console's: quit Lutra, back to the desktop mode (from Big Picture), minimize, or switch the controller off. It appears even when Lutra is out of sight, and acts on the controller whose button was held. In a game, holding the Guide still switches the controller off directly.
+
+### Fixed
+
+- Switching the controller off now tells the truth. Lutra waits for Bluetooth's answer (it used to fire the command and assume it worked) and shows BlueZ's message if it refuses. A controller plugged in with a cable has no power switch: the menu says to unplug it instead of pretending.
+
 ## [0.5.1] - 2026-11-13
 
 ### Added

@@ -18,5 +18,5 @@ export type InputAction =
   | "menu"
   /** Options / Select: the settings of what is focused. */
   | "options"
-  /** The Guide button held: the controller is being switched off. */
-  | "powerOff";
+  /** The Guide button held for a few seconds: the power menu. */
+  | "powerMenu";

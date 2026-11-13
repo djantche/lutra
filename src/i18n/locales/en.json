@@ -424,7 +424,6 @@
       "leftTrigger": "Left trigger",
       "rightTrigger": "Right trigger"
     },
-    "poweringOff": "Switching the controller off…",
     "leftStickMode": "Left stick acts as",
     "rightStickMode": "Right stick acts as",
     "stickModeHint": "Turn a stick into the mouse or into direction keys, for games that have no controller support.",
@@ -710,5 +709,21 @@
     "installLatestHint": "Lutra downloads the latest GE-Proton, a version of Proton made for games.",
     "installingNow": "Installing {{name}}…",
     "noRelease": "No release available to install."
+  },
+  "power": {
+    "title": "Power",
+    "description": "What do you want to do?",
+    "quit": "Quit Lutra",
+    "quitHint": "Close Lutra completely.",
+    "desktop": "Back to desktop mode",
+    "desktopHint": "Leave Big Picture and return to the desktop window.",
+    "minimize": "Minimize Lutra",
+    "minimizeHint": "Put Lutra out of sight; games keep running.",
+    "pad": "Switch off {{name}}",
+    "padHint": "Ends the Bluetooth link; press the controller's Guide button to reconnect it.",
+    "wiredHint": "A controller on a cable cannot be switched off: unplug it.",
+    "switchedOff": "{{name}} is switched off.",
+    "offFailed": "Could not switch off {{name}}.",
+    "error": "The action failed."
   }
 }

@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import type { InputAction } from "./input/actions";
 import { emitAction } from "./input/bus";
 import { useInputAction } from "./input/useInputAction";
@@ -10,12 +9,11 @@ import { ClassicShell } from "./shells/classic/ClassicShell";
 import { RunnerInstallEffects } from "./state/RunnerInstallEffects";
 import { BatteryAlerts } from "./state/BatteryAlerts";
 import { LibraryEffects } from "./state/LibraryEffects";
-import { useToastStore } from "./state/toasts";
+import { PowerDialog } from "./components/PowerDialog/PowerDialog";
 import { UiProvider, useUi } from "./state/ui";
 
 function Shell() {
-  const { mode, setMode, toggleMode } = useUi();
-  const { t } = useTranslation();
+  const { mode, setMode, toggleMode, powerMenuOpen, setPowerMenuOpen } = useUi();
 
   useKeyboardInput();
 
@@ -47,13 +45,19 @@ function Shell() {
       setMode("bigpicture");
       return true;
     }
-    if (action === "powerOff") {
-      useToastStore.getState().notify("info", t("controllers.poweringOff"));
+    // The Guide button held for a few seconds: the power menu.
+    if (action === "powerMenu") {
+      setPowerMenuOpen(true);
       return true;
     }
   });
 
-  return mode === "bigpicture" ? <BigPictureShell /> : <ClassicShell />;
+  return (
+    <>
+      {mode === "bigpicture" ? <BigPictureShell /> : <ClassicShell />}
+      {powerMenuOpen && <PowerDialog />}
+    </>
+  );
 }
 
 function App() {

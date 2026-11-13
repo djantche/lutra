@@ -424,7 +424,6 @@
       "leftTrigger": "Gâchette gauche",
       "rightTrigger": "Gâchette droite"
     },
-    "poweringOff": "Extinction de la manette…",
     "leftStickMode": "Le stick gauche fait office de",
     "rightStickMode": "Le stick droit fait office de",
     "stickModeHint": "Transforme un stick en souris ou en touches de direction, pour les jeux sans prise en charge de la manette.",
@@ -710,5 +709,21 @@
     "installLatestHint": "Lutra télécharge la dernière version de GE-Proton, une version de Proton pensée pour les jeux.",
     "installingNow": "Installation de {{name}}…",
     "noRelease": "Aucune version disponible à installer."
+  },
+  "power": {
+    "title": "Alimentation",
+    "description": "Que voulez-vous faire ?",
+    "quit": "Fermer Lutra",
+    "quitHint": "Ferme Lutra complètement.",
+    "desktop": "Retour au mode bureau",
+    "desktopHint": "Quitte Big Picture et revient à la fenêtre du bureau.",
+    "minimize": "Réduire Lutra",
+    "minimizeHint": "Met Lutra de côté ; les jeux continuent de tourner.",
+    "pad": "Éteindre {{name}}",
+    "padHint": "Coupe la liaison Bluetooth ; appuyez sur le bouton Guide de la manette pour la reconnecter.",
+    "wiredHint": "Une manette branchée par un câble ne peut pas être éteinte : débranchez-la.",
+    "switchedOff": "{{name}} est éteinte.",
+    "offFailed": "Impossible d'éteindre {{name}}.",
+    "error": "L'action a échoué."
   }
 }

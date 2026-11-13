@@ -7,8 +7,8 @@ use super::model::{Button, PadState};
 
 const FIRST_REPEAT: Duration = Duration::from_millis(380);
 const REPEAT: Duration = Duration::from_millis(120);
-/// How long the Guide button must be held to switch the controller off.
-const POWER_OFF_HOLD: Duration = Duration::from_millis(2000);
+/// How long the Guide button must be held to open the power menu (like a console's).
+const POWER_MENU_HOLD: Duration = Duration::from_millis(3000);
 /// How far the left stick must be pushed to count as a direction.
 const STICK_THRESHOLD: f32 = 0.6;
 
@@ -26,8 +26,8 @@ pub enum NavAction {
     Menu,
     /// Options / Select: the settings of what is focused.
     Options,
-    /// The Guide button, held long enough.
-    PowerOff,
+    /// The Guide button, held long enough: the power menu (quit, minimize, switch the pad off...).
+    PowerMenu,
     /// The Guide button released briefly during a game: open (or close) the in-game overlay.
     Overlay,
 }
@@ -46,7 +46,7 @@ impl NavAction {
             NavAction::TabNext => "tabNext",
             NavAction::Menu => "menu",
             NavAction::Options => "options",
-            NavAction::PowerOff => "powerOff",
+            NavAction::PowerMenu => "powerMenu",
             NavAction::Overlay => "overlay",
         }
     }
@@ -90,12 +90,12 @@ fn direction(state: &PadState) -> Option<NavAction> {
 }
 
 /// The Guide button, which acts on release so that holding it can mean something else: a short
-/// press is the menu (or the overlay in a game), a long hold switches the controller off.
+/// press is the menu (or the overlay in a game), a long hold is the power menu.
 #[derive(Default)]
 pub struct GuideWatcher {
     down: bool,
     since: Option<Instant>,
-    /// The hold already switched the controller off: releasing must not also act as a press.
+    /// The hold already acted: releasing must not also act as a press.
     held_out: bool,
 }
 
@@ -117,7 +117,7 @@ impl GuideWatcher {
     /// True once, when the button has been held long enough.
     pub fn held_long(&mut self, now: Instant) -> bool {
         match self.since {
-            Some(since) if !self.held_out && now.duration_since(since) >= POWER_OFF_HOLD => {
+            Some(since) if !self.held_out && now.duration_since(since) >= POWER_MENU_HOLD => {
                 self.held_out = true;
                 true
             }
@@ -161,7 +161,7 @@ impl Navigator {
     /// The held direction again, once its repeat delay is over.
     pub fn tick(&mut self, now: Instant) -> Option<NavAction> {
         if self.guide.held_long(now) {
-            return Some(NavAction::PowerOff);
+            return Some(NavAction::PowerMenu);
         }
         let (action, due) = self.held?;
         if now < due {
@@ -236,16 +236,19 @@ mod tests {
     }
 
     #[test]
-    fn holding_the_guide_button_powers_off_and_does_not_open_the_menu() {
+    fn holding_the_guide_button_opens_the_power_menu_and_not_the_menu() {
         let mut nav = Navigator::default();
         let start = Instant::now();
         nav.update(&pressed(&[Button::Guide]), start);
-        assert_eq!(nav.tick(start + Duration::from_millis(1500)), None);
-        assert_eq!(nav.tick(start + POWER_OFF_HOLD), Some(NavAction::PowerOff));
+        assert_eq!(nav.tick(start + Duration::from_millis(2500)), None);
+        assert_eq!(
+            nav.tick(start + POWER_MENU_HOLD),
+            Some(NavAction::PowerMenu)
+        );
         // Only once, and releasing afterwards does nothing.
-        assert_eq!(nav.tick(start + POWER_OFF_HOLD + REPEAT), None);
+        assert_eq!(nav.tick(start + POWER_MENU_HOLD + REPEAT), None);
         assert!(
-            nav.update(&PadState::default(), start + Duration::from_secs(3))
+            nav.update(&PadState::default(), start + Duration::from_secs(4))
                 .is_empty()
         );
     }

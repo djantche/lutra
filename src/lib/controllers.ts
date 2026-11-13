@@ -346,6 +346,31 @@ export const onControllerBattery = (
     ? listen<{ id: string; name: string; percent: number; level: number }>("controller-battery", (event) => callback(event.payload))
     : Promise.resolve(noop);
 
-/** Menu actions sent by the controller driver while no game runs. */
-export const onControllerAction = (callback: (action: string) => void): Promise<UnlistenFn> =>
-  hasBackend() ? listen<string>("ui-action", (event) => callback(event.payload)) : Promise.resolve(noop);
+/**
+ * Menu actions sent by the controller driver while no game runs. In the browser preview,
+ * `window.dispatchEvent(new CustomEvent("lutra:action", { detail: "powerMenu" }))` plays one.
+ */
+export const onControllerAction = (callback: (action: string) => void): Promise<UnlistenFn> => {
+  if (hasBackend()) return listen<string>("ui-action", (event) => callback(event.payload));
+  const onPreview = (event: Event) => callback(String((event as CustomEvent).detail));
+  window.addEventListener("lutra:action", onPreview);
+  return Promise.resolve(() => window.removeEventListener("lutra:action", onPreview));
+};
+
+// ---- power menu ----
+
+/** The controller the power menu would switch off. `wired`: on a cable, which cannot be switched off. */
+export interface PowerTarget {
+  id: string;
+  name: string;
+  wired: boolean;
+}
+
+export const powerTarget = (): Promise<PowerTarget | null> =>
+  hasBackend()
+    ? invoke<PowerTarget | null>("controller_power_target")
+    : Promise.resolve({ id: MOCK_CONTROLLER.id, name: MOCK_CONTROLLER.name, wired: false });
+
+/** Ends the controller's Bluetooth link for real. Rejects with `wired` on a cable, or Bluetooth's own message. */
+export const powerOffController = (id?: string): Promise<void> =>
+  hasBackend() ? invoke<void>("power_off_controller", { id: id ?? null }) : Promise.resolve();

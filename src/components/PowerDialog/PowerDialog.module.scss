@@ -1,0 +1,72 @@
+// Each choice is a bar like the rows of the settings: one whole line is selected.
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md, 12px);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  // The selection of a menu: the whole bar is outlined (white in Big Picture).
+  &:focus-visible,
+  :global([data-input="nav"]) &:focus {
+    background: var(--color-surface-hover);
+    box-shadow: 0 0 0 3px var(--row-focus, var(--color-accent));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.8rem;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  small {
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+  }
+}

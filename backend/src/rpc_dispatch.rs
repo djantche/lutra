@@ -367,6 +367,18 @@ pub(crate) fn dispatch(
             ))
             .and_then(rpc::to_value)
         }
+        "controller_power_target" => {
+            host::async_runtime::block_on(controller_power_target(app.state::<ControllerService>()))
+                .and_then(rpc::to_value)
+        }
+        "power_off_controller" => {
+            let id: Option<String> = rpc::arg(args, "id")?;
+            host::async_runtime::block_on(power_off_controller(
+                app.state::<ControllerService>(),
+                id,
+            ))
+            .and_then(rpc::to_value)
+        }
         "tray_settings" => {
             host::async_runtime::block_on(tray_settings(app.clone())).and_then(rpc::to_value)
         }

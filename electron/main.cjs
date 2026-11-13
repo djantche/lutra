@@ -131,8 +131,13 @@ function routeAction(action) {
     mainWindow.webContents.send("ev:tray-big-picture", null);
     return;
   }
-  // Powering the controller off acts whatever window is in use.
-  if (mainWindow && (action === "powerOff" || mainWindow.isFocused())) {
+  // The power menu (Guide held) comes up whatever window is in use, even a hidden one.
+  if (action === "powerMenu" && mainWindow) {
+    showMain();
+    mainWindow.webContents.send("ev:ui-action", action);
+    return;
+  }
+  if (mainWindow && mainWindow.isFocused()) {
     mainWindow.webContents.send("ev:ui-action", action);
   }
 }

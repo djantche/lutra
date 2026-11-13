@@ -100,6 +100,8 @@ struct Shared {
     /// Bumped when the default profile changes in a way workers apply without a new device.
     system_revision: AtomicU64,
     on_nav: NavCallback,
+    /// The controller whose Guide button was held last: what the power menu switches off.
+    power_target: Mutex<Option<ControllerInfo>>,
     /// The in-game overlay is open: the game gets a neutral controller and the overlay the input.
     overlay: AtomicBool,
 }
@@ -154,6 +156,7 @@ impl ControllerService {
             system_profile: Mutex::new(system_profile),
             system_revision: AtomicU64::new(0),
             on_nav,
+            power_target: Mutex::new(None),
             overlay: AtomicBool::new(false),
         });
         let workers: Arc<Mutex<HashMap<PathBuf, Worker>>> = Arc::default();
@@ -183,6 +186,27 @@ impl ControllerService {
             .expect("controller monitor thread");
 
         Self { shared, workers }
+    }
+
+    /// The controller the power menu is about: the one held last if it is still connected,
+    /// else the first Bluetooth one, else the first.
+    pub fn power_target(&self) -> Option<ControllerInfo> {
+        let connected = self.controllers();
+        let asked = self
+            .shared
+            .power_target
+            .lock()
+            .expect("power target")
+            .clone();
+        asked
+            .and_then(|asked| connected.iter().find(|info| info.id == asked.id).cloned())
+            .or_else(|| {
+                connected
+                    .iter()
+                    .find(|info| info.bus == "bluetooth")
+                    .cloned()
+            })
+            .or_else(|| connected.first().cloned())
     }
 
     pub fn controllers(&self) -> Vec<ControllerInfo> {
@@ -667,20 +691,69 @@ fn is_bluetooth_address(text: &str) -> bool {
             .all(|part| part.len() == 2 && part.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
-/// Switches a Bluetooth controller off by ending its link (a DualShock powers down when it is
-/// disconnected). A controller on a cable stays on: there is nothing to switch off.
-fn power_off(info: &ControllerInfo) {
+/// Why a controller could not be switched off.
+pub const POWER_OFF_WIRED: &str = "wired";
+
+/// How long `bluetoothctl` may take to end the link.
+const POWER_OFF_TIMEOUT: Duration = Duration::from_secs(8);
+
+/// Switches a Bluetooth controller off by ending its link (a DualShock or Xbox pad powers down
+/// when the host disconnects it). The answer is what really happened: BlueZ's own message when it
+/// refuses. A controller on a cable stays on: there is nothing to switch off, so unplugging it
+/// is the only way (`POWER_OFF_WIRED`).
+pub fn power_off(info: &ControllerInfo) -> Result<(), String> {
+    use std::io::Read;
+    use std::process::{Command, Stdio};
+
+    if info.bus == "usb" {
+        return Err(POWER_OFF_WIRED.into());
+    }
     if info.bus != "bluetooth" || !is_bluetooth_address(&info.id) {
-        return;
+        return Err(format!("{} is not a Bluetooth controller", info.name));
     }
-    if let Err(error) = crate::wine::host_env(&mut std::process::Command::new("bluetoothctl"))
+    let mut child = crate::wine::host_env(&mut Command::new("bluetoothctl"))
         .args(["disconnect", &info.id])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
+        // Not the backend's own stdin: that is the shell's request pipe.
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
-    {
-        applog::warn(format!("Could not switch {} off: {error}", info.name));
+        .map_err(|error| format!("bluetoothctl is not available: {error}"))?;
+
+    let started = Instant::now();
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if started.elapsed() < POWER_OFF_TIMEOUT => {
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err("Bluetooth did not answer in time".into());
+            }
+            Err(error) => return Err(error.to_string()),
+        }
+    };
+    let mut output = String::new();
+    if let Some(mut stdout) = child.stdout.take() {
+        let _ = stdout.read_to_string(&mut output);
     }
+    if let Some(mut stderr) = child.stderr.take() {
+        let _ = stderr.read_to_string(&mut output);
+    }
+    if status.success() && !output.contains("Failed") {
+        applog::info(format!("{} switched off (link ended)", info.name));
+        return Ok(());
+    }
+    let reason = output
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .unwrap_or("Bluetooth refused")
+        .to_string();
+    applog::warn(format!("Could not switch {} off: {reason}", info.name));
+    Err(reason)
 }
 
 fn run_worker(
@@ -877,10 +950,16 @@ fn run_worker(
             }
         }
         if in_game {
+            // In a game there is no window to show a menu in: holding the Guide switches the pad off.
             if game_guide.held_long(now) {
-                applog::info(format!("Switching {} off (Guide held)", info.name));
-                (shared.on_nav)(NavAction::PowerOff);
-                power_off(&info);
+                applog::info(format!(
+                    "Switching {} off (Guide held in a game)",
+                    info.name
+                ));
+                let info = info.clone();
+                std::thread::spawn(move || {
+                    let _ = power_off(&info);
+                });
             }
             // A direction held in the overlay keeps repeating.
             if shared.overlay.load(Ordering::SeqCst)
@@ -892,11 +971,11 @@ fn run_worker(
             .tick(now)
             .filter(|_| shared.navigation.load(Ordering::SeqCst))
         {
-            if action == NavAction::PowerOff {
-                applog::info(format!("Switching {} off (Guide held)", info.name));
-                // The interface is told first: the link is gone a moment later.
+            if action == NavAction::PowerMenu {
+                applog::info(format!("Power menu (Guide held on {})", info.name));
+                // The menu acts on the controller that asked for it.
+                *shared.power_target.lock().expect("power target") = Some(info.clone());
                 (shared.on_nav)(action);
-                power_off(&info);
             } else {
                 (shared.on_nav)(action);
             }
@@ -1102,6 +1181,17 @@ mod ignore_tests {
             model: codes::PadModel::from_ids(vendor, product),
             bus: "bluetooth",
         }
+    }
+
+    #[test]
+    fn a_controller_on_a_cable_cannot_be_switched_off() {
+        let mut info = controller(0x054c, 0x09cc);
+        info.bus = "usb";
+        assert_eq!(power_off(&info), Err(POWER_OFF_WIRED.to_string()));
+        // Bluetooth, but without a Bluetooth address to disconnect.
+        info.bus = "bluetooth";
+        info.id = "not-an-address".into();
+        assert!(power_off(&info).is_err());
     }
 
     #[test]

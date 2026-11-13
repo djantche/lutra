@@ -28,6 +28,9 @@ interface UiContextValue {
   /** Game waiting for the user to confirm its removal. */
   removeGameId: string | null;
   setRemoveGameId: (id: string | null) => void;
+  /** The power menu (quit, minimize, switch the controller off...), opened by holding the Guide button. */
+  powerMenuOpen: boolean;
+  setPowerMenuOpen: (open: boolean) => void;
 }
 
 const UiContext = createContext<UiContextValue | null>(null);
@@ -37,6 +40,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
   const [addGameOpen, setAddGameOpen] = useState(false);
   const [configureGameId, setConfigureGameId] = useState<string | null>(null);
   const [removeGameId, setRemoveGameId] = useState<string | null>(null);
+  const [powerMenuOpen, setPowerMenuOpen] = useState(false);
 
   const setMode = useCallback((next: UiMode) => {
     setModeState(next);
@@ -88,8 +92,10 @@ export function UiProvider({ children }: { children: ReactNode }) {
       setConfigureGameId,
       removeGameId,
       setRemoveGameId,
+      powerMenuOpen,
+      setPowerMenuOpen,
     }),
-    [mode, setMode, toggleMode, addGameOpen, configureGameId, removeGameId],
+    [mode, setMode, toggleMode, addGameOpen, configureGameId, removeGameId, powerMenuOpen],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }
