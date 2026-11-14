@@ -1,10 +1,11 @@
 {
   "name": "lutra",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "node scripts/dev-electron.mjs",
     "build": "tsc && vite build",
     "backend": "cargo build --release --manifest-path backend/Cargo.toml",
     "start": "pnpm build && pnpm backend && electron .",
