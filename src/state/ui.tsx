@@ -5,11 +5,16 @@ import { onTrayBigPicture, setTrayLabels } from "../lib/backend";
 
 export type UiMode = "classic" | "bigpicture";
 
-const STORAGE_KEY = "lutra.mode";
+// The mode Lutra opens in, chosen in Settings. Switching modes while using the app (F11, the
+// Big Picture button, the Guide menu) lasts for the session only. `lutra.mode` is what earlier
+// versions saved at every switch: it still gives the default to whoever never chose one.
+const DEFAULT_KEY = "lutra.defaultMode";
+const LEGACY_KEY = "lutra.mode";
 
-function readStoredMode(): UiMode {
+function readDefaultMode(): UiMode {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "bigpicture" ? "bigpicture" : "classic";
+    const chosen = localStorage.getItem(DEFAULT_KEY) ?? localStorage.getItem(LEGACY_KEY);
+    return chosen === "bigpicture" ? "bigpicture" : "classic";
   } catch {
     return "classic";
   }
@@ -17,7 +22,11 @@ function readStoredMode(): UiMode {
 
 interface UiContextValue {
   mode: UiMode;
+  /** Switches now, for this session. */
   setMode: (mode: UiMode) => void;
+  /** The mode Lutra opens in. */
+  defaultMode: UiMode;
+  setDefaultMode: (mode: UiMode) => void;
   toggleMode: () => void;
   /** The "add a game" dialog of the desktop mode. */
   addGameOpen: boolean;
@@ -36,16 +45,17 @@ interface UiContextValue {
 const UiContext = createContext<UiContextValue | null>(null);
 
 export function UiProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<UiMode>(readStoredMode);
+  const [defaultMode, setDefaultModeState] = useState<UiMode>(readDefaultMode);
+  const [mode, setMode] = useState<UiMode>(defaultMode);
   const [addGameOpen, setAddGameOpen] = useState(false);
   const [configureGameId, setConfigureGameId] = useState<string | null>(null);
   const [removeGameId, setRemoveGameId] = useState<string | null>(null);
   const [powerMenuOpen, setPowerMenuOpen] = useState(false);
 
-  const setMode = useCallback((next: UiMode) => {
-    setModeState(next);
+  const setDefaultMode = useCallback((next: UiMode) => {
+    setDefaultModeState(next);
     try {
-      localStorage.setItem(STORAGE_KEY, next);
+      localStorage.setItem(DEFAULT_KEY, next);
     } catch {
       // Persistence is a convenience only.
     }
@@ -63,7 +73,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
     return () => void stop.then((unlisten) => unlisten());
   }, [setMode]);
 
-  // `lutra --big-picture` forces console mode at startup.
+  // `lutra --big-picture` opens in console mode this once, whatever the default is.
   useEffect(() => {
     if (!isHosted()) return;
     invoke<UiMode>("launch_mode")
@@ -85,6 +95,8 @@ export function UiProvider({ children }: { children: ReactNode }) {
     () => ({
       mode,
       setMode,
+      defaultMode,
+      setDefaultMode,
       toggleMode,
       addGameOpen,
       setAddGameOpen,
@@ -95,7 +107,7 @@ export function UiProvider({ children }: { children: ReactNode }) {
       powerMenuOpen,
       setPowerMenuOpen,
     }),
-    [mode, setMode, toggleMode, addGameOpen, configureGameId, removeGameId, powerMenuOpen],
+    [mode, defaultMode, setDefaultMode, toggleMode, addGameOpen, configureGameId, removeGameId, powerMenuOpen],
   );
   return <UiContext.Provider value={value}>{children}</UiContext.Provider>;
 }

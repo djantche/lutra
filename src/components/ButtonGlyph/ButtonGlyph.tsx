@@ -1,26 +1,56 @@
+import type { CSSProperties, ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import east from "../../assets/controllers/playstation/east.webp";
-import l1 from "../../assets/controllers/playstation/l1.webp";
-import l2 from "../../assets/controllers/playstation/l2.webp";
-import l3 from "../../assets/controllers/playstation/l3.webp";
-import north from "../../assets/controllers/playstation/north.webp";
-import r1 from "../../assets/controllers/playstation/r1.webp";
-import r2 from "../../assets/controllers/playstation/r2.webp";
-import r3 from "../../assets/controllers/playstation/r3.webp";
-import south from "../../assets/controllers/playstation/south.webp";
-import west from "../../assets/controllers/playstation/west.webp";
 import { buttonLabel } from "../../lib/buttonLabels";
 import type { ControllerButton, ControllerFamily } from "../../lib/controllers";
+import { cx } from "../../lib/cx";
+import { PLAYSTATION_COLORS, XBOX_FACE } from "../GamepadVisual/padParts";
 import styles from "./ButtonGlyph.module.scss";
 
-// Buttons with a drawn icon; the others (D-pad directions, Share, Options, PS) stay as text.
-const PLAYSTATION: Partial<Record<ControllerButton, string>> = { south, east, west, north, l1, l2, r1, r2, l3, r3 };
+type FaceButton = keyof typeof PLAYSTATION_COLORS;
 
-/** A button as printed on the controller: its icon when there is one, its name otherwise. */
+const isFace = (button: ControllerButton): button is FaceButton => button in PLAYSTATION_COLORS;
+
+// The PlayStation symbols, drawn in a 24-unit box with one round stroke.
+const SYMBOLS: Record<FaceButton, ReactElement> = {
+  north: <path d="M12 5.5 19 18H5Z" />,
+  west: <rect x="6" y="6" width="12" height="12" rx="1" />,
+  east: <circle cx="12" cy="12" r="7" />,
+  south: <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" />,
+};
+
+/** What gives a face button its colour: PlayStation's symbols and Xbox's letters. Others stay plain. */
+function faceColor(button: FaceButton, family: ControllerFamily): string | undefined {
+  if (family === "playstation") return PLAYSTATION_COLORS[button];
+  if (family === "xbox") return XBOX_FACE[button].color;
+  return undefined;
+}
+
+/**
+ * A button as printed on the controller. Face buttons are round badges in the maker's colour
+ * (PlayStation symbols, Xbox letters); every other button is a pill with its name.
+ */
 export function ButtonGlyph({ button, family }: { button: ControllerButton; family: ControllerFamily }) {
   const { t } = useTranslation();
   const label = buttonLabel(button, family, t);
-  const icon = family === "playstation" ? PLAYSTATION[button] : undefined;
 
-  return icon ? <img className={styles.icon} src={icon} alt={label} title={label} draggable={false} /> : <kbd>{label}</kbd>;
+  if (!isFace(button)) return <kbd className={styles.glyph}>{label}</kbd>;
+
+  const color = faceColor(button, family);
+  return (
+    <span
+      className={cx(styles.glyph, styles.face)}
+      style={color ? ({ "--face": color } as CSSProperties) : undefined}
+      role="img"
+      aria-label={label}
+      title={label}
+    >
+      {family === "playstation" ? (
+        <svg viewBox="0 0 24 24" className={styles.symbol} aria-hidden="true">
+          {SYMBOLS[button]}
+        </svg>
+      ) : (
+        label
+      )}
+    </span>
+  );
 }

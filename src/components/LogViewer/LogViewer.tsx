@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { openLogsFolder, readLog, type GameLogKind, type LogContent } from "../../lib/backend";
+import { clearLog, openLogsFolder, readLog, type GameLogKind, type LogContent } from "../../lib/backend";
 import { cx } from "../../lib/cx";
 import { reportError } from "../../state/toasts";
 import { Button } from "../Button/Button";
@@ -66,6 +66,12 @@ export function LogViewer({ target, kind = "game", live = false }: LogViewerProp
       .catch((error) => reportError(t("errors.copy"), error));
   };
 
+  const clear = () => {
+    clearLog(target, kind)
+      .then(load)
+      .catch((error) => reportError(t("errors.clearLog"), error));
+  };
+
   return (
     <div className={styles.viewer}>
       <div className={styles.toolbar}>
@@ -81,6 +87,14 @@ export function LogViewer({ target, kind = "game", live = false }: LogViewerProp
         />
         <Button variant="ghost" icon="refresh" aria-label={t("logs.refresh")} title={t("logs.refresh")} onClick={load} />
         <Button variant="ghost" icon="copy" aria-label={t("logs.copy")} title={t("logs.copy")} onClick={copy} />
+        <Button
+          variant="ghost"
+          icon="trash"
+          aria-label={t("logs.clear")}
+          title={t("logs.clear")}
+          disabled={log?.text === ""}
+          onClick={clear}
+        />
         <Button
           variant="ghost"
           icon="folder"

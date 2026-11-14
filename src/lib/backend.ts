@@ -565,6 +565,13 @@ export function readLog(target: string, kind: GameLogKind = "game"): Promise<Log
 export const logFrontend = (level: "info" | "warn" | "error", message: string) =>
   hasBackend() ? invoke<void>("log_frontend", { level, message }) : Promise.resolve();
 
+/** Empties the log being shown: Lutra's own (`app`) or one of a game's. */
+export const clearLog = (target: string, kind: GameLogKind = "game"): Promise<void> =>
+  hasBackend() ? invoke<void>("clear_log", { target, kind }) : Promise.resolve();
+
+/** Empties Lutra's log and deletes every game's logs. Returns how many files went. */
+export const clearLogs = (): Promise<number> => (hasBackend() ? invoke<number>("clear_logs") : Promise.resolve(0));
+
 export const openLogsFolder = () => (hasBackend() ? invoke<void>("open_logs_folder") : Promise.resolve());
 
 export const importImages = (force: boolean): Promise<void> =>

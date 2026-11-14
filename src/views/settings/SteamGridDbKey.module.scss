@@ -22,14 +22,14 @@
   gap: 0.4em;
   padding: 0.35em 0.9em;
   border-radius: 999px;
-  background: rgb(61 220 151 / 0.14);
-  color: #3ddc97;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
   font-size: 0.85em;
   font-weight: 600;
 }
 
 .error {
-  color: #e5484d;
+  color: var(--color-danger);
   font-size: 0.88em;
 }
 
@@ -41,13 +41,11 @@
   font-size: 0.9em;
 }
 
-.link {
-  align-self: flex-start;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-accent, #fff);
+.help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em 0.9em;
+  color: var(--color-text-muted);
   font-size: 0.9em;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }

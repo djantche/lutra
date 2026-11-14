@@ -91,8 +91,6 @@
     "title": "Paramètres",
     "language": "Langue",
     "languageHint": "Choisis la langue de l'interface.",
-    "mode": "Mode d'interface",
-    "modeHint": "Bascule entre la fenêtre de bureau et le mode Big Picture façon console.",
     "modeClassic": "Bureau",
     "modeBigPicture": "Big Picture",
     "keyPlaceholder": "Clé API SteamGridDB",
@@ -100,7 +98,7 @@
     "keySaving": "Vérification…",
     "keyConnected": "Connecté",
     "keyInvalid": "SteamGridDB a refusé cette clé. Vérifie-la et réessaie.",
-    "keyGet": "Obtenir une clé gratuite",
+    "keyGet": "Générer une clé sur SteamGridDB",
     "importNow": "Actualiser toutes les illustrations",
     "importing": "Téléchargement des illustrations… {{done}} / {{total}}",
     "keyRemove": "Retirer la clé",
@@ -161,7 +159,19 @@
     "trayMissing": "Pas de zone de notification",
     "trayMissingHint": "Ton bureau n'en affiche pas : la fenêtre de Lutra n'est jamais cachée, pour rester accessible.",
     "sounds": "Sons de l'interface",
-    "soundsHint": "De courts sons quand on se déplace dans les menus, qu'on confirme, qu'on revient en arrière ou qu'on change un réglage."
+    "soundsHint": "De courts sons quand on se déplace dans les menus, qu'on confirme, qu'on revient en arrière ou qu'on change un réglage.",
+    "theme": "Thème",
+    "themeHint": "Clair, sombre, ou le même que celui de votre système.",
+    "themeSystem": "Système",
+    "themeLight": "Clair",
+    "themeDark": "Sombre",
+    "keyHelp": "Connectez-vous à SteamGridDB, ouvrez vos préférences et copiez la clé d'API.",
+    "clearLogs": "Effacer les logs",
+    "clearLogsTitle": "Effacer tous les logs ?",
+    "clearLogsHint": "Le journal de Lutra et les logs de chaque jeu seront supprimés. Cette action est définitive.",
+    "logsCleared": "Logs effacés.",
+    "defaultMode": "Mode d'interface par défaut",
+    "defaultModeHint": "Le mode dans lequel Lutra s'ouvre. Vous pouvez toujours basculer à tout moment."
   },
   "bigPicture": {
     "exit": "Mode bureau",
@@ -217,7 +227,8 @@
     "save": "Impossible d'enregistrer :",
     "remove": "Impossible de retirer le jeu :",
     "log": "Impossible de lire le journal :",
-    "copy": "Impossible de copier :"
+    "copy": "Impossible de copier :",
+    "clearLog": "Impossible d'effacer les logs :"
   },
   "menu": {
     "configure": "Configurer…",
@@ -363,7 +374,8 @@
     "game": "Cette exécution",
     "previous": "Exécution précédente",
     "proton": "Proton",
-    "graphics": "Graphismes (DXVK / VKD3D)"
+    "graphics": "Graphismes (DXVK / VKD3D)",
+    "clear": "Effacer ce log"
   },
   "controllers": {
     "title": "Manettes",
@@ -767,5 +779,51 @@
     "switchedOff": "{{name}} est éteinte.",
     "offFailed": "Impossible d'éteindre {{name}}.",
     "error": "L'action a échoué."
+  },
+  "tools": {
+    "install": "Installer",
+    "installing": "Installation de {{tool}}",
+    "waiting": "En attente du mot de passe demandé par le système…",
+    "installError": "Impossible de lancer l'installation :",
+    "noAuthentication": "Le système n'a pas laissé Lutra l'installer (pas de fenêtre de mot de passe, ou refus). Lancez plutôt la commande dans un terminal.",
+    "failed": "L'installation a échoué ({{reason}}). Lancez la commande dans un terminal pour voir pourquoi.",
+    "copyCommand": "Copier la commande",
+    "copied": "Copié",
+    "get": "Le télécharger"
+  },
+  "updates": {
+    "title": "Mises à jour",
+    "running": "Lutra {{version}}",
+    "idle": "Vérifier si une version plus récente existe.",
+    "checking": "Vérification…",
+    "upToDate": "Vous avez la dernière version.",
+    "available": "La version {{version}} est disponible.",
+    "checkFailed": "Vérification impossible : {{reason}}",
+    "checkedAt": "vérifié le {{time}}",
+    "check": "Rechercher les mises à jour",
+    "version": "Version {{version}}",
+    "install": "Mettre à jour ({{size}})",
+    "openPage": "Page de la version",
+    "skip": "Ignorer cette version",
+    "unskip": "Me le rappeler",
+    "manualHint": "Cette copie de Lutra n'est pas un AppImage capable de se remplacer (paquet ou compilation depuis les sources) : récupérez la nouvelle version sur la page de la release.",
+    "downloading": "Téléchargement",
+    "verify": "Vérification du fichier…",
+    "replace": "Mise en place…",
+    "cancel": "Annuler",
+    "cancelError": "Impossible d'arrêter le téléchargement :",
+    "installed": "La version {{version}} est prête.",
+    "restart": "Redémarrer Lutra",
+    "restartError": "Impossible de redémarrer Lutra :",
+    "failed": "La mise à jour a échoué : {{reason}}",
+    "options": "Notifications de mise à jour",
+    "auto": "Vérifier automatiquement",
+    "autoHint": "Cherche une nouvelle version au démarrage de Lutra, puis environ une fois par jour.",
+    "notify": "Me prévenir",
+    "notifyHint": "Un message dans Lutra et une notification système, une seule fois par nouvelle version.",
+    "availableTitle": "Mise à jour disponible.",
+    "availableBody": "Lutra {{version}} peut être installé depuis Paramètres → À propos.",
+    "major": "Versions majeures uniquement",
+    "majorHint": "Ignore les petites versions : seule une nouvelle version majeure est annoncée (1.0, 2.0… et chaque 0.x avant la 1.0). Paramètres → À propos montre toujours toutes les mises à jour."
   }
 }

@@ -1,6 +1,6 @@
 // Lutra's shell: the windows, the tray icon and the dialogs. Everything that touches the system
 // is done by the Rust backend (`backend/`), a child process we talk to in JSON lines.
-const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, net, protocol } = require("electron");
+const { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, nativeTheme, net, protocol } = require("electron");
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -177,7 +177,7 @@ function createMainWindow() {
     frame: false,
     title: "Lutra",
     icon: ICON,
-    backgroundColor: "#0b0c12",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b0c12" : "#f4f5f9",
     webPreferences: webPreferences(),
   });
   mainWindow.on("page-title-updated", (event) => event.preventDefault());
@@ -309,6 +309,16 @@ ipcMain.handle("pick", async (event, options = {}) => {
 });
 
 ipcMain.handle("version", () => app.getVersion());
+
+// After an update replaced the AppImage: start the new file, then close this process. The new one
+// waits for the single-instance lock this one gives up as it exits.
+ipcMain.handle("relaunch", () => {
+  const appImage = process.env.APPIMAGE;
+  if (appImage) app.relaunch({ execPath: appImage, args: process.argv.slice(1) });
+  else app.relaunch();
+  quitting = true;
+  app.quit();
+});
 
 // ---------------------------------------------------------------- life cycle
 

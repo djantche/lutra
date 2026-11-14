@@ -91,8 +91,6 @@
     "title": "Settings",
     "language": "Language",
     "languageHint": "Choose the language of the interface.",
-    "mode": "Interface mode",
-    "modeHint": "Switch between the desktop window and the console-style Big Picture mode.",
     "modeClassic": "Desktop",
     "modeBigPicture": "Big Picture",
     "keyPlaceholder": "SteamGridDB API key",
@@ -100,7 +98,7 @@
     "keySaving": "Checking…",
     "keyConnected": "Connected",
     "keyInvalid": "SteamGridDB rejected this key. Check it and try again.",
-    "keyGet": "Get a free key",
+    "keyGet": "Generate a key on SteamGridDB",
     "importNow": "Refresh all artwork",
     "importing": "Downloading artwork… {{done}} / {{total}}",
     "keyRemove": "Remove key",
@@ -161,7 +159,19 @@
     "trayMissing": "No notification area",
     "trayMissingHint": "Your desktop does not show one: Lutra's window is never hidden, so it stays reachable.",
     "sounds": "Interface sounds",
-    "soundsHint": "Short sounds when you move through menus, confirm, go back or switch a setting."
+    "soundsHint": "Short sounds when you move through menus, confirm, go back or switch a setting.",
+    "theme": "Theme",
+    "themeHint": "Light, dark, or the same as your system.",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "keyHelp": "Sign in to SteamGridDB, open your preferences and copy the API key.",
+    "clearLogs": "Clear logs",
+    "clearLogsTitle": "Clear all logs?",
+    "clearLogsHint": "Lutra's log and the logs of every game will be deleted. This cannot be undone.",
+    "logsCleared": "Logs cleared.",
+    "defaultMode": "Default interface mode",
+    "defaultModeHint": "The mode Lutra opens in. You can still switch at any time."
   },
   "bigPicture": {
     "exit": "Desktop mode",
@@ -217,7 +227,8 @@
     "save": "Could not save:",
     "remove": "Could not remove the game:",
     "log": "Could not read the log:",
-    "copy": "Could not copy:"
+    "copy": "Could not copy:",
+    "clearLog": "Could not clear the logs:"
   },
   "menu": {
     "configure": "Configure…",
@@ -363,7 +374,8 @@
     "game": "This run",
     "previous": "Previous run",
     "proton": "Proton",
-    "graphics": "Graphics (DXVK / VKD3D)"
+    "graphics": "Graphics (DXVK / VKD3D)",
+    "clear": "Clear this log"
   },
   "controllers": {
     "title": "Controllers",
@@ -767,5 +779,51 @@
     "switchedOff": "{{name}} is switched off.",
     "offFailed": "Could not switch off {{name}}.",
     "error": "The action failed."
+  },
+  "tools": {
+    "install": "Install",
+    "installing": "Installing {{tool}}",
+    "waiting": "Waiting for the system to ask for your password…",
+    "installError": "Could not start the install:",
+    "noAuthentication": "The system did not let Lutra install it (no password dialog, or it was refused). Run the command in a terminal instead.",
+    "failed": "The install failed ({{reason}}). You can run the command in a terminal to see why.",
+    "copyCommand": "Copy command",
+    "copied": "Copied",
+    "get": "Get it"
+  },
+  "updates": {
+    "title": "Updates",
+    "running": "Lutra {{version}}",
+    "idle": "Check whether a newer version is available.",
+    "checking": "Checking…",
+    "upToDate": "You're on the latest version.",
+    "available": "Version {{version}} is available.",
+    "checkFailed": "Could not check: {{reason}}",
+    "checkedAt": "checked {{time}}",
+    "check": "Check for updates",
+    "version": "Version {{version}}",
+    "install": "Update ({{size}})",
+    "openPage": "Release page",
+    "skip": "Skip this version",
+    "unskip": "Remind me again",
+    "manualHint": "This copy of Lutra is not an AppImage that can replace itself (a package or a build from source): get the new version from the release page.",
+    "downloading": "Downloading",
+    "verify": "Checking the download…",
+    "replace": "Putting it in place…",
+    "cancel": "Cancel",
+    "cancelError": "Could not stop the download:",
+    "installed": "Version {{version}} is ready.",
+    "restart": "Restart Lutra",
+    "restartError": "Could not restart Lutra:",
+    "failed": "The update failed: {{reason}}",
+    "options": "Update notifications",
+    "auto": "Check automatically",
+    "autoHint": "Looks for a new version when Lutra starts, then about once a day.",
+    "notify": "Notify me",
+    "notifyHint": "A message in Lutra and a system notification, once for each new version.",
+    "availableTitle": "Update available.",
+    "availableBody": "Lutra {{version}} can be installed from Settings → About.",
+    "major": "Only major versions",
+    "majorHint": "Skips the smaller releases: only a new major version is announced (1.0, 2.0…, and each 0.x until 1.0). Settings → About still shows every update."
   }
 }

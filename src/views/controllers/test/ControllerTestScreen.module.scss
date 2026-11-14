@@ -99,29 +99,14 @@
   transition:
     background 80ms linear,
     color 80ms linear;
-
-  kbd {
-    display: inline-grid;
-    place-items: center;
-    min-width: 2.2em;
-    height: 1.9em;
-    padding: 0 0.45em;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.08);
-    color: var(--color-text);
-    font: inherit;
-    font-size: 0.85em;
-    font-weight: 700;
-  }
 }
 
 .lit {
   background: var(--color-accent);
   color: #fff;
-
-  kbd {
-    background: rgb(255 255 255 / 0.25);
-  }
+  --glyph-bg: rgb(255 255 255 / 0.25);
+  --glyph-ink: #fff;
+  --glyph-face: #fff;
 }
 
 .arrow {
@@ -282,11 +267,9 @@
     outline: none;
     background: #fff;
     color: #05060a;
-
-    kbd {
-      background: rgb(0 0 0 / 0.12);
-      color: #05060a;
-    }
+    --glyph-bg: rgb(0 0 0 / 0.12);
+    --glyph-ink: #05060a;
+    --glyph-face: #05060a;
   }
 }
 
@@ -294,6 +277,9 @@
 .picking:hover {
   background: var(--color-accent);
   color: #fff;
+  --glyph-bg: rgb(255 255 255 / 0.25);
+  --glyph-ink: #fff;
+  --glyph-face: #fff;
   animation: picking 1s ease-in-out infinite alternate;
 }
 

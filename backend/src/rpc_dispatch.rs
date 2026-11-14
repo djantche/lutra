@@ -61,6 +61,23 @@ pub(crate) fn dispatch(
             host::async_runtime::block_on(remove_runner(app.clone(), name)).and_then(rpc::to_value)
         }
         "wine_tools" => host::async_runtime::block_on(wine_tools()).and_then(rpc::to_value),
+        "check_for_update" => {
+            host::async_runtime::block_on(check_for_update()).and_then(rpc::to_value)
+        }
+        "install_update" => {
+            host::async_runtime::block_on(install_update(app.clone())).and_then(rpc::to_value)
+        }
+        "cancel_update" => host::async_runtime::block_on(cancel_update()).and_then(rpc::to_value),
+        "tool_install_plans" => {
+            host::async_runtime::block_on(tool_install_plans()).and_then(rpc::to_value)
+        }
+        "install_tool" => {
+            let tool: tools::Tool = rpc::arg(args, "tool")?;
+            host::async_runtime::block_on(install_tool(app.clone(), tool)).and_then(rpc::to_value)
+        }
+        "installing_tool" => {
+            host::async_runtime::block_on(installing_tool()).and_then(rpc::to_value)
+        }
         "default_runner" => host::async_runtime::block_on(default_runner(app.state::<Library>()))
             .and_then(rpc::to_value),
         "set_default_runner" => {
@@ -336,6 +353,15 @@ pub(crate) fn dispatch(
             let kind: Option<String> = rpc::arg(args, "kind")?;
             host::async_runtime::block_on(read_log(app.clone(), target, kind))
                 .and_then(rpc::to_value)
+        }
+        "clear_log" => {
+            let target: String = rpc::arg(args, "target")?;
+            let kind: Option<String> = rpc::arg(args, "kind")?;
+            host::async_runtime::block_on(clear_log(app.clone(), target, kind))
+                .and_then(rpc::to_value)
+        }
+        "clear_logs" => {
+            host::async_runtime::block_on(clear_logs(app.clone())).and_then(rpc::to_value)
         }
         "game_logs" => {
             let id: String = rpc::arg(args, "id")?;

@@ -16,7 +16,9 @@ mod runners;
 mod session;
 mod steam;
 mod steamgriddb;
+mod tools;
 mod tray;
+mod updater;
 mod vdf;
 mod wine;
 
@@ -326,6 +328,48 @@ async fn wine_tools() -> Result<Tools, String> {
     host::async_runtime::spawn_blocking(wine::detect_tools)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Asks GitHub whether a newer Lutra release exists (see `updater.rs`).
+// @rpc
+async fn check_for_update() -> Result<updater::UpdateInfo, String> {
+    host::async_runtime::spawn_blocking(updater::check)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Downloads and puts in place the latest release; progress arrives as `update-install` events.
+// @rpc
+async fn install_update(app: AppHandle) -> Result<(), String> {
+    updater::install(&app)
+}
+
+/// Stops a download in progress.
+// @rpc
+async fn cancel_update() -> Result<(), String> {
+    updater::cancel();
+    Ok(())
+}
+
+/// How each helper program could be installed on this system (see `tools.rs`).
+// @rpc
+async fn tool_install_plans() -> Result<Vec<tools::Plan>, String> {
+    host::async_runtime::spawn_blocking(tools::plans)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Installs a helper program through the system's package manager; progress arrives as
+/// `tool-install` events.
+// @rpc
+async fn install_tool(app: AppHandle, tool: tools::Tool) -> Result<(), String> {
+    tools::install(&app, tool)
+}
+
+/// The helper program being installed right now, if any.
+// @rpc
+async fn installing_tool() -> Result<Option<tools::Tool>, String> {
+    Ok(tools::installing())
 }
 
 // @rpc
@@ -2715,6 +2759,43 @@ async fn read_log(
         text,
         truncated,
     })
+}
+
+/// Empties one log: Lutra's own (`app`, with its rotated copy) or one of a game's.
+// @rpc
+async fn clear_log(app: AppHandle, target: String, kind: Option<String>) -> Result<(), String> {
+    let logs = app_dir(&app)?.join("logs");
+    if target == "app" {
+        applog::clear(&logs.join("lutra.log")).map_err(|e| e.to_string())?;
+        let _ = fs::remove_file(logs.join("lutra.old.log"));
+    } else {
+        let path = game_log_path(&logs, &target, kind.as_deref().unwrap_or("game"))
+            .ok_or("this log does not exist")?;
+        fs::remove_file(path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Empties Lutra's log and deletes every game's logs. Returns how many files went.
+// @rpc
+async fn clear_logs(app: AppHandle) -> Result<u32, String> {
+    let logs = app_dir(&app)?.join("logs");
+    let mut removed = 0;
+    for entry in fs::read_dir(&logs).map_err(|e| e.to_string())?.flatten() {
+        let path = entry.path();
+        if path.file_name().is_some_and(|name| name == "lutra.log") {
+            applog::clear(&path).map_err(|e| e.to_string())?;
+            continue;
+        }
+        let gone = if path.is_dir() {
+            fs::remove_dir_all(&path)
+        } else {
+            fs::remove_file(&path)
+        };
+        removed += u32::from(gone.is_ok());
+    }
+    applog::info("Logs cleared");
+    Ok(removed)
 }
 
 /// Which logs a game has right now, in the order to show them.

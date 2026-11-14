@@ -796,6 +796,8 @@ fn run_worker(
     });
     if info.bus != "usb" {
         decoder = decoder.bluetooth();
+    } else if device::driven_by_xpad(&path) {
+        decoder = decoder.xpad();
     }
     decoder.calibrate(|axis| Some(ranges.as_ref()?.get(axis as usize)?.value));
 
@@ -1214,10 +1216,15 @@ mod hardware_tests {
     #[ignore = "needs a connected controller"]
     fn connected_controllers_are_described() {
         let found = device::scan();
-        for (_, info) in &found {
+        for (path, info) in &found {
             println!(
-                "{:?} {:04x}:{:04x} {} -> {:?}",
-                info.name, info.vendor, info.product, info.bus, info.model
+                "{:?} {:04x}:{:04x} {} -> {:?}, xpad: {}",
+                info.name,
+                info.vendor,
+                info.product,
+                info.bus,
+                info.model,
+                device::driven_by_xpad(path)
             );
         }
         assert!(!found.is_empty(), "no controller is connected");

@@ -12,7 +12,8 @@ export function PlayButton({ game, size = "md" }: { game: Game; size?: "md" | "l
 
   return (
     <Button
-      variant={running ? "secondary" : "primary"}
+      // Always over artwork (the game's banner), where only the glass style reads in both themes.
+      variant={running ? "glass" : "primary"}
       size={size}
       icon={launching ? undefined : running ? "stop" : "play"}
       onClick={toggle}

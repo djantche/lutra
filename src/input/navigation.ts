@@ -154,7 +154,13 @@ export function handleDefaultAction(action: InputAction): void {
       const active = document.activeElement;
       if (!(active instanceof HTMLElement)) break;
       const control = active.matches(ROW) ? active.querySelector<HTMLElement>(FOCUSABLE) : active;
-      if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) control.focus();
+      // A field takes the focus to be typed in, a slider to be adjusted with left and right (and
+      // gives it back on "back"); anything else is pressed.
+      const takesFocus =
+        control instanceof HTMLInputElement ||
+        control instanceof HTMLTextAreaElement ||
+        control?.getAttribute("role") === "slider";
+      if (takesFocus) control.focus();
       else control?.click();
       // A switch makes its own sound.
       if (control?.getAttribute("role") !== "switch") playSound("confirm");

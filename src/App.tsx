@@ -8,6 +8,7 @@ import { BigPictureShell } from "./shells/bigpicture/BigPictureShell";
 import { ClassicShell } from "./shells/classic/ClassicShell";
 import { RunnerInstallEffects } from "./state/RunnerInstallEffects";
 import { BatteryAlerts } from "./state/BatteryAlerts";
+import { UpdateEffects } from "./state/UpdateEffects";
 import { LibraryEffects } from "./state/LibraryEffects";
 import { PowerDialog } from "./components/PowerDialog/PowerDialog";
 import { UiProvider, useUi } from "./state/ui";
@@ -65,6 +66,7 @@ function App() {
     <UiProvider>
       <LibraryEffects />
       <BatteryAlerts />
+      <UpdateEffects />
       <RunnerInstallEffects />
       <Shell />
     </UiProvider>

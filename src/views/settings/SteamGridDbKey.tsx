@@ -93,9 +93,12 @@ export function SteamGridDbKey({ connected, onChange }: SteamGridDbKeyProps) {
       )}
 
       {!connected && (
-        <button type="button" data-focusable className={styles.link} onClick={() => void openExternal(STEAMGRIDDB_KEY_URL)}>
-          {t("settings.keyGet")}
-        </button>
+        <div className={styles.help}>
+          <span>{t("settings.keyHelp")}</span>
+          <Button variant="secondary" icon="external" onClick={() => void openExternal(STEAMGRIDDB_KEY_URL)}>
+            {t("settings.keyGet")}
+          </Button>
+        </div>
       )}
     </div>
   );

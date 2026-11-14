@@ -75,6 +75,15 @@ pub fn error(message: impl AsRef<str>) {
     write(Level::Error, message.as_ref());
 }
 
+/// Empties a log file. Lutra's own is open for appending, so what it writes next starts the file
+/// again from the top.
+pub fn clear(path: &Path) -> std::io::Result<()> {
+    match OpenOptions::new().write(true).truncate(true).open(path) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        other => other.map(|_| ()),
+    }
+}
+
 /// The end of a log file, starting on a whole line. `truncated` says older lines were left out.
 pub fn read_tail(path: &Path, max_bytes: u64) -> std::io::Result<(String, bool)> {
     let mut file = match File::open(path) {

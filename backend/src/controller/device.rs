@@ -126,6 +126,24 @@ fn usb_strings(resolved: &Path) -> UsbStrings {
         .unwrap_or_default()
 }
 
+/// Whether the `xpad` driver runs the controller behind this input node. `xpad` is what takes
+/// every USB pad that speaks XInput, whatever its maker, and it reports X and Y in the reverse of
+/// the positional order (see `Decoder`): that depends on the driver, not on the vendor id.
+pub fn driven_by_xpad(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|node| std::fs::canonicalize(Path::new("/sys/class/input").join(node)).ok())
+        .is_some_and(|resolved| xpad_above(&resolved))
+}
+
+/// Whether a device above this resolved `sysfs` path is bound to `xpad`: the USB interface
+/// carries a `driver` link to it.
+fn xpad_above(resolved: &Path) -> bool {
+    resolved.ancestors().any(|dir| {
+        std::fs::read_link(dir.join("driver"))
+            .is_ok_and(|target| target.file_name().is_some_and(|name| name == "xpad"))
+    })
+}
+
 /// The names a driver gives to controllers it knows nothing about, which say nothing of them.
 const DRIVER_FALLBACK_NAMES: &[&str] = &["Generic X-Box pad"];
 
@@ -228,6 +246,33 @@ mod tests {
         let other = root.path().join("bluetooth/hci0/input7/event9");
         std::fs::create_dir_all(&other).unwrap();
         assert_eq!(usb_strings(&other), UsbStrings::default());
+    }
+
+    #[test]
+    fn xpad_is_found_from_the_driver_link_of_the_usb_interface() {
+        let root = tempfile::tempdir().unwrap();
+        let interface = root.path().join("usb1/1-2/1-2:1.0");
+        let node = interface.join("input/input51/event257");
+        std::fs::create_dir_all(&node).unwrap();
+        std::fs::create_dir_all(root.path().join("bus/drivers/xpad")).unwrap();
+        std::fs::create_dir_all(root.path().join("bus/drivers/hid-generic")).unwrap();
+        std::os::unix::fs::symlink(
+            root.path().join("bus/drivers/xpad"),
+            interface.join("driver"),
+        )
+        .unwrap();
+        assert!(xpad_above(&node));
+
+        // The same stick as a plain HID pad: another driver, positional buttons.
+        let hid = root.path().join("usb1/1-3/1-3:1.0");
+        let hid_node = hid.join("input/input9/event5");
+        std::fs::create_dir_all(&hid_node).unwrap();
+        std::os::unix::fs::symlink(
+            root.path().join("bus/drivers/hid-generic"),
+            hid.join("driver"),
+        )
+        .unwrap();
+        assert!(!xpad_above(&hid_node));
     }
 
     #[test]

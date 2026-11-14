@@ -7,7 +7,9 @@ import { OverlayApp } from "./overlay/OverlayApp";
 import "./i18n";
 import "./styles/main.scss";
 import { applyAccessibility } from "./lib/accessibility";
+import { applyTheme } from "./lib/theme";
 
+applyTheme();
 applyAccessibility();
 
 // The in-game overlay is the same app opened in its own window (`?overlay=1`).

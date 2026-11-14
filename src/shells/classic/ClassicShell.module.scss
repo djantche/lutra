@@ -34,6 +34,9 @@ $rail: 820px;
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  // The title bar floats over the top of this area: what the keyboard or the pad selects is
+  // scrolled into view below it, not under it.
+  scroll-padding-top: 5.5rem;
 }
 
 .page {

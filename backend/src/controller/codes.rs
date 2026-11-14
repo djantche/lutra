@@ -244,6 +244,13 @@ impl Decoder {
         self
     }
 
+    /// The pad is run by the `xpad` driver, whoever made it: a DragonRise arcade stick is an
+    /// Xbox 360 pad to the kernel, and its X and Y come in xpad's order.
+    pub fn xpad(mut self) -> Self {
+        self.xpad_layout = true;
+        self
+    }
+
     /// Takes the sticks' current position as their rest position, when they are close enough
     /// to the centre to be at rest. `current` gives the axis' value as the device reports it.
     pub fn calibrate(&mut self, current: impl Fn(u16) -> Option<i32>) {
@@ -569,6 +576,15 @@ mod tests {
         assert!(state.pressed(Button::North));
         assert!(state.pressed(Button::DpadUp));
         assert_eq!((state.lx, state.ly), (1.0, -1.0));
+    }
+
+    #[test]
+    fn xpad_x_and_y_are_put_back_even_for_a_pad_that_is_not_microsofts() {
+        // An arcade stick from another maker, taken by xpad.
+        let mut decoder = Decoder::new(Family::Generic, |_| None).xpad();
+        decoder.feed(EV_KEY, key::X, 1);
+        assert!(decoder.state().pressed(Button::West));
+        assert!(!decoder.state().pressed(Button::North));
     }
 
     #[test]

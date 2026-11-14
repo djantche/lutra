@@ -27,5 +27,8 @@ contextBridge.exposeInMainWorld("lutra", {
   /** Zooms the whole interface (1 is normal size). */
   setZoom: (factor) => webFrame.setZoomFactor(factor),
 
+  /** Starts Lutra again (after an update replaced its AppImage) and closes this one. */
+  relaunch: () => ipcRenderer.invoke("relaunch"),
+
   version: () => ipcRenderer.invoke("version"),
 });

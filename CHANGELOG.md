@@ -4,6 +4,29 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-14
+
+### Added
+
+- **Updates** (Settings > About): Lutra looks at its GitHub releases when it starts and about once a day, tells you once per new version (a message and a system notification), and an AppImage can install the update itself: it downloads the release's AppImage, checks the SHA-256 GitHub published for it, keeps the old file as `<name>.previous` and offers to restart. Other installs (a package, a build from source) are sent to the release page. Checking, notifying, announcing only major versions (while below 1.0, each 0.x counts as one) and skipping a version are all options.
+- **Theme** (Settings > General): light, dark, or the system's.
+- **Install missing tools** (Settings > Windows games): Wine, umu-launcher, Winetricks, GameMode and MangoHud can be installed from the list through the system's package manager (the password is asked by polkit, never by Lutra), or the command is offered to copy.
+- A button to clear the logs, in the log viewer and in Settings > Logs.
+- A link to generate the SteamGridDB API key, next to the field.
+- `pnpm dev:electron`: Vite's hot reload inside Electron, with a debug backend.
+
+### Changed
+
+- The interface mode setting is now the **default** mode Lutra opens in. Switching during a session no longer changes it.
+- Face buttons on the test and remap screens are round badges in the maker's colours instead of sprite images (the sprite pack is gone).
+- Settings sliders: confirm gives the slider the focus, left and right adjust it, back returns to its row, up and down move to the neighbouring items.
+
+### Fixed
+
+- X and Y swapped on arcade sticks (and any pad run by `xpad` that is not Microsoft's).
+- "Waiting for the game…" unreadable on a game's banner in the light theme.
+- What the keyboard or a controller selects is no longer left half under the title bar when the page scrolls to it.
+
 ## [0.6.0] - 2026-11-14
 
 ### Added

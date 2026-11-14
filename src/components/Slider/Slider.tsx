@@ -36,10 +36,9 @@ export function Slider({ value, min, max, step, onChange, ariaLabel, format = St
   const onKeyDown = (event: KeyboardEvent) => {
     const big = (max - min) / 10;
     const next: Record<string, number> = {
+      // Up and down are not here: they leave the slider for the neighbouring items.
       ArrowLeft: value - step,
-      ArrowDown: value - step,
       ArrowRight: value + step,
-      ArrowUp: value + step,
       PageDown: value - big,
       PageUp: value + big,
       Home: min,
@@ -52,11 +51,19 @@ export function Slider({ value, min, max, step, onChange, ariaLabel, format = St
     }
   };
 
-  // With a controller, left/right adjust the slider while it is selected.
+  // While the slider has the focus (a row's confirm gives it): left and right adjust it, with the
+  // keyboard or a controller, and back hands the focus to its row so navigation carries on from
+  // there. Up and down are left to move to the neighbouring items.
   useInputAction((action) => {
     if (document.activeElement !== track.current) return;
     if (action === "left" || action === "right") {
       commit(value + (action === "right" ? step : -step));
+      return true;
+    }
+    if (action === "back") {
+      const row = track.current?.closest<HTMLElement>("[data-nav-row]");
+      if (row) row.focus({ preventScroll: true });
+      else track.current?.blur();
       return true;
     }
   });

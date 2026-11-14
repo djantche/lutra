@@ -31,7 +31,10 @@
     transform: translateY(-50%);
   }
 
-  &:focus-visible {
+  // After a click the browser does not call a script's focus "visible": the keyboard and the pad
+  // set `data-input="nav"` for that.
+  &:focus-visible,
+  :global([data-input="nav"]) &:focus {
     outline: none;
     box-shadow: none;
 

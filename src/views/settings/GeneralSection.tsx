@@ -7,13 +7,15 @@ import { Select } from "../../components/Select/Select";
 import { SegmentedControl } from "../../components/SegmentedControl/SegmentedControl";
 import { SettingsGroup, SettingsRow } from "../../components/SettingsGroup/SettingsGroup";
 import { LANGUAGES, setLanguage } from "../../i18n";
+import { setTheme, theme, type ThemeChoice } from "../../lib/theme";
 import { useUi } from "../../state/ui";
 import styles from "./GeneralSection.module.scss";
 
 export function GeneralSection() {
   const { t, i18n } = useTranslation();
-  const { mode, setMode } = useUi();
+  const { defaultMode, setDefaultMode } = useUi();
   const [tray, setTray] = useState<TraySettings | null>(null);
+  const [appearance, setAppearance] = useState<ThemeChoice>(theme);
 
   useEffect(() => {
     traySettings()
@@ -43,15 +45,31 @@ export function GeneralSection() {
         </div>
       </SettingsRow>
 
-      <SettingsRow title={t("settings.mode")} description={t("settings.modeHint")}>
+      <SettingsRow title={t("settings.theme")} description={t("settings.themeHint")}>
         <SegmentedControl
-          ariaLabel={t("settings.mode")}
+          ariaLabel={t("settings.theme")}
+          segments={[
+            { value: "system", icon: "monitor", label: t("settings.themeSystem") },
+            { value: "light", icon: "sun", label: t("settings.themeLight") },
+            { value: "dark", icon: "moon", label: t("settings.themeDark") },
+          ]}
+          value={appearance}
+          onChange={(choice) => {
+            setAppearance(choice);
+            setTheme(choice);
+          }}
+        />
+      </SettingsRow>
+
+      <SettingsRow title={t("settings.defaultMode")} description={t("settings.defaultModeHint")}>
+        <SegmentedControl
+          ariaLabel={t("settings.defaultMode")}
           segments={[
             { value: "classic", label: t("settings.modeClassic") },
             { value: "bigpicture", label: t("settings.modeBigPicture") },
           ]}
-          value={mode}
-          onChange={setMode}
+          value={defaultMode}
+          onChange={setDefaultMode}
         />
       </SettingsRow>
     </SettingsGroup>

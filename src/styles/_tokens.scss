@@ -52,28 +52,39 @@
   color-scheme: dark;
 }
 
+// The light palette. It applies when the system asks for light (and the person did not force dark
+// in Settings > General) or when the person forced light. `data-theme` is set by `lib/theme.ts`.
+@mixin light-palette {
+  --color-bg: #f4f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-surface: rgb(15 18 35 / 0.035);
+  --color-surface-hover: rgb(15 18 35 / 0.065);
+  --color-surface-active: rgb(15 18 35 / 0.1);
+  --color-border: rgb(15 18 35 / 0.08);
+  --color-border-strong: rgb(15 18 35 / 0.15);
+  --color-text: #12141f;
+  --color-text-muted: #61667e;
+  --color-text-subtle: #9095ab;
+  --color-accent: #4f5fe8;
+  --color-accent-hover: #4352d6;
+  --color-accent-soft: rgb(79 95 232 / 0.1);
+  --color-favorite: #f0a500;
+  --color-success: #178a5b;
+
+  --shadow-md: 0 10px 30px -12px rgb(20 24 50 / 0.25);
+  --shadow-lg: 0 30px 60px -24px rgb(20 24 50 / 0.35);
+
+  color-scheme: light;
+}
+
 @media (prefers-color-scheme: light) {
-  :root {
-    --color-bg: #f4f5f9;
-    --color-bg-elevated: #ffffff;
-    --color-surface: rgb(15 18 35 / 0.035);
-    --color-surface-hover: rgb(15 18 35 / 0.065);
-    --color-surface-active: rgb(15 18 35 / 0.1);
-    --color-border: rgb(15 18 35 / 0.08);
-    --color-border-strong: rgb(15 18 35 / 0.15);
-    --color-text: #12141f;
-    --color-text-muted: #61667e;
-    --color-text-subtle: #9095ab;
-    --color-accent: #4f5fe8;
-    --color-accent-hover: #4352d6;
-    --color-accent-soft: rgb(79 95 232 / 0.1);
-    --color-favorite: #f0a500;
-
-    --shadow-md: 0 10px 30px -12px rgb(20 24 50 / 0.25);
-    --shadow-lg: 0 30px 60px -24px rgb(20 24 50 / 0.35);
-
-    color-scheme: light;
+  :root:not([data-theme="dark"]) {
+    @include light-palette;
   }
+}
+
+:root[data-theme="light"] {
+  @include light-palette;
 }
 
 // High contrast mode (Settings > Accessibility): text, borders and surfaces stand out more.
@@ -90,17 +101,25 @@
   --color-surface-active: rgb(255 255 255 / 0.27);
 }
 
+@mixin light-high-contrast {
+  --color-bg: #fff;
+  --color-bg-elevated: #fff;
+  --color-text: #000;
+  --color-text-muted: #25283b;
+  --color-text-subtle: #454961;
+  --color-border: rgb(0 0 0 / 0.4);
+  --color-border-strong: rgb(0 0 0 / 0.75);
+  --color-surface: rgb(0 0 0 / 0.07);
+  --color-surface-hover: rgb(0 0 0 / 0.13);
+  --color-surface-active: rgb(0 0 0 / 0.2);
+}
+
 @media (prefers-color-scheme: light) {
-  :root[data-contrast="high"] {
-    --color-bg: #fff;
-    --color-bg-elevated: #fff;
-    --color-text: #000;
-    --color-text-muted: #25283b;
-    --color-text-subtle: #454961;
-    --color-border: rgb(0 0 0 / 0.4);
-    --color-border-strong: rgb(0 0 0 / 0.75);
-    --color-surface: rgb(0 0 0 / 0.07);
-    --color-surface-hover: rgb(0 0 0 / 0.13);
-    --color-surface-active: rgb(0 0 0 / 0.2);
+  :root[data-contrast="high"]:not([data-theme="dark"]) {
+    @include light-high-contrast;
   }
+}
+
+:root[data-contrast="high"][data-theme="light"] {
+  @include light-high-contrast;
 }

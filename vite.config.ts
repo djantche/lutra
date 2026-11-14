@@ -5,8 +5,8 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
 
-  // Vite serves the interface while developing: `pnpm dev`, then
-  // `LUTRA_DEV_URL=http://localhost:1420 pnpm exec electron .` in another terminal.
+  // Vite serves the interface while developing: `pnpm dev:electron` runs it inside Electron
+  // (`LUTRA_DEV_URL` makes the shell load this server), `pnpm dev` alone is for a browser.
   clearScreen: false,
   server: {
     port: 1420,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button/Button";
 import { Select } from "../../components/Select/Select";
@@ -25,6 +25,12 @@ export function WindowsSection() {
   const [chosen, setChosen] = useState(AUTOMATIC);
   const [tools, setTools] = useState<Tools | null>(null);
 
+  const reloadTools = useCallback(() => {
+    wineTools()
+      .then(setTools)
+      .catch(() => setTools(null));
+  }, []);
+
   useEffect(() => {
     const load = () =>
       listRunners()
@@ -36,11 +42,9 @@ export function WindowsSection() {
     defaultRunner()
       .then((path) => setChosen(path ?? AUTOMATIC))
       .catch(() => setChosen(AUTOMATIC));
-    wineTools()
-      .then(setTools)
-      .catch(() => setTools(null));
+    reloadTools();
     return () => void stop.then((unlisten) => unlisten());
-  }, []);
+  }, [reloadTools]);
 
   const choose = (path: string) => {
     setChosen(path);
@@ -79,7 +83,7 @@ export function WindowsSection() {
       {tools && (
         <SettingsGroup title={t("settings.tools")}>
           <SettingsRow stacked title={t("settings.toolsFound")} description={t("settings.toolsHint")}>
-            <ToolsStatus tools={tools} />
+            <ToolsStatus tools={tools} onInstalled={reloadTools} />
           </SettingsRow>
         </SettingsGroup>
       )}

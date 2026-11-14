@@ -16,6 +16,7 @@ interface LutraBridge {
   ): Promise<void>;
   pick(options: PickOptions): Promise<string | null>;
   version(): Promise<string>;
+  relaunch(): Promise<void>;
   setZoom(factor: number): void;
 }
 
@@ -70,5 +71,8 @@ export function setZoom(factor: number): void {
   if (isHosted()) bridge().setZoom(factor);
   else document.documentElement.style.zoom = String(factor);
 }
+
+/** Starts Lutra again and closes this one (after an update). */
+export const relaunchApp = (): Promise<void> => bridge().relaunch();
 
 export const appVersion = (): Promise<string> => bridge().version();

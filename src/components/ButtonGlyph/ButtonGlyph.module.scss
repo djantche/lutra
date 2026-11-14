@@ -1,5 +1,37 @@
-.icon {
+// Colours come from the line it sits in (`--glyph-ink`, `--glyph-bg`, `--glyph-face`), so a lit or
+// selected line can recolour its glyphs without knowing what they are.
+.glyph {
+  display: inline-grid;
   flex: none;
+  place-items: center;
+  min-width: 2.2em;
   height: 1.9em;
-  width: auto;
+  padding: 0 0.45em;
+  border-radius: 999px;
+  background: var(--glyph-bg, rgb(255 255 255 / 0.08));
+  color: var(--glyph-ink, var(--color-text));
+  font: inherit;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+// A face button: a round badge tinted with its own colour, ringed in a stronger one.
+.face {
+  min-width: 0;
+  width: 1.9em;
+  padding: 0;
+  color: var(--glyph-face, var(--face, var(--color-text)));
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 55%, transparent);
+  font-size: 0.95em;
+}
+
+.symbol {
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
