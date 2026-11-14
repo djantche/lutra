@@ -4,6 +4,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-14
+
+### Added
+
+- **Components** in a Windows game's settings (the Wine tab, in both the desktop and Big Picture modes): the Windows libraries games most often ask for can be installed, switched on and off, and taken out, from one list: the shader compiler (`d3dcompiler_47`), the DirectX 9 and 11 libraries, the Visual C++ 2015-2022 runtime, Microsoft's core fonts and XACT audio. A download fills a real progress bar with its percentage; unpacking and registering, which cannot be measured, get an animated bar and their name. A switch turns a component's DLLs on and off without deleting anything. **Remove** puts Wine's own DLLs back, for the components that are plain DLL copies (the shader compiler and the DirectX libraries); the ones that ran an installer cannot be undone cleanly and only get the switch. Nothing changes while the game runs, since its prefix is in use.
+- Lutra installs Microsoft's own `d3dcompiler_47` itself, instead of the 2013 build Winetricks offers: it reads that one file (about 2 MB) out of Electron's 158 MB Windows release with range requests, and only accepts the expected size and SHA-256. A prefix that has the old copy is offered an **Update**. With the old one, every vertex shader of some games (Tekken Tag Tournament 2's PC port, for one) failed to compile and fell back to the processor, which left the game at a few frames per second.
+- **Arcade sticks** are recognised, whatever their maker: by what they call themselves (fightstick, fighting stick, arcade stick, Hitbox, leverless, Panthera, Qanba...), read from the USB product name, so a stick that appears under two different USB identities is found under both. They get their own line drawing: a lever seen from above that leans and lights up, two rows of four buttons in the Xbox order, and the system buttons. On the test and remap screens, what is pressed lights up like on the DualShock 4.
+- **Every other controller gets a standard gamepad drawing** instead of the old schematic, with its buttons named the way its maker names them (A B X Y on an Xbox pad). The sticks move, the D-pad fills the direction pressed, the bumpers and the triggers light up with the buttons.
+- **Your own artwork.** In a game's Artwork tab, a cover, a banner or a logo can be an image of your own, from a file or a link. Lutra keeps its own copy, so the original can move or disappear, and tells an image by its content, not by its name or its ending. Logos can now be picked from SteamGridDB too, in a **Logos** tab of the gallery.
+- A new application icon.
+
+### Changed
+
+- A controller is shown under the name its maker gave it (its USB product name) when the system only knows it as the driver's made-up "Generic X-Box pad".
+- The virtual controller Lutra presents takes USB ids that no connected controller uses. The one made for an arcade stick used to take the ids of a real DualShock 4 beside it, so that one was not hidden from the game, which saw it twice.
+- The log only warns that a Windows game "gets a PlayStation 4 controller that XInput cannot see" when that is true (without `/dev/uhid`). The controller Lutra creates normally is read through `hidraw`, which Wine and Proton turn into an XInput pad too.
+
+### Fixed
+
+- A controller that worked at one launch of a game and did nothing at the next, in the menus as well as in games, when two controllers were connected. Lutra gave the same Bluetooth address to all its virtual DualShocks, and the kernel refuses a second one with an address it already has (`Duplicate device found for MAC address`): the one created last had no gamepad, and which one that was changed from a launch to the next. Each virtual DualShock now has its own address.
+
 ## [0.5.2] - 2026-11-13
 
 ### Changed

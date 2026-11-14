@@ -1,6 +1,6 @@
 [package]
 name = "lutra"
-version = "0.5.2"
+version = "0.6.0"
 description = "The backend of Lutra, a modern game library and launcher for Linux"
 authors = ["Lutra contributors"]
 license = "GPL-3.0-or-later"
