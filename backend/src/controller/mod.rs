@@ -104,6 +104,9 @@ struct Shared {
     power_target: Mutex<Option<ControllerInfo>>,
     /// The in-game overlay is open: the game gets a neutral controller and the overlay the input.
     overlay: AtomicBool,
+    /// The USB ids of the physical controllers connected. A virtual controller must not take any
+    /// of them, whichever physical controller it stands in for.
+    physicals: Mutex<Vec<(u16, u16)>>,
 }
 
 impl Shared {
@@ -158,6 +161,7 @@ impl ControllerService {
             on_nav,
             power_target: Mutex::new(None),
             overlay: AtomicBool::new(false),
+            physicals: Mutex::new(Vec::new()),
         });
         let workers: Arc<Mutex<HashMap<PathBuf, Worker>>> = Arc::default();
 
@@ -341,11 +345,15 @@ fn ignore_list(
     output: OutputKind,
     windows: bool,
 ) -> Option<String> {
+    let physicals: Vec<(u16, u16)> = controllers
+        .iter()
+        .map(|controller| (controller.vendor, controller.product))
+        .collect();
     let shown: Vec<(u16, u16)> = controllers
         .iter()
         .filter_map(|controller| {
             let output = output.resolve(windows, controller.family == Family::PlayStation);
-            virtual_pad::identity(output, (controller.vendor, controller.product))
+            virtual_pad::identity(output, &physicals)
         })
         .collect();
     let hidden: BTreeSet<(u16, u16)> = controllers
@@ -365,6 +373,11 @@ fn ignore_list(
 /// Starts workers for new controllers and forgets unplugged ones. True if the list changed.
 fn refresh(shared: &Arc<Shared>, workers: &Arc<Mutex<HashMap<PathBuf, Worker>>>) -> bool {
     let found = device::scan();
+    // Before any worker starts: a new one picks its virtual controller's ids from this list.
+    *shared.physicals.lock().expect("physicals") = found
+        .iter()
+        .map(|(_, info)| (info.vendor, info.product))
+        .collect();
     let mut workers = workers.lock().expect("workers");
     let mut changed = false;
 
@@ -496,6 +509,7 @@ fn activate(
     mut profile: Profile,
     windows_game: bool,
     system: bool,
+    physicals: &[(u16, u16)],
 ) -> Option<Active> {
     if profile.output == OutputKind::None {
         return None;
@@ -503,7 +517,6 @@ fn activate(
     profile.output = profile
         .output
         .resolve(windows_game, info.family == Family::PlayStation);
-    let physical = (info.vendor, info.product);
     let hid_ds4 = profile.output == OutputKind::Ds4 && virtual_ds4::available();
     if profile.output == OutputKind::Ds4 && !hid_ds4 {
         applog::warn(
@@ -514,13 +527,14 @@ fn activate(
     let created = if profile.output == OutputKind::Keyboard {
         None
     } else if hid_ds4 {
-        let identity = virtual_pad::identity(OutputKind::Ds4, physical).unwrap_or(physical);
+        let identity = virtual_pad::identity(OutputKind::Ds4, physicals)
+            .unwrap_or((info.vendor, info.product));
         Some(
             virtual_ds4::VirtualDs4::create(identity, NEXT_HID.fetch_add(1, Ordering::SeqCst))
                 .map(VirtualGamepad::Hid),
         )
     } else {
-        Some(virtual_pad::create(profile.output, physical).map(VirtualGamepad::Input))
+        Some(virtual_pad::create(profile.output, physicals).map(VirtualGamepad::Input))
     };
     let pad = match created {
         None => None,
@@ -805,17 +819,23 @@ fn run_worker(
                 let session = shared.session.lock().expect("session");
                 (session.owner.clone(), session.profile.clone())
             };
+            let physicals = shared.physicals.lock().expect("physicals").clone();
             active = match (owner, profile) {
-                (Some(owner), Some(profile)) => {
-                    activate(&mut device, &info, profile, windows_game(&owner), false)
-                }
+                (Some(owner), Some(profile)) => activate(
+                    &mut device,
+                    &info,
+                    profile,
+                    windows_game(&owner),
+                    false,
+                    &physicals,
+                ),
                 (None, _) if shared.system_wide() => {
                     let profile = shared
                         .system_profile
                         .lock()
                         .expect("system profile")
                         .clone();
-                    activate(&mut device, &info, profile, false, true)
+                    activate(&mut device, &info, profile, false, true, &physicals)
                 }
                 _ => None,
             };
@@ -999,7 +1019,7 @@ mod hardware_tests {
             (OutputKind::Xbox360, 0x045e, 0x028e),
             (OutputKind::Ds4, 0x054c, 0x09cc),
         ] {
-            let mut pad = virtual_pad::create(kind, (0, 0)).expect("virtual controller");
+            let mut pad = virtual_pad::create(kind, &[]).expect("virtual controller");
             let node = pad
                 .device
                 .enumerate_dev_nodes_blocking()
@@ -1076,6 +1096,39 @@ mod hardware_tests {
         assert!(hidraw, "games find the controller through hidraw");
     }
 
+    /// Two physical controllers mean two virtual DualShocks at once, and the kernel driver keeps
+    /// each by its address: with one address for both, the second had no gamepad, and which one
+    /// that was changed from a launch to the next. `cargo test -- --ignored two_hid_dualshocks`
+    #[test]
+    #[ignore = "needs /dev/uhid"]
+    fn two_hid_dualshocks_are_both_taken_by_the_kernel_driver() {
+        let mut first =
+            virtual_ds4::VirtualDs4::create((0x054c, 0x09cc), 901).expect("first uhid device");
+        let mut second =
+            virtual_ds4::VirtualDs4::create((0x054c, 0x05c4), 902).expect("second uhid device");
+        let phys = |index: u32| format!("{}/ds4-{index}", virtual_ds4::PHYS_PREFIX);
+        let started = Instant::now();
+        let mut found: Vec<String> = Vec::new();
+        while started.elapsed() < Duration::from_secs(5) && found.len() < 2 {
+            for pad in [&mut first, &mut second] {
+                pad.process();
+                pad.tick(Instant::now());
+            }
+            found = evdev::enumerate()
+                .filter(|(_, device)| {
+                    device
+                        .supported_keys()
+                        .is_some_and(|keys| keys.contains(evdev::KeyCode::BTN_SOUTH))
+                })
+                .filter_map(|(path, _)| device::lutra_hid_phys(&path))
+                .filter(|path| path == &phys(901) || path == &phys(902))
+                .collect();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        found.sort();
+        assert_eq!(found, vec![phys(901), phys(902)], "both got a gamepad");
+    }
+
     #[test]
     #[ignore = "needs /dev/uinput"]
     fn converted_input_arrives_as_keyboard_and_mouse_events() {
@@ -1134,7 +1187,7 @@ mod hardware_tests {
             .ok()
             .and_then(|value| value.parse().ok())
             .unwrap_or(20);
-        let mut pad = virtual_pad::create(OutputKind::Xbox360, (0, 0)).expect("virtual controller");
+        let mut pad = virtual_pad::create(OutputKind::Xbox360, &[]).expect("virtual controller");
         let mut previous = PadState::default();
         let started = Instant::now();
         // A and the stick alternate between pressed and released, so a program that opens the
@@ -1153,6 +1206,21 @@ mod hardware_tests {
             previous = state;
             std::thread::sleep(Duration::from_millis(50));
         }
+    }
+
+    /// What Lutra makes of the controllers that are connected: their name, model and ids.
+    /// `cargo test -- --ignored --nocapture connected_controllers_are_described`
+    #[test]
+    #[ignore = "needs a connected controller"]
+    fn connected_controllers_are_described() {
+        let found = device::scan();
+        for (_, info) in &found {
+            println!(
+                "{:?} {:04x}:{:04x} {} -> {:?}",
+                info.name, info.vendor, info.product, info.bus, info.model
+            );
+        }
+        assert!(!found.is_empty(), "no controller is connected");
     }
 
     #[test]
@@ -1211,6 +1279,21 @@ mod ignore_tests {
         // hidraw node anyway, so grabbing it is enough).
         let xbox = [controller(0x045e, 0x028e)];
         assert_eq!(ignore_list(&xbox, OutputKind::Xbox360, true), None);
+    }
+
+    #[test]
+    fn a_stick_beside_a_dualshock_does_not_leave_the_dualshock_visible_to_games() {
+        // The virtual DualShock made for the stick used to take the real one's ids, so the real one
+        // counted as "shown" and was not hidden: the game saw it twice.
+        let pads = [controller(0x054c, 0x09cc), controller(0x0079, 0x187c)];
+        assert_eq!(
+            ignore_list(&pads, OutputKind::Ds4, true).as_deref(),
+            Some("0x0079/0x187c,0x054c/0x09cc")
+        );
+        // Whatever pads are connected, no virtual controller takes the ids of a physical one.
+        let ids: Vec<(u16, u16)> = pads.iter().map(|pad| (pad.vendor, pad.product)).collect();
+        let virtual_ids = virtual_pad::identity(OutputKind::Ds4, &ids).unwrap();
+        assert!(!ids.contains(&virtual_ids));
     }
 }
 

@@ -38,7 +38,7 @@ export function ArtworkTab({ game }: { game: Game }) {
     setChoices(null);
     artworkChoices(game.id, sgdbGame)
       .then((found) => current && setChoices(found))
-      .catch(() => current && setChoices({ posters: [], heroes: [] }));
+      .catch(() => current && setChoices({ posters: [], heroes: [], logos: [] }));
     return () => {
       current = false;
     };

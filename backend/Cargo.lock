@@ -528,6 +528,7 @@ version = "0.5.2"
 dependencies = [
  "chrono",
  "evdev",
+ "flate2",
  "libc",
  "rusqlite",
  "serde",

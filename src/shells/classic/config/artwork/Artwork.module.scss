@@ -49,6 +49,30 @@
   }
 }
 
+.previewLogo {
+  flex: none;
+  width: 140px;
+
+  .frame {
+    // Logos sit on a darkened banner, so they are shown on a dark ground too.
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    padding: var(--space-3);
+    background: #14171f;
+    font-size: 1rem;
+  }
+}
+
+.previewLogoBox {
+  --logo-width: 100%;
+  --logo-height: 100%;
+  --logo-align: center;
+  --logo-text-align: center;
+  align-items: center;
+}
+
 // ---- Matched game and search
 
 .source {
@@ -166,6 +190,24 @@
   justify-content: space-between;
 }
 
+.import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.importRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.importField {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
 .count {
   color: var(--color-text-subtle);
   font-size: 0.82rem;
@@ -179,6 +221,10 @@
 
 .gridWide {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.gridLogo {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
 }
 
 .thumb {
@@ -213,6 +259,17 @@
 
 .thumbWide {
   aspect-ratio: 1920 / 620;
+}
+
+.thumbLogo {
+  aspect-ratio: 16 / 9;
+  // Logos are mostly white: they need the dark ground they are shown on.
+  background: #14171f;
+
+  img {
+    object-fit: contain;
+    padding: var(--space-3);
+  }
 }
 
 .selected {

@@ -1,0 +1,74 @@
+// Sized in em so each shell can scale it. A state never changes the row's height.
+.state,
+.installed,
+.progress {
+  animation: settle var(--duration-base) var(--ease-out) both;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  width: 15em;
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+  font-size: 0.88em;
+}
+
+.label {
+  color: var(--color-text-muted);
+}
+
+.percent {
+  color: var(--color-accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.installed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.45em 0.95em 0.45em 0.8em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+  font-size: 0.88em;
+  font-weight: 600;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+// The word says what the switch does now, in the color of the state.
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8em;
+  cursor: pointer;
+  font-size: 0.88em;
+  font-weight: 600;
+}
+
+.on {
+  color: var(--color-success);
+}
+
+.off {
+  color: var(--color-text-muted);
+}

@@ -1,36 +1,109 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Lutra — modern otter gaming icon</title>
+  <desc id="desc">A playful otter curls into an open ring, embracing a minimalist gaming controller. Warm coral orange over midnight blue.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8592ff"/>
-      <stop offset="1" stop-color="#3b45c4"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#232D40"/>
+      <stop offset=".53" stop-color="#182233"/>
+      <stop offset="1" stop-color="#101824"/>
     </linearGradient>
-    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#9c6846"/>
-      <stop offset="1" stop-color="#76482c"/>
+    <radialGradient id="ambient" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#53627B" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#141D2A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fur" x1=".1" y1="0" x2=".92" y2=".95">
+      <stop offset="0" stop-color="#FFB66F"/>
+      <stop offset=".32" stop-color="#FC935E"/>
+      <stop offset=".77" stop-color="#EF6F4C"/>
+      <stop offset="1" stop-color="#DE5A46"/>
     </linearGradient>
+    <linearGradient id="muzzle" x1="0" y1="0" x2=".65" y2="1">
+      <stop offset="0" stop-color="#FFFAEA"/>
+      <stop offset="1" stop-color="#FFE1BB"/>
+    </linearGradient>
+    <linearGradient id="controller" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF9EC"/>
+      <stop offset="1" stop-color="#FFE5C8"/>
+    </linearGradient>
+    <filter id="inner-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <ellipse cx="256" cy="414" rx="170" ry="20" fill="#000" opacity="0.16"/>
-  <circle cx="98" cy="232" r="30" fill="url(#fur)"/>
-  <circle cx="414" cy="232" r="30" fill="url(#fur)"/>
-  <circle cx="102" cy="236" r="14" fill="#55321e"/>
-  <circle cx="410" cy="236" r="14" fill="#55321e"/>
-  <path d="M256 124 C368 124 440 196 440 282 C440 360 360 404 256 404 C152 404 72 360 72 282 C72 196 144 124 256 124Z" fill="url(#fur)"/>
-  <path d="M256 236 C330 236 404 268 404 324 C404 372 336 398 256 398 C176 398 108 372 108 324 C108 268 182 236 256 236Z" fill="#f2dbbf"/>
-  <ellipse cx="216" cy="318" rx="56" ry="42" fill="#fbe9d3"/>
-  <ellipse cx="296" cy="318" rx="56" ry="42" fill="#fbe9d3"/>
-  <circle cx="178" cy="226" r="19" fill="#24160f"/>
-  <circle cx="334" cy="226" r="19" fill="#24160f"/>
-  <circle cx="172" cy="219" r="6" fill="#fff"/>
-  <circle cx="328" cy="219" r="6" fill="#fff"/>
-  <path d="M220 272 Q256 260 292 272 Q290 296 256 304 Q222 296 220 272Z" fill="#24160f"/>
-  <path d="M256 304 V320 M256 320 Q244 336 230 330 M256 320 Q268 336 282 330" fill="none" stroke="#24160f" stroke-width="7" stroke-linecap="round"/>
-  <g fill="#b48460">
-    <circle cx="196" cy="306" r="4.5"/><circle cx="180" cy="322" r="4.5"/><circle cx="200" cy="330" r="4.5"/>
-    <circle cx="316" cy="306" r="4.5"/><circle cx="332" cy="322" r="4.5"/><circle cx="312" cy="330" r="4.5"/>
+  <!-- The tile can be hidden for a transparent application icon. -->
+  <g id="background">
+    <rect x="16" y="16" width="992" height="992" rx="226" fill="url(#tile)"/>
+    <rect x="16" y="16" width="992" height="992" rx="226" fill="url(#ambient)"/>
   </g>
-  <g fill="none" stroke="#fbe9d3" stroke-width="5" stroke-linecap="round" opacity="0.9">
-    <path d="M160 312 Q120 300 84 306"/><path d="M160 328 Q122 330 90 344"/>
-    <path d="M352 312 Q392 300 428 306"/><path d="M352 328 Q390 330 422 344"/>
+  <!-- Curled otter: readable as a distinctive C-shaped silhouette at dock sizes. -->
+  <g id="otter">
+    <path id="tail-body" fill="url(#fur)" d="M 667 285
+      C 566 213 419 215 315 292
+      C 207 373 155 484 177 624
+      C 201 775 337 871 493 866
+      C 621 862 718 796 765 691
+      C 692 743 620 763 536 756
+      C 406 744 305 652 303 531
+      C 301 433 374 348 467 333
+      C 538 321 587 345 633 385
+      Z"/>
+    <!-- Underside: a single soft ribbon, not a busy cartoon outline. -->
+    <path id="belly" fill="#FFD9AE" d="M 298 663
+      C 337 736 414 779 514 795
+      C 600 807 681 778 745 717
+      C 684 803 594 841 492 837
+      C 403 833 335 765 298 663 Z"/>
+    <!-- Outer ear -->
+    <path id="ear" fill="#F18A59" d="M 615 285
+      C 605 255 607 219 619 193
+      Q 628 179 641 191
+      L 676 240
+      C 671 260 653 283 615 285 Z"/>
+    <path id="ear-inner" fill="#BB5545" d="M 631 246
+      C 625 231 626 217 631 208
+      L 652 239
+      Z"/>
+    <!-- Otter head turned to the right; deliberately simplified. -->
+    <path id="head" fill="url(#fur)" d="M 603 272
+      C 637 242 693 237 733 253
+      C 770 263 793 290 802 321
+      C 824 329 837 350 830 372
+      C 822 397 792 409 758 408
+      C 729 433 674 429 633 405
+      C 598 384 580 340 591 303
+      Q 594 284 603 272 Z"/>
+    <path id="cheek" fill="url(#muzzle)" d="M 668 346
+      C 685 326 719 325 742 343
+      C 756 330 786 327 805 342
+      C 821 355 812 382 794 395
+      C 768 419 716 417 689 402
+      C 671 393 661 365 668 346 Z"/>
+    <path id="snout" fill="#F1C9A7" d="M 767 351 Q 797 341 818 358 Q 817 375 799 380 Q 778 381 767 351 Z"/>
+    <circle id="eye" cx="735" cy="315" r="13.8" fill="#263144"/>
+    <circle id="eye-spark" cx="740" cy="309.5" r="3.7" fill="#FFFFFF"/>
+    <path id="nose" fill="#263144" d="M 804 349 C 816 344 829 348 831 358 C 827 371 815 375 805 367 C 799 362 797 354 804 349 Z"/>
+    <path id="smile" d="M 768 377 Q 773 385 786 383" fill="none" stroke="#B67666" stroke-width="5.5" stroke-linecap="round"/>
+    <!-- One paw rests on the controller: the visual wink. -->
+    <path id="paw" d="M 612 429 C 626 411 654 407 671 418 C 686 431 685 459 672 474 C 657 493 630 499 617 483 C 608 470 606 444 612 429 Z" fill="#F58A58"/>
+    <path id="paw-inside" d="M 635 450 Q 648 458 656 445" fill="none" stroke="#D5644B" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g id="gamepad">
+    <!-- Casing's silhouette is designed to remain legible at 32 px. -->
+    <path id="shell-shadow" d="M 410 482 C 370 480 342 506 328 546 L 295 651 C 286 683 300 709 327 712 C 347 714 368 701 388 682 L 423 649 C 465 660 548 660 591 649 L 627 682 C 650 704 666 713 685 710 C 712 706 722 678 713 648 L 681 545 C 670 506 639 481 599 482 C 539 488 468 488 410 482 Z" fill="#0C1420" opacity=".34" transform="translate(0 14)"/>
+    <path id="shell" d="M 410 482 C 370 480 342 506 328 546 L 295 651 C 286 683 300 709 327 712 C 347 714 368 701 388 682 L 423 649 C 465 660 548 660 591 649 L 627 682 C 650 704 666 713 685 710 C 712 706 722 678 713 648 L 681 545 C 670 506 639 481 599 482 C 539 488 468 488 410 482 Z" fill="url(#controller)"/>
+    <path id="top-contour" d="M 391 510 C 439 518 569 518 617 510" fill="none" stroke="#FFFFFF" stroke-opacity=".6" stroke-width="8" stroke-linecap="round"/>
+    <!-- D-pad, slightly reduced complexity -->
+    <path id="dpad" d="M 398 545 h 20 v -18 h 20 v 18 h 20 v 20 h -20 v 19 h -20 v -19 h -20 Z" fill="#253347"/>
+    <!-- Face buttons -->
+    <circle cx="593" cy="542" r="11.7" fill="#F07454"/>
+    <circle cx="621" cy="566" r="11.7" fill="#253347"/>
+    <circle cx="563" cy="568" r="11.7" fill="#253347"/>
+    <circle cx="592" cy="593" r="11.7" fill="#F0A55D"/>
+    <!-- Analog sticks -->
+    <circle cx="448" cy="615" r="15" fill="#303D50"/>
+    <circle cx="542" cy="615" r="15" fill="#303D50"/>
+    <circle cx="444" cy="611" r="5" fill="#718092" opacity=".65"/>
+    <circle cx="538" cy="611" r="5" fill="#718092" opacity=".65"/>
+    <!-- Subtle central launch/play button -->
+    <path id="play" d="M 498 546 L 498 572 L 517 559 Z" fill="#EA825A"/>
   </g>
 </svg>

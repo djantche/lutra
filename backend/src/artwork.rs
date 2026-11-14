@@ -98,6 +98,79 @@ pub fn download_first(
     Ok(None)
 }
 
+/// The extension for the image format `bytes` start with, read from its signature: a file's name
+/// or a link's ending says nothing reliable about what it holds.
+fn sniff_extension(bytes: &[u8]) -> Option<&'static str> {
+    match bytes {
+        [0x89, b'P', b'N', b'G', ..] => Some("png"),
+        [0xFF, 0xD8, 0xFF, ..] => Some("jpg"),
+        [
+            b'R',
+            b'I',
+            b'F',
+            b'F',
+            _,
+            _,
+            _,
+            _,
+            b'W',
+            b'E',
+            b'B',
+            b'P',
+            ..,
+        ] => Some("webp"),
+        _ => None,
+    }
+}
+
+/// Writes an image of the user's as `<dir>/<stem>.<ext>`, replacing the previous one.
+/// This copy is what Lutra shows from then on, so the original can move or disappear.
+fn store_image(bytes: &[u8], dir: &Path, stem: &str) -> Result<PathBuf, Error> {
+    let extension = sniff_extension(bytes)
+        .ok_or_else(|| Error::Other("this is not a PNG, JPEG or WebP image".into()))?;
+    fs::create_dir_all(dir).map_err(|e| Error::Other(e.to_string()))?;
+    let path = dir.join(format!("{stem}.{extension}"));
+    fs::write(&path, bytes).map_err(|e| Error::Other(e.to_string()))?;
+    remove_stale(dir, stem, &path);
+    Ok(path)
+}
+
+/// Copies an image file of the user's into `dir` as `<stem>.<ext>`.
+pub fn import_file(source: &Path, dir: &Path, stem: &str) -> Result<PathBuf, Error> {
+    let metadata =
+        fs::metadata(source).map_err(|e| Error::Other(format!("{}: {e}", source.display())))?;
+    if !metadata.is_file() {
+        return Err(Error::Other(format!("{} is not a file", source.display())));
+    }
+    if metadata.len() > MAX_IMAGE_BYTES {
+        return Err(Error::Other(
+            "this image is too large (25 MB at most)".into(),
+        ));
+    }
+    let bytes = fs::read(source).map_err(|e| Error::Other(e.to_string()))?;
+    store_image(&bytes, dir, stem)
+}
+
+/// Downloads an image from a link the user gave and keeps it in `dir` as `<stem>.<ext>`.
+pub fn import_url(
+    agent: &ureq::Agent,
+    url: &str,
+    dir: &Path,
+    stem: &str,
+) -> Result<PathBuf, Error> {
+    let mut response = agent
+        .get(url)
+        .call()
+        .map_err(|e| Error::Other(e.to_string()))?;
+    let bytes = response
+        .body_mut()
+        .with_config()
+        .limit(MAX_IMAGE_BYTES)
+        .read_to_vec()
+        .map_err(|e| Error::Other(e.to_string()))?;
+    store_image(&bytes, dir, stem)
+}
+
 /// A new image may have another extension than the previous one: do not leave both behind.
 fn remove_stale(dir: &Path, stem: &str, keep: &Path) {
     let Ok(entries) = fs::read_dir(dir) else {
@@ -138,6 +211,48 @@ mod tests {
                 .iter()
                 .all(|url| url.ends_with("/apps/1/library_hero.jpg"))
         );
+    }
+
+    const PNG: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+
+    #[test]
+    fn recognizes_images_by_content_not_by_name() {
+        assert_eq!(sniff_extension(PNG), Some("png"));
+        assert_eq!(sniff_extension(&[0xFF, 0xD8, 0xFF, 0xE0, 0]), Some("jpg"));
+        assert_eq!(sniff_extension(b"RIFF\x10\0\0\0WEBPVP8 "), Some("webp"));
+        assert_eq!(sniff_extension(b"<!DOCTYPE html>"), None);
+        assert_eq!(sniff_extension(b""), None);
+    }
+
+    #[test]
+    fn imports_a_file_under_the_stable_name_whatever_it_was_called() {
+        let source = tempfile::tempdir().unwrap();
+        let game = tempfile::tempdir().unwrap();
+        let original = source.path().join("My Holiday Photo (final).jpeg");
+        fs::write(&original, PNG).unwrap();
+        fs::write(game.path().join("poster.jpg"), "old").unwrap();
+
+        let saved = import_file(&original, game.path(), "poster").unwrap();
+
+        // The extension follows the content (it is a PNG), and the old cover is gone.
+        assert_eq!(saved, game.path().join("poster.png"));
+        assert_eq!(fs::read(&saved).unwrap(), PNG);
+        assert!(!game.path().join("poster.jpg").exists());
+        // The user's file is only copied, never moved.
+        assert!(original.exists());
+    }
+
+    #[test]
+    fn refuses_what_is_not_an_image() {
+        let source = tempfile::tempdir().unwrap();
+        let game = tempfile::tempdir().unwrap();
+        let text = source.path().join("cover.png");
+        fs::write(&text, "not an image").unwrap();
+
+        assert!(import_file(&text, game.path(), "poster").is_err());
+        assert!(import_file(source.path(), game.path(), "poster").is_err());
+        assert!(import_file(&source.path().join("missing.png"), game.path(), "poster").is_err());
+        assert!(!game.path().join("poster.png").exists());
     }
 
     #[test]

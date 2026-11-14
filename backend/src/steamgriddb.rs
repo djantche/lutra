@@ -180,6 +180,15 @@ impl Client {
             .unwrap_or_default())
     }
 
+    /// Every logo offered for a game.
+    pub fn logo_candidates(&self, game: u64) -> Result<Vec<Candidate>, Error> {
+        Ok(self
+            .get(&format!("/logos/game/{game}?types=static"))?
+            .as_ref()
+            .map(parse_candidates)
+            .unwrap_or_default())
+    }
+
     /// Every wide banner offered for a game.
     pub fn hero_candidates(&self, game: u64) -> Result<Vec<Candidate>, Error> {
         Ok(self

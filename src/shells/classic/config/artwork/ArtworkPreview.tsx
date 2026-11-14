@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { GameArt } from "../../../../components/GameArt/GameArt";
+import { GameLogo } from "../../../../components/GameLogo/GameLogo";
 import type { Game } from "../../../../types/game";
 import styles from "./Artwork.module.scss";
 
@@ -20,6 +21,12 @@ export function ArtworkPreview({ game }: { game: Game }) {
           <GameArt game={game} kind="hero" />
         </div>
         <figcaption>{t("config.banner")}</figcaption>
+      </figure>
+      <figure className={styles.previewLogo}>
+        <div className={styles.frame}>
+          <GameLogo game={game} className={styles.previewLogoBox} />
+        </div>
+        <figcaption>{t("config.logo")}</figcaption>
       </figure>
     </div>
   );

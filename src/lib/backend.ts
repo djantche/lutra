@@ -177,10 +177,16 @@ export interface Candidate {
   style: string | null;
 }
 
+/** The images a game can have: a cover, a wide banner and a transparent logo. */
+export type ArtworkKind = "poster" | "hero" | "logo";
+
 export interface ArtworkChoices {
   posters: Candidate[];
   heroes: Candidate[];
+  logos: Candidate[];
 }
+
+const ARTWORK_URL_FIELD = { poster: "posterUrl", hero: "heroUrl", logo: "logoUrl" } as const;
 
 export interface LogContent {
   path: string;
@@ -507,14 +513,34 @@ export function artworkChoices(id: string, sgdbGame: number | null): Promise<Art
       ...(steam ? [mockCandidate(210, 1920, 620, "official")] : []),
       ...hues.slice(0, 3).map((hue) => mockCandidate(hue, 1920, 620, null)),
     ],
+    logos: [
+      ...(steam ? [mockCandidate(210, 640, 240, "official")] : []),
+      ...hues.slice(0, 3).map((hue) => mockCandidate(hue, 640, 240, "white")),
+    ],
   });
 }
 
-/** Downloads a chosen image as a game's cover (`poster`) or banner (`hero`). */
-export function setArtwork(id: string, kind: "poster" | "hero", url: string): Promise<Game> {
+/** Downloads a chosen image as a game's cover, banner or logo. */
+export function setArtwork(id: string, kind: ArtworkKind, url: string): Promise<Game> {
   if (hasBackend()) return invoke<Game>("set_artwork", { id, kind, url });
   const known = MOCK_GAMES.find((game) => game.id === id) ?? MOCK_GAMES[0];
-  return Promise.resolve({ ...known, [kind === "poster" ? "posterUrl" : "heroUrl"]: url });
+  return Promise.resolve({ ...known, [ARTWORK_URL_FIELD[kind]]: url });
+}
+
+/** Opens the native file picker for an image. Resolves to null if cancelled. */
+export async function pickImage(): Promise<string | null> {
+  if (!hasBackend()) return "/mock/Pictures/cover.png";
+  return pickPath({ filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "webp"] }] });
+}
+
+/**
+ * Uses the user's own image, given as a link or a file path, as a game's cover, banner or logo.
+ * The backend keeps a copy, so it outlives the original.
+ */
+export function importArtwork(id: string, kind: ArtworkKind, source: string): Promise<Game> {
+  if (hasBackend()) return invoke<Game>("import_artwork", { id, kind, source });
+  const known = MOCK_GAMES.find((game) => game.id === id) ?? MOCK_GAMES[0];
+  return Promise.resolve({ ...known, [ARTWORK_URL_FIELD[kind]]: source });
 }
 
 /** The logs a game can have: this run's output, the run before, and the runner's and graphics layers' (debug mode). */

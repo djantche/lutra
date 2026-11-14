@@ -29,18 +29,24 @@ pub struct ControllerInfo {
 /// One of Lutra's HID controllers (`virtual_ds4`), from this Lutra or another one. The input
 /// devices the kernel makes for them carry no `phys`; their HID parent does.
 pub fn is_lutra_hid(path: &Path) -> bool {
-    let Some(name) = path.file_name() else {
-        return false;
-    };
+    lutra_hid_phys(path).is_some()
+}
+
+/// The `phys` of one of Lutra's own HID controllers (`lutra-virtual/ds4-3`), read from the HID
+/// device behind this input node; `None` for any other device.
+pub fn lutra_hid_phys(path: &Path) -> Option<String> {
+    let name = path.file_name()?;
     let uevent = Path::new("/sys/class/input")
         .join(name)
         .join("device/device/uevent");
-    std::fs::read_to_string(uevent).is_ok_and(|text| {
-        text.lines().any(|line| {
+    std::fs::read_to_string(uevent)
+        .ok()?
+        .lines()
+        .find_map(|line| {
             line.strip_prefix("HID_PHYS=")
-                .is_some_and(|phys| phys.starts_with(super::virtual_ds4::PHYS_PREFIX))
+                .filter(|phys| phys.starts_with(super::virtual_ds4::PHYS_PREFIX))
+                .map(str::to_string)
         })
-    })
 }
 
 /// Whether `sysfs_path` (the resolved `/sys/class/input/<node>`) belongs to a `uinput` device.
@@ -92,19 +98,73 @@ fn non_empty(text: Option<&str>) -> Option<&str> {
     text.map(str::trim).filter(|text| !text.is_empty())
 }
 
+/// What a USB device says about itself in its descriptors.
+#[derive(Debug, Default, PartialEq)]
+struct UsbStrings {
+    product: Option<String>,
+    manufacturer: Option<String>,
+}
+
+/// The USB strings of the device behind an input node, found from its resolved `sysfs` path: the
+/// USB device is the closest ancestor with an `idVendor` file. Whatever driver took the controller
+/// (`xpad`, `hid-generic`, a vendor's), the strings are the maker's own, while the input device's
+/// name is the driver's and often a generic one.
+fn usb_strings(resolved: &Path) -> UsbStrings {
+    let read = |dir: &Path, file: &str| {
+        std::fs::read_to_string(dir.join(file))
+            .ok()
+            .map(|text| text.trim().to_string())
+            .filter(|text| !text.is_empty())
+    };
+    resolved
+        .ancestors()
+        .find(|dir| dir.join("idVendor").is_file())
+        .map(|usb| UsbStrings {
+            product: read(usb, "product"),
+            manufacturer: read(usb, "manufacturer"),
+        })
+        .unwrap_or_default()
+}
+
+/// The names a driver gives to controllers it knows nothing about, which say nothing of them.
+const DRIVER_FALLBACK_NAMES: &[&str] = &["Generic X-Box pad"];
+
+/// The name to show: the input device's, unless the driver made it up because it did not know the
+/// controller, in which case the maker's own product name is better.
+fn display_name(input_name: &str, usb_product: Option<&str>) -> String {
+    match usb_product {
+        Some(product) if DRIVER_FALLBACK_NAMES.contains(&input_name) => product.to_string(),
+        _ => input_name.to_string(),
+    }
+}
+
 pub fn describe(path: &Path, device: &Device) -> ControllerInfo {
     let id = device.input_id();
+    let input_name = device.name().unwrap_or("Controller");
+    let usb = path
+        .file_name()
+        .and_then(|node| std::fs::canonicalize(Path::new("/sys/class/input").join(node)).ok())
+        .map(|resolved| usb_strings(&resolved))
+        .unwrap_or_default();
     ControllerInfo {
         id: non_empty(device.unique_name())
             .or_else(|| non_empty(device.physical_path()))
             .map(str::to_string)
             .unwrap_or_else(|| path.display().to_string()),
-        name: device.name().unwrap_or("Controller").to_string(),
+        name: display_name(input_name, usb.product.as_deref()),
         path: path.display().to_string(),
         vendor: id.vendor(),
         product: id.product(),
         family: Family::from_vendor(id.vendor()),
-        model: PadModel::from_ids(id.vendor(), id.product()),
+        model: PadModel::detect(
+            id.vendor(),
+            id.product(),
+            &[
+                input_name,
+                usb.product.as_deref().unwrap_or_default(),
+                usb.manufacturer.as_deref().unwrap_or_default(),
+            ],
+        ),
         bus: match id.bus_type() {
             BusType::BUS_USB => "usb",
             BusType::BUS_BLUETOOTH => "bluetooth",
@@ -145,6 +205,45 @@ pub fn companions(controller: &ControllerInfo) -> Vec<Device> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_usb_strings_come_from_the_usb_device_above_the_input_node() {
+        let root = tempfile::tempdir().unwrap();
+        let usb = root.path().join("usb1/1-2");
+        let node = usb.join("1-2:1.0/input/input91/event5");
+        std::fs::create_dir_all(&node).unwrap();
+        std::fs::write(usb.join("idVendor"), "0079\n").unwrap();
+        std::fs::write(usb.join("product"), "FightStick\n").unwrap();
+        std::fs::write(usb.join("manufacturer"), " \n").unwrap();
+
+        assert_eq!(
+            usb_strings(&node),
+            UsbStrings {
+                product: Some("FightStick".into()),
+                // Blank, like the one this stick gives.
+                manufacturer: None,
+            }
+        );
+        // Bluetooth, or a laptop's own device: no USB device above, nothing to read.
+        let other = root.path().join("bluetooth/hci0/input7/event9");
+        std::fs::create_dir_all(&other).unwrap();
+        assert_eq!(usb_strings(&other), UsbStrings::default());
+    }
+
+    #[test]
+    fn a_made_up_driver_name_gives_way_to_the_makers_product_name() {
+        assert_eq!(
+            display_name("Generic X-Box pad", Some("FightStick")),
+            "FightStick"
+        );
+        // The driver knows this one: its name stays.
+        assert_eq!(
+            display_name("Microsoft X-Box 360 pad", Some("Controller")),
+            "Microsoft X-Box 360 pad"
+        );
+        assert_eq!(display_name("Generic X-Box pad", None), "Generic X-Box pad");
+        assert_eq!(display_name("FightStick", Some("FightStick")), "FightStick");
+    }
 
     #[test]
     fn a_uinput_device_is_told_from_a_real_or_uhid_controller() {

@@ -9,7 +9,7 @@ use serde::Serialize;
 
 use crate::wine::WineConfig;
 
-const GAME_COLUMNS: &str = "id, title, source, source_id, playtime_minutes, last_played, favorite, exe_path, runner_kind, poster_path, hero_path, poster_url, hero_url, images_checked_at, sgdb_game_id, meta_json, logo_path";
+const GAME_COLUMNS: &str = "id, title, source, source_id, playtime_minutes, last_played, favorite, exe_path, runner_kind, poster_path, hero_path, poster_url, hero_url, images_checked_at, sgdb_game_id, meta_json, logo_path, logo_url, logo_checked_at";
 
 /// A game as the frontend sees it.
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -49,6 +49,9 @@ pub struct Game {
     /// Absolute path of the downloaded logo (transparent title art), if any.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo: Option<String>,
+    /// Where the current logo came from (a link, or the file the user imported).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub logo_url: Option<String>,
     /// Changes whenever artwork is downloaded again; lets the webview drop its cached copy.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub art_version: Option<i64>,
@@ -204,7 +207,12 @@ fn game_from_row(row: &Row) -> rusqlite::Result<Game> {
         poster_url: row.get("poster_url")?,
         hero_url: row.get("hero_url")?,
         logo: row.get("logo_path")?,
-        art_version: row.get("images_checked_at")?,
+        logo_url: row.get("logo_url")?,
+        // Whichever of the images or the logo changed last: the logo keeps the same file name, so
+        // without it a new logo would still show the cached old one.
+        art_version: row
+            .get::<_, Option<i64>>("images_checked_at")?
+            .max(row.get::<_, Option<i64>>("logo_checked_at")?),
         sgdb_game_id: row.get("sgdb_game_id")?,
         exe_path: row.get("exe_path")?,
         runner_kind: row.get("runner_kind")?,

@@ -65,6 +65,9 @@ pub enum PadModel {
     DualShock4,
     DualSense,
     SteamDeck,
+    /// An arcade stick: a lever and a row of buttons. There are far too many makers to know them
+    /// by their USB ids, so it is recognised by what the stick calls itself (`detect`).
+    Fightstick,
     Other,
 }
 
@@ -78,6 +81,43 @@ impl PadModel {
             _ => PadModel::Other,
         }
     }
+
+    /// The model of a controller: by its USB ids when they are known, otherwise by the names it
+    /// goes by (the name of the input device, and the USB product and maker strings).
+    pub fn detect(vendor: u16, product: u16, names: &[&str]) -> Self {
+        match Self::from_ids(vendor, product) {
+            PadModel::Other if names.iter().any(|name| looks_like_an_arcade_stick(name)) => {
+                PadModel::Fightstick
+            }
+            model => model,
+        }
+    }
+}
+
+/// Whether a name is an arcade stick's: the makers' own words for it, not the generic ones.
+/// "Joystick" and "thumbstick" are not it: a flight stick or a controller's analogue stick is
+/// another thing, and the Linux kernel calls every pad without a better name a joystick.
+fn looks_like_an_arcade_stick(name: &str) -> bool {
+    const WORDS: &[&str] = &[
+        "fightstick",
+        "fight stick",
+        "fighting stick",
+        "arcade stick",
+        "arcade fight",
+        "arcade pad",
+        "arcade controller",
+        "real arcade pro",
+        "hitbox",
+        "leverless",
+        "fightbox",
+        "panthera",
+        "atrox",
+        "qanba",
+        "victrix pro fs",
+        "sanwa",
+    ];
+    let name = name.to_lowercase();
+    WORDS.iter().any(|word| name.contains(word))
 }
 
 impl Family {
@@ -446,6 +486,65 @@ mod tests {
         assert_eq!(PadModel::from_ids(0x28de, 0x1205), PadModel::SteamDeck);
         assert_eq!(PadModel::from_ids(0x045e, 0x028e), PadModel::Other);
         assert_eq!(Family::from_vendor(0x28de), Family::Xbox);
+    }
+
+    #[test]
+    fn an_arcade_stick_is_recognised_by_what_it_calls_itself() {
+        // The same stick under both of its USB identities: the kernel names the second one
+        // "Generic X-Box pad", so the USB product string is what says it is a stick.
+        assert_eq!(
+            PadModel::detect(0x0079, 0x1884, &["FightStick", "FightStick", ""]),
+            PadModel::Fightstick
+        );
+        assert_eq!(
+            PadModel::detect(0x0079, 0x187c, &["Generic X-Box pad", "FightStick", " "]),
+            PadModel::Fightstick
+        );
+        // Other makers' words for it, in any case and in the maker's field too.
+        for words in [
+            "Mad Catz Street Fighter IV Arcade FightStick Tournament Edition",
+            "HORI Fighting Stick Mini",
+            "Razer Panthera Evo",
+            "Hitbox",
+            "Qanba Obsidian",
+            "Mayflash Arcade Stick F300",
+            "LEVERLESS controller",
+        ] {
+            assert_eq!(
+                PadModel::detect(0x1234, 0x5678, &["Pad", words]),
+                PadModel::Fightstick,
+                "{words}"
+            );
+        }
+    }
+
+    #[test]
+    fn pads_and_joysticks_are_not_taken_for_arcade_sticks() {
+        for words in [
+            "Generic X-Box pad",
+            "Microsoft X-Box 360 pad",
+            "Xbox Wireless Controller",
+            "Logitech Extreme 3D Pro Joystick",
+            "Thrustmaster T.Flight Hotas X",
+            "Wireless Controller",
+            "HORI Fighting Commander",
+            "",
+        ] {
+            assert_eq!(
+                PadModel::detect(0x1234, 0x5678, &[words]),
+                PadModel::Other,
+                "{words}"
+            );
+        }
+        // Known ids win over names.
+        assert_eq!(
+            PadModel::detect(0x054c, 0x09cc, &["Arcade Stick"]),
+            PadModel::DualShock4
+        );
+        assert_eq!(
+            PadModel::detect(0x28de, 0x1205, &["Arcade Stick"]),
+            PadModel::SteamDeck
+        );
     }
 
     use super::*;

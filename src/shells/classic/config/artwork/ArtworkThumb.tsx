@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Icon } from "../../../../components/Icon/Icon";
 import { Spinner } from "../../../../components/Spinner/Spinner";
-import type { Candidate } from "../../../../lib/backend";
+import type { ArtworkKind, Candidate } from "../../../../lib/backend";
 import { cx } from "../../../../lib/cx";
 import styles from "./Artwork.module.scss";
 
 interface ArtworkThumbProps {
   candidate: Candidate;
-  kind: "poster" | "hero";
+  kind: ArtworkKind;
   selected: boolean;
   busy: boolean;
   disabled: boolean;
@@ -30,7 +30,12 @@ export function ArtworkThumb({ candidate, kind, selected, busy, disabled, onChoo
     <button
       type="button"
       data-focusable
-      className={cx(styles.thumb, kind === "hero" && styles.thumbWide, selected && styles.selected)}
+      className={cx(
+        styles.thumb,
+        kind === "hero" && styles.thumbWide,
+        kind === "logo" && styles.thumbLogo,
+        selected && styles.selected,
+      )}
       aria-pressed={selected}
       aria-label={by}
       title={[by, size].filter(Boolean).join(" · ")}

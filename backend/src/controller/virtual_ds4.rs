@@ -54,8 +54,27 @@ const FEATURES: &[(u8, u8)] = &[
     (0xa3, 48),
 ];
 
-/// Address the virtual controller reports: locally administered, so it never is a real one.
-const ADDRESS: [u8; 6] = [0x02, 0x4c, 0x55, 0x54, 0x52, 0x41];
+/// The address a virtual controller reports in its pairing information. The kernel's
+/// `hid-playstation` driver keeps every DualShock 4 by its address and refuses a second one with
+/// the same address (`Duplicate device found for MAC address`, error -17): the controller then
+/// has a `hidraw` node but no gamepad, and the game gets nothing from it. With two physical
+/// controllers there are two virtual ones, so each needs its own, and which of them lost used to
+/// depend on which was created first: a controller that worked one launch was dead the next.
+///
+/// Locally administered (the 0x02 bit), so it never is a real one. It holds the process id and the
+/// number of the virtual controller: unique among those alive, and never the same two launches
+/// in a row for devices that the kernel has not finished removing.
+fn address(index: usize) -> [u8; 6] {
+    let process = std::process::id();
+    [
+        0x02,
+        (process >> 8) as u8,
+        process as u8,
+        (index >> 16) as u8,
+        (index >> 8) as u8,
+        index as u8,
+    ]
+}
 
 /// The HID report descriptor of a DualShock 4 on USB: report 0x01 (input, 64 bytes), 0x05
 /// (output: rumble and light bar) and the feature reports above.
@@ -90,7 +109,7 @@ fn descriptor() -> Vec<u8> {
 }
 
 /// The bytes of a feature report, report id first.
-fn feature(id: u8) -> Option<Vec<u8>> {
+fn feature(id: u8, address: &[u8; 6]) -> Option<Vec<u8>> {
     let size = FEATURES.iter().find(|(known, _)| *known == id)?.1;
     let mut report = vec![0u8; size as usize + 1];
     report[0] = id;
@@ -109,7 +128,7 @@ fn feature(id: u8) -> Option<Vec<u8>> {
         }
         // Pairing information: the controller's address, least significant byte first.
         0x12 | 0x81 => {
-            for (index, byte) in ADDRESS.iter().rev().enumerate() {
+            for (index, byte) in address.iter().rev().enumerate() {
                 report[1 + index] = *byte;
             }
         }
@@ -182,6 +201,7 @@ pub fn available() -> bool {
 
 pub struct VirtualDs4 {
     file: File,
+    address: [u8; 6],
     state: PadState,
     counter: u8,
     started: Instant,
@@ -223,6 +243,7 @@ impl VirtualDs4 {
         let now = Instant::now();
         let mut pad = Self {
             file,
+            address: address(index),
             state: PadState::default(),
             counter: 0,
             started: now,
@@ -275,7 +296,7 @@ impl VirtualDs4 {
             match kind {
                 UHID_GET_REPORT => {
                     let id = &event[4..8];
-                    let reply = feature(event[8]);
+                    let reply = feature(event[8], &self.address);
                     let mut answer = vec![0u8; 12 + 4096];
                     answer[0..4].copy_from_slice(&UHID_GET_REPORT_REPLY.to_ne_bytes());
                     answer[4..8].copy_from_slice(id);
@@ -350,16 +371,27 @@ mod tests {
     #[test]
     fn the_kernel_driver_gets_the_feature_reports_it_needs() {
         // hid-playstation reads these on USB and checks their exact size.
+        let address = address(7);
         for (id, size) in [(0x02u8, 37usize), (0x12, 16), (0xa3, 49)] {
-            let report = feature(id).unwrap();
+            let report = feature(id, &address).unwrap();
             assert_eq!(report.len(), size);
             assert_eq!(report[0], id);
         }
-        assert_eq!(
-            &feature(0x12).unwrap()[1..7],
-            &[0x41, 0x52, 0x54, 0x55, 0x4c, 0x02]
-        );
-        assert!(feature(0x42).is_none());
+        // The address comes least significant byte first, like on a real controller.
+        let reversed: Vec<u8> = address.iter().rev().copied().collect();
+        assert_eq!(&feature(0x12, &address).unwrap()[1..7], &reversed[..]);
+        assert!(feature(0x42, &address).is_none());
+    }
+
+    #[test]
+    fn every_virtual_controller_has_its_own_address() {
+        let addresses: Vec<[u8; 6]> = (0..70_000).map(address).collect();
+        let distinct: std::collections::HashSet<_> = addresses.iter().collect();
+        assert_eq!(distinct.len(), addresses.len());
+        // Locally administered and unicast: never a real controller's.
+        assert!(addresses.iter().all(|a| a[0] & 0x03 == 0x02));
+        // Two controllers made one after the other share nothing the kernel compares.
+        assert_ne!(address(0), address(1));
     }
 
     #[test]

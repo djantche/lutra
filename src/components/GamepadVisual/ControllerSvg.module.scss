@@ -48,6 +48,17 @@
   fill: var(--pad-on, var(--color-accent));
 }
 
+// A button's letter, small and dim inside it (the arcade stick).
+.label {
+  fill: currentColor;
+  stroke: none;
+  font: 700 2.3px var(--font-sans);
+  text-anchor: middle;
+  dominant-baseline: central;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
 // A trigger fills with how far it is pulled.
 .trigger {
   fill: var(--color-accent);

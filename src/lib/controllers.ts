@@ -58,7 +58,7 @@ export interface ControllerBattery {
 }
 
 /** What a controller looks like, to show its picture. */
-export type PadModel = "dualshock4" | "dualsense" | "steamdeck" | "other";
+export type PadModel = "dualshock4" | "dualsense" | "steamdeck" | "fightstick" | "other";
 
 export interface ControllerInfo {
   id: string;
@@ -141,10 +141,12 @@ export const DEFAULT_PROFILE: ControllerProfile = {
 
 // ---- browser preview ----
 
-/** `?pad=dualsense` or `?pad=steamdeck` in the browser preview shows another controller. */
+/** `?pad=dualsense`, `steamdeck`, `fightstick` or `other` in the browser preview shows another controller. */
 function mockModel(): PadModel {
   const asked = typeof location === "undefined" ? null : new URLSearchParams(location.search).get("pad");
-  return asked === "dualsense" || asked === "steamdeck" ? asked : "dualshock4";
+  return asked === "dualsense" || asked === "steamdeck" || asked === "fightstick" || asked === "other"
+    ? asked
+    : "dualshock4";
 }
 
 const MOCK_CONTROLLER: ControllerInfo = {
@@ -153,7 +155,7 @@ const MOCK_CONTROLLER: ControllerInfo = {
   path: "/dev/input/event30",
   vendor: 0x054c,
   product: 0x09cc,
-  family: "playstation",
+  family: mockModel() === "other" ? "xbox" : "playstation",
   model: mockModel(),
   bus: "bluetooth",
   battery: { percent: 64, charging: false },

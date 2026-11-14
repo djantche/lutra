@@ -23,6 +23,8 @@ export interface Game {
   heroUrl?: string;
   /** Absolute path of the downloaded logo (transparent title art), shown instead of the name. */
   logo?: string;
+  /** Where the current logo came from. */
+  logoUrl?: string;
   /** Changes when artwork is downloaded again, so cached copies get dropped. */
   artVersion?: number;
   /** SteamGridDB game picked by the user for this game's artwork. */

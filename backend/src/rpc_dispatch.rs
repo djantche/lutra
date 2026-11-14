@@ -148,6 +148,46 @@ pub(crate) fn dispatch(
             ))
             .and_then(rpc::to_value)
         }
+        "list_components" => {
+            let id: String = rpc::arg(args, "id")?;
+            host::async_runtime::block_on(list_components(app.state::<Library>(), id))
+                .and_then(rpc::to_value)
+        }
+        "install_component" => {
+            let id: String = rpc::arg(args, "id")?;
+            let verb: String = rpc::arg(args, "verb")?;
+            host::async_runtime::block_on(install_component(
+                app.clone(),
+                app.state::<Library>(),
+                id,
+                verb,
+            ))
+            .and_then(rpc::to_value)
+        }
+        "set_component_enabled" => {
+            let id: String = rpc::arg(args, "id")?;
+            let verb: String = rpc::arg(args, "verb")?;
+            let enabled: bool = rpc::arg(args, "enabled")?;
+            host::async_runtime::block_on(set_component_enabled(
+                app.clone(),
+                app.state::<Library>(),
+                id,
+                verb,
+                enabled,
+            ))
+            .and_then(rpc::to_value)
+        }
+        "remove_component" => {
+            let id: String = rpc::arg(args, "id")?;
+            let verb: String = rpc::arg(args, "verb")?;
+            host::async_runtime::block_on(remove_component(
+                app.clone(),
+                app.state::<Library>(),
+                id,
+                verb,
+            ))
+            .and_then(rpc::to_value)
+        }
         "run_in_prefix" => {
             let id: String = rpc::arg(args, "id")?;
             let exe_path: String = rpc::arg(args, "exePath")?;
@@ -275,6 +315,19 @@ pub(crate) fn dispatch(
                 id,
                 kind,
                 url,
+            ))
+            .and_then(rpc::to_value)
+        }
+        "import_artwork" => {
+            let id: String = rpc::arg(args, "id")?;
+            let kind: String = rpc::arg(args, "kind")?;
+            let source: String = rpc::arg(args, "source")?;
+            host::async_runtime::block_on(import_artwork(
+                app.clone(),
+                app.state::<Library>(),
+                id,
+                kind,
+                source,
             ))
             .and_then(rpc::to_value)
         }

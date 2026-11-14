@@ -1,8 +1,10 @@
 mod applog;
 mod artwork;
 mod audio;
+mod components;
 mod controller;
 mod db;
+mod dllfetch;
 mod gamedb;
 mod hardware;
 pub mod host;
@@ -1276,6 +1278,397 @@ async fn launch_wine_tool(
     Ok(())
 }
 
+/// A component offered for a game's prefix, and where it stands.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ComponentInfo {
+    verb: &'static str,
+    installed: bool,
+    /// Installed, but not the copy Lutra would install now: an update is offered.
+    outdated: bool,
+    /// Switched on: its DLLs are the real ones. Only meaningful once installed.
+    enabled: bool,
+    can_toggle: bool,
+    can_remove: bool,
+    /// What is being done to it right now, with how far it is when that can be measured.
+    operation: Option<components::Operation>,
+    phase: Option<components::Phase>,
+    percent: Option<u8>,
+}
+
+/// A Windows game's prefix, as the component commands need it.
+struct PrefixOf {
+    settings: WineSettings,
+    kind: RunnerKind,
+    /// The folder Wine sees as the prefix (`pfx/` for Proton).
+    wine_prefix: PathBuf,
+}
+
+fn prefix_of(library: &State<'_, Library>, id: &str) -> Result<PrefixOf, String> {
+    let settings = library
+        .lock()?
+        .wine_settings(id)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("not a Windows game: {id}"))?;
+    let kind = RunnerKind::parse(&settings.runner_kind).ok_or("unknown runner type")?;
+    let wine_prefix = wine::effective_prefix(kind, Path::new(&settings.prefix_path));
+    Ok(PrefixOf {
+        settings,
+        kind,
+        wine_prefix,
+    })
+}
+
+/// The components Lutra offers for a Windows game's prefix, and where each one stands.
+// @rpc
+async fn list_components(
+    library: State<'_, Library>,
+    id: String,
+) -> Result<Vec<ComponentInfo>, String> {
+    let prefix = prefix_of(&library, &id)?;
+    let have = components::installed(&prefix.wine_prefix);
+    let user_reg = fs::read_to_string(prefix.wine_prefix.join("user.reg")).unwrap_or_default();
+    let overrides = components::overrides(&user_reg);
+    let current = components::current(&id);
+
+    Ok(components::CATALOG
+        .iter()
+        .map(|component| {
+            let job = current.as_ref().filter(|job| job.verb == component.verb);
+            let installed = have.contains(component.verb);
+            ComponentInfo {
+                verb: component.verb,
+                installed,
+                outdated: installed && components::is_outdated(component, &prefix.wine_prefix),
+                enabled: components::is_enabled(component, &overrides),
+                can_toggle: component.togglable(),
+                can_remove: component.removable,
+                operation: job.map(|job| job.operation),
+                phase: job.map(|job| job.progress.phase),
+                percent: job.and_then(|job| job.progress.percent),
+            }
+        })
+        .collect())
+}
+
+/// Installs a component in a game's prefix (or updates it). It can take a while: how it goes
+/// arrives as `component-install` events, see `start_component_job`.
+// @rpc
+async fn install_component(
+    app: AppHandle,
+    library: State<'_, Library>,
+    id: String,
+    verb: String,
+) -> Result<(), String> {
+    start_component_job(&app, &library, id, verb, components::Operation::Install)
+}
+
+/// Switches an installed component on or off: its DLLs are loaded first, or Wine's own are.
+/// Nothing is deleted.
+// @rpc
+async fn set_component_enabled(
+    app: AppHandle,
+    library: State<'_, Library>,
+    id: String,
+    verb: String,
+    enabled: bool,
+) -> Result<(), String> {
+    let operation = if enabled {
+        components::Operation::Enable
+    } else {
+        components::Operation::Disable
+    };
+    start_component_job(&app, &library, id, verb, operation)
+}
+
+/// Takes a component out of a game's prefix: Wine's own DLLs go back in its place.
+// @rpc
+async fn remove_component(
+    app: AppHandle,
+    library: State<'_, Library>,
+    id: String,
+    verb: String,
+) -> Result<(), String> {
+    start_component_job(&app, &library, id, verb, components::Operation::Remove)
+}
+
+/// Says how a component job is going: `running` (with the phase and the download's percentage
+/// each time they change), then `done` or `failed`. The output is in
+/// `<data>/logs/<id>-components.log`.
+struct JobReporter {
+    app: AppHandle,
+    id: String,
+    verb: String,
+    operation: components::Operation,
+}
+
+impl JobReporter {
+    fn emit(&self, state: &str, message: Option<String>, progress: components::Progress) {
+        let _ = self.app.emit(
+            "component-install",
+            json!({
+                "id": self.id, "verb": self.verb, "operation": self.operation,
+                "state": state, "message": message,
+                "phase": progress.phase, "percent": progress.percent,
+            }),
+        );
+    }
+
+    /// Remembers the progress for a window opened later, and tells the open ones.
+    fn running(&self, busy: &components::Busy, progress: components::Progress) {
+        busy.set_progress(progress);
+        self.emit("running", None, progress);
+    }
+}
+
+/// What a component job works on.
+struct JobContext {
+    id: String,
+    component: &'static components::Component,
+    prefix: PrefixOf,
+    win32: bool,
+    log_name: String,
+    /// Where fetched files are kept for the next prefix.
+    cache: PathBuf,
+}
+
+/// Starts a job on a component in the background, after checking it can run: the game must be
+/// closed (its prefix is in use), and nothing else may be changing the prefix.
+fn start_component_job(
+    app: &AppHandle,
+    library: &State<'_, Library>,
+    id: String,
+    verb: String,
+    operation: components::Operation,
+) -> Result<(), String> {
+    use components::Operation;
+
+    let component = components::find(&verb).ok_or_else(|| format!("unknown component: {verb}"))?;
+    match operation {
+        Operation::Enable | Operation::Disable if !component.togglable() => {
+            return Err(format!("{verb} has nothing to switch"));
+        }
+        Operation::Remove if !component.removable => {
+            return Err(format!("{verb} cannot be taken out cleanly"));
+        }
+        _ => {}
+    }
+    if app
+        .state::<Running>()
+        .0
+        .lock()
+        .map_err(|e| e.to_string())?
+        .contains_key(&id)
+    {
+        return Err("close the game first: its prefix is in use".into());
+    }
+    let prefix = prefix_of(library, &id)?;
+    let win32 = prefixes::architecture(Path::new(&prefix.settings.prefix_path)) == Some("win32");
+    let busy = components::begin(&id, &verb, operation)?;
+    applog::info(format!(
+        "{operation:?} {verb} in the prefix of {}",
+        prefix.settings.title
+    ));
+
+    let context = JobContext {
+        log_name: format!("{}-components", dir_name(&id)),
+        cache: app_dir(app)?.join("cache"),
+        id: id.clone(),
+        component,
+        prefix,
+        win32,
+    };
+    let reporter = JobReporter {
+        app: app.clone(),
+        id,
+        verb,
+        operation,
+    };
+    reporter.emit("running", None, components::Progress::default());
+    std::thread::spawn(move || {
+        let result = run_component_job(&reporter, &busy, &context, operation);
+        let progress = components::current(&context.id)
+            .map(|job| job.progress)
+            .unwrap_or_default();
+        match result {
+            Ok(()) => {
+                applog::info(format!("{:?} {}: done", operation, context.component.verb));
+                reporter.emit("done", None, progress);
+            }
+            Err(message) => {
+                applog::warn(format!(
+                    "{:?} {}: {message}",
+                    operation, context.component.verb
+                ));
+                reporter.emit("failed", Some(message), progress);
+            }
+        }
+    });
+    Ok(())
+}
+
+fn run_component_job(
+    reporter: &JobReporter,
+    busy: &components::Busy,
+    context: &JobContext,
+    operation: components::Operation,
+) -> Result<(), String> {
+    use components::{Operation, Source};
+
+    let component = context.component;
+    let wine_prefix = &context.prefix.wine_prefix;
+    match operation {
+        Operation::Install if component.source == Source::Winetricks => {
+            install_with_winetricks(reporter, busy, context)
+        }
+        Operation::Install => {
+            // Microsoft's DLL: fetched (with a real progress), put in place, switched on.
+            let mut last = None;
+            let file = dllfetch::d3dcompiler(&context.cache, &mut |percent| {
+                if last != Some(percent) {
+                    last = Some(percent);
+                    reporter.running(
+                        busy,
+                        components::Progress {
+                            phase: components::Phase::Download,
+                            percent: Some(percent),
+                        },
+                    );
+                }
+            })?;
+            reporter.running(busy, components::Progress::default());
+            components::install_dll(&file, wine_prefix, component.verb)
+                .map_err(|error| format!("could not put the DLL in the prefix: {error}"))?;
+            set_overrides(reporter, context, true)?;
+            components::record(wine_prefix, component.verb).map_err(|error| error.to_string())
+        }
+        Operation::Enable => set_overrides(reporter, context, true),
+        Operation::Disable => set_overrides(reporter, context, false),
+        Operation::Remove => {
+            set_overrides(reporter, context, false)?;
+            components::restore_builtin(
+                context.prefix.kind,
+                Path::new(&context.prefix.settings.runner_path),
+                wine_prefix,
+                component,
+                context.win32,
+            )?;
+            components::forget(wine_prefix, component.verb).map_err(|error| error.to_string())
+        }
+    }
+}
+
+/// Runs Winetricks for one verb, and follows its output for the progress.
+fn install_with_winetricks(
+    reporter: &JobReporter,
+    busy: &components::Busy,
+    context: &JobContext,
+) -> Result<(), String> {
+    let settings = &context.prefix.settings;
+    let winetricks = wine::find_in_path("winetricks").ok_or("winetricks is not installed")?;
+    let verbs = [context.component.verb.to_string()];
+    let config = clean_config(&settings.config);
+    let mut spec = spec_for(
+        settings,
+        &config,
+        Target::Components(&winetricks, &verbs),
+        None,
+    )?;
+    // Winetricks prefers aria2c, then wget. Only curl's output has a percentage Lutra can read.
+    if wine::find_in_path("curl").is_some() {
+        spec.envs
+            .push(("WINETRICKS_DOWNLOADER".into(), "curl".into()));
+    }
+
+    let logs = app_dir(&reporter.app)?.join("logs");
+    let mut child = spawn_process(
+        &reporter.app,
+        &context.log_name,
+        Path::new(&settings.prefix_path),
+        &spec,
+    )?;
+    // Winetricks has no progress of its own to ask for: its output is read back as it grows.
+    let log_path = logs.join(format!("{}.log", context.log_name));
+    let mut tracker = components::Tracker::default();
+    let mut offset = 0;
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Err(error) => return Err(error.to_string()),
+            Ok(None) => {}
+        }
+        let output = components::read_since(&log_path, &mut offset);
+        if tracker.feed(&output) {
+            reporter.running(busy, tracker.progress());
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    };
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "winetricks exited with {status}: see the components log"
+        ))
+    }
+}
+
+/// A game's options without what makes no sense for a helper program in its prefix.
+fn clean_config(config: &WineConfig) -> WineConfig {
+    WineConfig {
+        args: String::new(),
+        working_dir: None,
+        mangohud: false,
+        gamemode: false,
+        gamescope: None,
+        ..config.clone()
+    }
+}
+
+/// Switches a component's DLL overrides on or off through Wine's registry editor (the registry
+/// belongs to the wineserver while anything runs in the prefix), then waits until the prefix's
+/// `user.reg` shows it: Wine writes it a few seconds after the last program ends.
+fn set_overrides(reporter: &JobReporter, context: &JobContext, enable: bool) -> Result<(), String> {
+    let settings = &context.prefix.settings;
+    let file = Path::new(&settings.prefix_path).join("lutra-overrides.reg");
+    fs::write(&file, components::registry_file(context.component, enable))
+        .map_err(|error| error.to_string())?;
+
+    let args = [
+        "regedit".to_string(),
+        "/S".to_string(),
+        components::windows_path(&file),
+    ];
+    let config = clean_config(&settings.config);
+    let run = || -> Result<(), String> {
+        let spec = spec_for(settings, &config, Target::Wine(&args), None)?;
+        let mut child = spawn_process(
+            &reporter.app,
+            &context.log_name,
+            Path::new(&settings.prefix_path),
+            &spec,
+        )?;
+        let status = child.wait().map_err(|error| error.to_string())?;
+        status
+            .success()
+            .then_some(())
+            .ok_or_else(|| format!("the registry editor exited with {status}"))
+    };
+    let result = run();
+    let _ = fs::remove_file(&file);
+    result?;
+
+    let user_reg = context.prefix.wine_prefix.join("user.reg");
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while Instant::now() < deadline {
+        let overrides = components::overrides(&fs::read_to_string(&user_reg).unwrap_or_default());
+        if components::is_enabled(context.component, &overrides) == enable {
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(300));
+    }
+    Err("Wine did not save the change".into())
+}
+
 /// Runs another program (an installer, a patch...) inside a game's prefix.
 // @rpc
 async fn run_in_prefix(
@@ -2075,6 +2468,7 @@ async fn artwork_match(
 struct ArtworkChoices {
     posters: Vec<Candidate>,
     heroes: Vec<Candidate>,
+    logos: Vec<Candidate>,
 }
 
 /// Every image the user can choose from: Steam's own (for Steam games) and SteamGridDB's.
@@ -2111,15 +2505,18 @@ async fn artwork_choices(
         let mut choices = ArtworkChoices {
             posters: Vec::new(),
             heroes: Vec::new(),
+            logos: Vec::new(),
         };
         if info.source == "steam" {
             choices.posters = official(artwork::steam_poster_urls(&info.source_id));
             choices.heroes = official(artwork::steam_hero_urls(&info.source_id));
+            choices.logos = official(artwork::steam_logo_urls(&info.source_id));
         }
         if let (Some(key), Some(game)) = (key, sgdb_game) {
             let client = Client::new(&key);
             choices.posters.extend(client.poster_candidates(game)?);
             choices.heroes.extend(client.hero_candidates(game)?);
+            choices.logos.extend(client.logo_candidates(game)?);
         }
         Ok(choices)
     })
@@ -2128,7 +2525,43 @@ async fn artwork_choices(
     .map_err(art_error)
 }
 
-/// Downloads one image chosen by the user as a game's cover (`poster`) or banner (`hero`).
+/// The file stem a kind of artwork is stored under (`poster.png`, `hero.jpg`, `logo.png`).
+fn artwork_stem(kind: &str) -> Result<String, String> {
+    match kind {
+        "poster" | "hero" | "logo" => Ok(kind.to_string()),
+        other => Err(format!("unknown artwork kind: {other}")),
+    }
+}
+
+/// Records an image saved in a game's artwork folder as its cover or banner, and tells the interface.
+fn record_artwork(
+    app: &AppHandle,
+    library: &Library,
+    id: &str,
+    kind: &str,
+    saved: Image,
+) -> Result<Game, String> {
+    let game = {
+        let db = library.lock()?;
+        match kind {
+            "poster" => db.set_images(id, Some(&saved), None, now()),
+            "hero" => db.set_images(id, None, Some(&saved), now()),
+            _ => db.set_logo(id, Some(&saved), now()),
+        }
+        .map_err(|e| e.to_string())?;
+        db.get(id)
+            .map_err(|e| e.to_string())?
+            .ok_or("unknown game")?
+    };
+    applog::info(format!(
+        "Artwork for {}: {kind} set to {}",
+        game.title, saved.url
+    ));
+    let _ = app.emit("game-updated", game.clone());
+    Ok(game)
+}
+
+/// Downloads one image chosen by the user as a game's cover (`poster`), banner (`hero`) or logo.
 // @rpc
 async fn set_artwork(
     app: AppHandle,
@@ -2137,37 +2570,84 @@ async fn set_artwork(
     kind: String,
     url: String,
 ) -> Result<Game, String> {
-    let stem = match kind.as_str() {
-        "poster" | "hero" => kind.clone(),
-        other => return Err(format!("unknown artwork kind: {other}")),
-    };
+    let stem = artwork_stem(&kind)?;
     let folder = app_dir(&app)?.join("images").join(dir_name(&id));
-    let source = url.clone();
     let saved = host::async_runtime::spawn_blocking(move || {
-        artwork::download_first(&artwork::agent(), &[source], &folder, &stem)
+        artwork::download_first(&artwork::agent(), &[url], &folder, &stem)
     })
     .await
     .map_err(|e| e.to_string())?
     .map_err(art_error)?
     .ok_or("this image is no longer available")?;
 
-    let saved = image(saved);
-    let game = {
-        let db = library.lock()?;
-        let (poster, hero) = if kind == "poster" {
-            (Some(&saved), None)
-        } else {
-            (None, Some(&saved))
+    record_artwork(&app, &library, &id, &kind, image(saved))
+}
+
+/// Where an image the user typed comes from: a link to download or a file to copy.
+enum ImageSource {
+    Link(String),
+    File(PathBuf),
+}
+
+impl ImageSource {
+    /// Reads what the user typed or pasted: a `http(s)` link, or a path (`~/` allowed, quotes
+    /// around it ignored, as a file manager's "copy path" may add them).
+    fn parse(text: &str, home: Option<&Path>) -> Result<Self, String> {
+        let text = text.trim();
+        let text = text
+            .strip_prefix('"')
+            .and_then(|rest| rest.strip_suffix('"'))
+            .or_else(|| {
+                text.strip_prefix('\'')
+                    .and_then(|rest| rest.strip_suffix('\''))
+            })
+            .unwrap_or(text)
+            .trim();
+        if text.is_empty() {
+            return Err("no image given".into());
+        }
+        if text.starts_with("http://") || text.starts_with("https://") {
+            return Ok(Self::Link(text.to_string()));
+        }
+        // A path copied from a terminal escapes its spaces (`My\ Logo.png`).
+        let text = text.replace("\\ ", " ");
+        let path = match (text.strip_prefix("~/"), home) {
+            (Some(rest), Some(home)) => home.join(rest),
+            _ => PathBuf::from(text),
         };
-        db.set_images(&id, poster, hero, now())
-            .map_err(|e| e.to_string())?;
-        db.get(&id)
-            .map_err(|e| e.to_string())?
-            .ok_or("unknown game")?
-    };
-    applog::info(format!("Artwork for {}: {kind} set to {url}", game.title));
-    let _ = app.emit("game-updated", game.clone());
-    Ok(game)
+        if !path.is_absolute() {
+            return Err("give a link (https://…) or a full path".into());
+        }
+        Ok(Self::File(path))
+    }
+}
+
+/// Uses an image of the user's own, given as a link or a file path, as a game's cover (`poster`),
+/// banner (`hero`) or logo. It is copied into the game's artwork folder under the usual name, so it
+/// stays available if the original moves or the link dies.
+// @rpc
+async fn import_artwork(
+    app: AppHandle,
+    library: State<'_, Library>,
+    id: String,
+    kind: String,
+    source: String,
+) -> Result<Game, String> {
+    let stem = artwork_stem(&kind)?;
+    let source = ImageSource::parse(&source, home_dir().ok().as_deref())?;
+    let folder = app_dir(&app)?.join("images").join(dir_name(&id));
+    let saved = host::async_runtime::spawn_blocking(move || match source {
+        ImageSource::Link(url) => {
+            artwork::import_url(&artwork::agent(), &url, &folder, &stem).map(|path| (path, url))
+        }
+        ImageSource::File(from) => artwork::import_file(&from, &folder, &stem)
+            .map(|path| (path, from.to_string_lossy().into_owned())),
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(art_error)?;
+
+    record_artwork(&app, &library, &id, &kind, image(saved))
 }
 
 fn art_error(error: ArtError) -> String {
@@ -2298,10 +2778,16 @@ fn take_controllers(app: &AppHandle, game: &str, spec: &mut LaunchSpec) {
         service.start_session(game, profile);
         return;
     }
-    if profile.output == OutputKind::Ds4 && game.starts_with("wine:") {
+    // Only the plain input device (no /dev/uhid) is invisible to XInput. The HID one is read through
+    // hidraw, which Wine and Proton turn into an XInput pad too: a game that reads only XInput
+    // worked with it.
+    if profile.output == OutputKind::Ds4
+        && game.starts_with("wine:")
+        && !controller::uhid_available()
+    {
         applog::warn(
-            "This Windows game gets a PlayStation 4 controller: it only exists for DirectInput, \
-             so games that read XInput will not see it (choose Automatic or Xbox 360)",
+            "This Windows game gets a PlayStation 4 controller without /dev/uhid: it only exists \
+             for DirectInput, so games that read XInput will not see it (choose Automatic or Xbox 360)",
         );
     }
     if !controller::uinput_available() {
@@ -2727,6 +3213,32 @@ include!("rpc_dispatch.rs");
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_an_image_given_as_a_link_or_a_path() {
+        let home = Path::new("/home/me");
+        let parse = |text: &str| ImageSource::parse(text, Some(home));
+
+        assert!(matches!(
+            parse("  https://example.com/a.png?x=1 ").unwrap(),
+            ImageSource::Link(url) if url == "https://example.com/a.png?x=1"
+        ));
+        assert!(matches!(
+            parse("\"/data/My Games/cover.png\"").unwrap(),
+            ImageSource::File(path) if path == Path::new("/data/My Games/cover.png")
+        ));
+        assert!(matches!(
+            parse("~/Pictures/cover.jpg").unwrap(),
+            ImageSource::File(path) if path == Path::new("/home/me/Pictures/cover.jpg")
+        ));
+        assert!(matches!(
+            parse("/data/My\\ Games/cover.png").unwrap(),
+            ImageSource::File(path) if path == Path::new("/data/My Games/cover.png")
+        ));
+        assert!(parse("").is_err());
+        assert!(parse("cover.png").is_err());
+        assert!(parse("ftp://example.com/a.png").is_err());
+    }
 
     #[test]
     fn only_one_lutra_can_use_a_data_folder() {

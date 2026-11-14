@@ -330,6 +330,10 @@ pub enum Target<'a> {
     Winecfg,
     /// Winetricks, at the given path.
     Winetricks(&'a Path),
+    /// Winetricks, at the given path, installing these verbs without asking anything.
+    Components(&'a Path, &'a [String]),
+    /// A Wine program by name with its arguments (`regedit /S file.reg`), run in the prefix.
+    Wine(&'a [String]),
 }
 
 /// Everything needed to start something, independent of how it is spawned.
@@ -419,6 +423,16 @@ pub fn merge_dll_overrides(lists: &[&str]) -> String {
         .join(";")
 }
 
+/// What Winetricks is given: nothing to open its window, `-q` and the verbs to install them unattended.
+fn winetricks_args(target: Target) -> Vec<OsString> {
+    match target {
+        Target::Components(_, verbs) => std::iter::once(os("-q"))
+            .chain(verbs.iter().map(|verb| os(verb)))
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
 /// Builds the command that runs `request.target` with the runner and the game's options.
 ///
 /// Proton goes through `umu-run` when available (it provides the Steam Linux Runtime container
@@ -454,7 +468,8 @@ pub fn build_launch(request: &LaunchRequest) -> Result<LaunchSpec, String> {
             cwd = cwd.or_else(|| exe.parent().map(Path::to_path_buf));
         }
         Target::Winecfg => payload.push(os("winecfg")),
-        Target::Winetricks(_) => {}
+        Target::Wine(args) => payload.extend(args.iter().map(|arg| os(arg))),
+        Target::Winetricks(_) | Target::Components(..) => {}
     }
     let cwd = cwd.unwrap_or_else(|| prefix.to_path_buf());
 
@@ -544,10 +559,10 @@ pub fn build_launch(request: &LaunchRequest) -> Result<LaunchSpec, String> {
             (exe.to_path_buf(), rest)
         }
         (RunnerKind::Native, _) => return Err("this tool is only for Windows games".into()),
-        (RunnerKind::Wine, Target::Winetricks(winetricks)) => {
+        (RunnerKind::Wine, Target::Winetricks(winetricks) | Target::Components(winetricks, _)) => {
             envs.push(("WINEPREFIX".into(), prefix.as_os_str().to_owned()));
             envs.push(("WINE".into(), runner.path.as_os_str().to_owned()));
-            (winetricks.to_path_buf(), Vec::new())
+            (winetricks.to_path_buf(), winetricks_args(*target))
         }
         (RunnerKind::Wine, _) => {
             envs.push(("WINEPREFIX".into(), prefix.as_os_str().to_owned()));
@@ -558,7 +573,10 @@ pub fn build_launch(request: &LaunchRequest) -> Result<LaunchSpec, String> {
             }
             (runner.path.clone(), payload)
         }
-        (RunnerKind::Proton, Target::Winetricks(winetricks)) => {
+        (
+            RunnerKind::Proton,
+            Target::Winetricks(winetricks) | Target::Components(winetricks, _),
+        ) => {
             let proton_dir = runner.path.parent().ok_or("invalid Proton path")?;
             envs.push((
                 "WINEPREFIX".into(),
@@ -568,7 +586,7 @@ pub fn build_launch(request: &LaunchRequest) -> Result<LaunchSpec, String> {
                 "WINE".into(),
                 proton_dir.join("files/bin/wine").into_os_string(),
             ));
-            (winetricks.to_path_buf(), Vec::new())
+            (winetricks.to_path_buf(), winetricks_args(*target))
         }
         (RunnerKind::Proton, _) => {
             if !config.esync {
@@ -1050,6 +1068,75 @@ mod tests {
         assert_eq!(
             env(&spec, "WINE"),
             Some(&OsString::from("/tools/GE-Proton9/files/bin/wine"))
+        );
+    }
+
+    #[test]
+    fn components_install_unattended_in_the_games_prefix() {
+        let tricks = Path::new("/usr/bin/winetricks");
+        let verbs = vec!["d3dcompiler_47".to_string(), "vcrun2022".to_string()];
+        let config = WineConfig::default();
+        let expected = vec![
+            OsString::from("-q"),
+            OsString::from("d3dcompiler_47"),
+            OsString::from("vcrun2022"),
+        ];
+
+        let wine = runner(RunnerKind::Wine, "/usr/bin/wine");
+        let spec = build_launch(&request(
+            &wine,
+            &config,
+            Target::Components(tricks, &verbs),
+            None,
+            None,
+        ))
+        .unwrap();
+        assert_eq!(spec.program, PathBuf::from("/usr/bin/winetricks"));
+        assert_eq!(spec.args, expected);
+        assert_eq!(
+            env(&spec, "WINEPREFIX"),
+            Some(&OsString::from("/prefixes/foo"))
+        );
+
+        let proton = runner(RunnerKind::Proton, "/tools/GE-Proton9/proton");
+        let spec = build_launch(&request(
+            &proton,
+            &config,
+            Target::Components(tricks, &verbs),
+            None,
+            None,
+        ))
+        .unwrap();
+        assert_eq!(spec.args, expected);
+        assert_eq!(
+            env(&spec, "WINEPREFIX"),
+            Some(&OsString::from("/prefixes/foo/pfx"))
+        );
+    }
+
+    #[test]
+    fn a_wine_command_runs_in_the_games_prefix() {
+        let args = vec![
+            "regedit".to_string(),
+            "/S".to_string(),
+            "Z:\\prefix\\a.reg".to_string(),
+        ];
+        let config = WineConfig::default();
+
+        let wine = runner(RunnerKind::Wine, "/usr/bin/wine");
+        let spec = build_launch(&request(&wine, &config, Target::Wine(&args), None, None)).unwrap();
+        assert_eq!(spec.program, PathBuf::from("/usr/bin/wine"));
+        assert_eq!(
+            spec.args,
+            vec![
+                OsString::from("regedit"),
+                OsString::from("/S"),
+                OsString::from("Z:\\prefix\\a.reg")
+            ]
+        );
+        assert_eq!(
+            env(&spec, "WINEPREFIX"),
+            Some(&OsString::from("/prefixes/foo"))
         );
     }
 
