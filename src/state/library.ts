@@ -7,6 +7,7 @@ import {
   launchGameBackend,
   pickArtwork,
   removeGameBackend,
+  saveSnapshot,
   scanSources,
   setFavorite,
   stopGameBackend,
@@ -192,6 +193,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set((state) => ({ games: state.games.filter((game) => game.id !== id) }));
   },
 }));
+
+// What is on screen is what the next start paints first.
+useLibraryStore.subscribe((state, previous) => {
+  if (state.games !== previous.games) saveSnapshot(state.games);
+});
+
 
 /** Whole store plus the game being launched. Prefer `useLibraryStore(selector)` when only a slice is needed. */
 export function useLibrary() {

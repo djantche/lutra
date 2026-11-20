@@ -1,6 +1,6 @@
 //! Local SQLite library: games found by the sources plus what the user did with them.
 
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 
 use chrono::{DateTime, SecondsFormat};
@@ -293,6 +293,10 @@ impl Db {
                     OR key LIKE 'emulation_profile:%';",
             )?;
         }
+        // Names the user gave to Wine prefixes (a prefix is only known by its folder).
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS prefix_names (path TEXT PRIMARY KEY, name TEXT NOT NULL);",
+        )?;
         conn.execute_batch("PRAGMA user_version = 7;")?;
         Ok(Self { conn })
     }
@@ -426,6 +430,46 @@ impl Db {
             .prepare("SELECT id FROM games WHERE prefix_path = ?1")?;
         let ids = statement.query_map([prefix], |row| row.get(0))?;
         ids.collect()
+    }
+
+    /// Titles of the games that use each Wine prefix, by prefix folder.
+    pub fn prefix_games(&self) -> rusqlite::Result<BTreeMap<String, Vec<String>>> {
+        let mut statement = self.conn.prepare(
+            "SELECT prefix_path, title FROM games
+             WHERE prefix_path IS NOT NULL AND prefix_path != ''
+             ORDER BY title COLLATE NOCASE",
+        )?;
+        let rows = statement.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
+        let mut games: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for row in rows {
+            let (path, title) = row?;
+            games.entry(path).or_default().push(title);
+        }
+        Ok(games)
+    }
+
+    /// The names the user gave to prefixes, by prefix folder.
+    pub fn prefix_names(&self) -> rusqlite::Result<HashMap<String, String>> {
+        let mut statement = self.conn.prepare("SELECT path, name FROM prefix_names")?;
+        let rows = statement.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+        rows.collect()
+    }
+
+    /// Names a prefix; `None` goes back to the automatic name.
+    pub fn set_prefix_name(&self, path: &str, name: Option<&str>) -> rusqlite::Result<()> {
+        match name {
+            Some(name) => self.conn.execute(
+                "INSERT INTO prefix_names (path, name) VALUES (?1, ?2)
+                 ON CONFLICT(path) DO UPDATE SET name = excluded.name",
+                params![path, name],
+            )?,
+            None => self
+                .conn
+                .execute("DELETE FROM prefix_names WHERE path = ?1", [path])?,
+        };
+        Ok(())
     }
 
     pub fn wine_settings(&self, id: &str) -> rusqlite::Result<Option<WineSettings>> {
@@ -701,6 +745,29 @@ mod tests {
             config: WineConfig::default(),
             meta: None,
         }
+    }
+
+    #[test]
+    fn prefixes_know_their_games_and_their_names() {
+        let db = Db::open_in_memory().unwrap();
+        for (id, title, prefix) in [
+            ("wine:a", "Sifu", "/p/one"),
+            ("wine:b", "Alan Wake", "/p/one"),
+            ("wine:c", "Hades", "/p/two"),
+        ] {
+            let mut game = manual(id, title);
+            game.prefix_path = prefix.into();
+            db.add_manual(&game).unwrap();
+        }
+        let games = db.prefix_games().unwrap();
+        assert_eq!(games["/p/one"], ["Alan Wake", "Sifu"]);
+        assert_eq!(games["/p/two"], ["Hades"]);
+
+        db.set_prefix_name("/p/one", Some("Action")).unwrap();
+        db.set_prefix_name("/p/one", Some("Action games")).unwrap();
+        assert_eq!(db.prefix_names().unwrap()["/p/one"], "Action games");
+        db.set_prefix_name("/p/one", None).unwrap();
+        assert!(db.prefix_names().unwrap().is_empty());
     }
 
     #[test]

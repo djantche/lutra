@@ -15,8 +15,22 @@ export function subscribe(handler: ActionHandler): () => void {
   };
 }
 
+let locks = 0;
+
+/** While locked, no action reaches the interface (the intro of Big Picture, a restart). Returns the unlock. */
+export function lockInput(): () => void {
+  locks++;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    locks--;
+  };
+}
+
 /** Most recently subscribed handlers run first, so an open overlay wins over its page. */
 export function emitAction(action: InputAction): void {
+  if (locks > 0) return;
   for (let i = handlers.length - 1; i >= 0; i--) {
     if (handlers[i](action) === true) {
       // A screen took the action: it went back, opened something, or changed tab.

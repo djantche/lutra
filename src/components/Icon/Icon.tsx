@@ -171,6 +171,12 @@ const PATHS = {
       <path d="M9 6V4h6v2" />
     </>
   ),
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </>
+  ),
   check: <polyline points="20 6 9 17 4 12" />,
   external: (
     <>

@@ -240,6 +240,12 @@ pub(crate) fn dispatch(
         "list_prefixes" => {
             host::async_runtime::block_on(list_prefixes(app.clone())).and_then(rpc::to_value)
         }
+        "rename_prefix" => {
+            let path: String = rpc::arg(args, "path")?;
+            let name: String = rpc::arg(args, "name")?;
+            host::async_runtime::block_on(rename_prefix(app.clone(), path, name))
+                .and_then(rpc::to_value)
+        }
         "check_prefix" => {
             let path: String = rpc::arg(args, "path")?;
             let runner_kind: String = rpc::arg(args, "runnerKind")?;
@@ -286,10 +292,8 @@ pub(crate) fn dispatch(
             host::async_runtime::block_on(save_steamgriddb_key(app.state::<Library>(), key))
                 .and_then(rpc::to_value)
         }
-        "read_artwork" => {
-            let path: String = rpc::arg(args, "path")?;
-            host::async_runtime::block_on(read_artwork(app.clone(), path))
-                .map(|bytes| rpc::bytes(&bytes))
+        "artwork_root" => {
+            host::async_runtime::block_on(artwork_root(app.clone())).and_then(rpc::to_value)
         }
         "import_images" => {
             let force: bool = rpc::arg(args, "force")?;
@@ -375,6 +379,11 @@ pub(crate) fn dispatch(
         "open_logs_folder" => {
             host::async_runtime::block_on(open_logs_folder(app.clone())).and_then(rpc::to_value)
         }
+        "setup_controller_access" => host::async_runtime::block_on(setup_controller_access(
+            app.clone(),
+            app.state::<ControllerService>(),
+        ))
+        .and_then(rpc::to_value),
         "controller_status" => {
             host::async_runtime::block_on(controller_status(app.state::<ControllerService>()))
                 .and_then(rpc::to_value)

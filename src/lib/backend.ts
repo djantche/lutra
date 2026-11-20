@@ -5,7 +5,37 @@ import type { Game } from "../types/game";
 /** True inside the Lutra window. In a plain browser (`pnpm dev`) the app runs on mock data. */
 export const hasBackend = (): boolean => isHosted();
 
-export const initialGames = (): Game[] => (hasBackend() ? [] : MOCK_GAMES);
+const SNAPSHOT_KEY = "lutra.library";
+
+/**
+ * The library as it was when Lutra last ran, so the first paint already shows every game with its
+ * cover instead of an empty page; the backend's list replaces it a moment later.
+ */
+function readSnapshot(): Game[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) ?? "[]");
+    return Array.isArray(parsed) ? (parsed as Game[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+let snapshotTimer: number | undefined;
+
+/** Remembers the library for the next start (a few times a second at most). */
+export function saveSnapshot(games: Game[]): void {
+  if (!hasBackend()) return;
+  window.clearTimeout(snapshotTimer);
+  snapshotTimer = window.setTimeout(() => {
+    try {
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(games));
+    } catch {
+      // Too big or not allowed: the next start simply waits for the backend.
+    }
+  }, 1000);
+}
+
+export const initialGames = (): Game[] => (hasBackend() ? readSnapshot() : MOCK_GAMES);
 
 export interface Runner {
   kind: "wine" | "proton";
@@ -61,6 +91,8 @@ export interface InstallRequest {
   runnerPath: string;
   /** An existing prefix; a new one is created when absent. */
   prefixPath?: string;
+  /** What to call the new prefix. */
+  prefixName?: string;
 }
 
 export interface InstallFinished {
@@ -78,6 +110,8 @@ export interface NewGame {
   runnerPath: string;
   /** An existing Wine prefix to reuse; a new one is created when absent. */
   prefixPath?: string;
+  /** What to call the prefix created for the game (when no existing one is reused). */
+  prefixName?: string;
   meta?: GameMeta;
   /** The options to start with; the backend picks the best ones for this machine when absent. */
   config?: WineConfig;
@@ -143,6 +177,10 @@ export interface PrefixInfo {
   /** Null for a folder where nothing ran yet. */
   kind: Runner["kind"] | null;
   arch: "win64" | "win32" | null;
+  /** What the user called it. */
+  customName: string | null;
+  /** Titles of the games of the library that use it. */
+  games: string[];
 }
 
 /** One real stage of a game launch, pushed by the backend. */
@@ -211,9 +249,6 @@ export interface SearchHit {
   year: number | null;
   verified: boolean;
 }
-
-/** Raw bytes of a downloaded artwork file. */
-export const readArtwork = (path: string) => invoke<ArrayBuffer>("read_artwork", { path });
 
 export const listGames = () => invoke<Game[]>("list_games");
 export const scanSources = () => invoke<Game[]>("scan_sources");
@@ -288,8 +323,10 @@ const MOCK_HARDWARE: Hardware = {
   gamescope: null,
 };
 const MOCK_PREFIXES: PrefixInfo[] = [
-  { path: "/mock/Prefixes/shared", name: "shared", origin: "lutra", kind: "proton", arch: "win64" },
-  { path: "/mock/Steam/compatdata/730", name: "Counter-Strike 2", origin: "steam", kind: "proton", arch: "win64" },
+  { path: "/mock/Prefixes/03bdd556", name: "03bdd556", origin: "lutra", kind: "proton", arch: "win64", customName: null, games: ["Sifu"] },
+  { path: "/mock/Prefixes/06c2a7f3", name: "06c2a7f3", origin: "lutra", kind: "proton", arch: "win64", customName: "Souls games", games: ["Dark Souls III", "Elden Ring", "Sekiro"] },
+  { path: "/mock/Prefixes/40dac01e", name: "40dac01e", origin: "lutra", kind: "wine", arch: "win32", customName: null, games: [] },
+  { path: "/mock/Steam/compatdata/730", name: "Counter-Strike 2", origin: "steam", kind: "proton", arch: "win64", customName: null, games: [] },
 ];
 
 export const wineTools = (): Promise<Tools> => (hasBackend() ? invoke<Tools>("wine_tools") : Promise.resolve(MOCK_TOOLS));
@@ -420,6 +457,16 @@ export const recommendedConfig = (runnerKind: RunnerKind): Promise<WineConfig> =
 
 export const listPrefixes = (): Promise<PrefixInfo[]> =>
   hasBackend() ? invoke<PrefixInfo[]>("list_prefixes") : Promise.resolve(MOCK_PREFIXES);
+
+/** Gives a prefix a name of the user's own; an empty name goes back to the automatic one. */
+export const renamePrefix = (path: string, name: string): Promise<void> => {
+  if (!hasBackend()) {
+    const prefix = MOCK_PREFIXES.find((candidate) => candidate.path === path);
+    if (prefix) prefix.customName = name.trim() === "" ? null : name.trim();
+    return Promise.resolve();
+  }
+  return invoke<void>("rename_prefix", { path, name });
+};
 
 /** Resolves when a folder can be the prefix of a game run by `runnerKind`; rejects with the reason. */
 export const checkPrefix = (path: string, runnerKind: RunnerKind): Promise<void> =>

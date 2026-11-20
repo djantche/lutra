@@ -61,8 +61,14 @@ async function load(): Promise<void> {
   );
 }
 
+/** Sounds belong to the console identity: Big Picture and the in-game overlay, never the desktop mode. */
+function inConsoleMode(): boolean {
+  const root = document.documentElement;
+  return root.dataset.mode === "bigpicture" || "overlay" in root.dataset;
+}
+
 export function playSound(name: SoundName): void {
-  if (!enabled) return;
+  if (!enabled || !inConsoleMode()) return;
   if (!context) {
     void load();
     return;

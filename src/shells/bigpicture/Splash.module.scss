@@ -5,7 +5,8 @@
   display: grid;
   place-items: center;
   background: radial-gradient(circle at center, #1b1f45 0%, #05060a 70%);
-  pointer-events: none;
+  // Stops the pointer: the interface under it is not usable while it plays.
+  cursor: none;
   animation: splash 1.7s var(--ease-out) forwards;
 }
 

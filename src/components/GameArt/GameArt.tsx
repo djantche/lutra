@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_HEIGHT, ART_WIDTH, createScene } from "../../lib/art";
 import { cx } from "../../lib/cx";
 import { useArtworkUrl } from "../../lib/useArtworkUrl";
@@ -75,30 +75,43 @@ function GeneratedArt({ game }: { game: Game }) {
 
 /**
  * A game's cover or banner filling its container (the container decides the aspect ratio).
- * Generated art stands in until the real image is loaded, then is not drawn at all.
+ * Generated art only stands in for a game that has no image (or whose file cannot be read). A game
+ * that has one shows a plain tint of its colour until the image is there: the image is a local
+ * file, so it usually is before the first paint, and the generated scene never flashes before it.
  */
 export function GameArt({ game, kind = "poster", showTitle = false, className }: GameArtProps) {
   const image = useArtworkUrl(kind === "hero" ? game.hero : game.poster, game.artVersion);
-  // An image already in memory shows at once, without the generated art or a fade.
-  const [instant] = useState(image !== null);
-  const [shown, setShown] = useState<string | null>(image);
-  const covered = image !== null && shown === image;
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const [broken, setBroken] = useState<string | null>(null);
+  const ref = useRef<HTMLImageElement>(null);
+
+  // An image the browser already has is shown in this very frame, without a fade.
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (image && element?.complete && element.naturalWidth > 0) setLoaded(image);
+  }, [image]);
+
+  const usable = image !== null && broken !== image;
+  const visible = usable && loaded === image;
 
   return (
-    <div className={cx(styles.art, className)} aria-hidden="true">
-      {!covered && <GeneratedArt game={game} />}
+    <div className={cx(styles.art, className)} style={{ "--tint": `hsl(${game.hue} 28% 11%)` } as CSSProperties} aria-hidden="true">
+      {!usable && <GeneratedArt game={game} />}
 
-      {image && (
+      {usable && (
         <img
-          className={cx(styles.image, !instant && styles.fadeIn)}
+          ref={ref}
+          className={cx(styles.image, visible && styles.visible)}
           src={image}
           alt=""
           draggable={false}
-          onLoad={() => setShown(image)}
+          decoding="async"
+          onLoad={() => setLoaded(image)}
+          onError={() => setBroken(image)}
         />
       )}
 
-      {showTitle && !image && (
+      {showTitle && !usable && (
         <div className={styles.title}>
           <GameLogo game={game} />
         </div>

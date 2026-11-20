@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { checkForUpdate, installUpdate, setLastChecked, type UpdateInfo } from "../lib/updates";
 
 export interface InstallProgress {
-  state: "download" | "verify" | "replace";
+  state: "download" | "verify" | "replace" | "install";
   received: number;
   total: number;
 }
@@ -16,6 +16,10 @@ interface UpdateStore {
   /** Version in place on disk, waiting for a restart. */
   installed: string | null;
   failure: string | null;
+  /** The full-screen page announcing a release found at start. */
+  promptOpen: boolean;
+  openPrompt: () => void;
+  closePrompt: () => void;
   check: () => Promise<UpdateInfo | null>;
   startInstall: () => Promise<void>;
   setProgress: (progress: InstallProgress | null) => void;
@@ -29,6 +33,9 @@ export const useUpdates = create<UpdateStore>((set, get) => ({
   install: null,
   installed: null,
   failure: null,
+  promptOpen: false,
+  openPrompt: () => set({ promptOpen: true }),
+  closePrompt: () => set({ promptOpen: false }),
 
   check: async () => {
     if (get().checking) return get().info;

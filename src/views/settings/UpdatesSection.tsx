@@ -99,7 +99,7 @@ export function UpdatesSection({ version }: { version: string | null }) {
                     <span className={styles.status}>
                       {install.state === "download"
                         ? `${t("updates.downloading")} · ${size(install.received)} / ${size(install.total)}`
-                        : t(`updates.${install.state}`)}
+                        : t(`updates.stage.${install.state}`)}
                     </span>
                     {install.state === "download" && (
                       <Button variant="ghost" icon="close" onClick={() => cancelUpdate().catch((e) => reportError(t("updates.cancelError"), e))}>

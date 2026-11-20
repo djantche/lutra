@@ -1,3 +1,4 @@
+mod access;
 mod applog;
 mod artwork;
 mod audio;
@@ -54,14 +55,21 @@ const CONTROLLER_SYSTEM: &str = "controller_system";
 const DEFAULT_PROFILE: &str = "default";
 const TEST_SESSION: &str = "test";
 
-/// Where Lutra keeps its data, known before Tauri starts (same as `app_data_dir`).
+/// Folder of the installed Lutra's data, under `~/.local/share`.
+const DATA_FOLDER: &str = "lutra";
+/// Folder used while developing (`LUTRA_PROFILE=dev`, set by the shell for `pnpm dev:electron`), so
+/// a development session never touches the library, prefixes and settings of the real one.
+const DEV_DATA_FOLDER: &str = "lutra-dev";
+
+/// Where Lutra keeps its data, known before the shell's first request.
 fn data_dir_early() -> Option<PathBuf> {
     let base = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .or_else(|| {
             std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
         })?;
-    Some(base.join("dev.lutra.app"))
+    let dev = std::env::var("LUTRA_PROFILE").is_ok_and(|profile| profile == "dev");
+    Some(base.join(if dev { DEV_DATA_FOLDER } else { DATA_FOLDER }))
 }
 
 const OVERLAY_TITLE: &str = "Lutra Overlay";
@@ -406,6 +414,9 @@ struct NewGame {
     #[serde(default)]
     runner_path: String,
     prefix_path: Option<String>,
+    /// What to call the prefix created for this game (only when `prefix_path` is absent).
+    #[serde(default)]
+    prefix_name: Option<String>,
     meta: Option<db::GameMeta>,
     config: Option<WineConfig>,
 }
@@ -458,11 +469,11 @@ async fn add_game(
             prefixes::check_usable(Path::new(&existing), kind)?;
             existing
         }
-        (_, None) => app_dir(&app)?
-            .join("prefixes")
-            .join(&key)
-            .to_string_lossy()
-            .into_owned(),
+        (_, None) => {
+            let created = app_dir(&app)?.join("prefixes").join(&key);
+            name_new_prefix(&*library.lock()?, &created, game.prefix_name.as_deref())?;
+            created.to_string_lossy().into_owned()
+        }
     };
     let config = game.config.unwrap_or_else(|| {
         wine::recommended_config(
@@ -489,6 +500,15 @@ async fn add_game(
     db.get(&id)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "game was not saved".to_string())
+}
+
+/// Gives the prefix about to be created the name the user typed for it, if they typed one.
+fn name_new_prefix(db: &Db, path: &Path, name: Option<&str>) -> Result<(), String> {
+    if let Some(name) = name.map(prefixes::clean_name).transpose()?.flatten() {
+        db.set_prefix_name(&path.to_string_lossy(), Some(&name))
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// A Wine prefix that removing a game can delete too.
@@ -614,6 +634,10 @@ async fn remove_game(
             .await
             .map_err(|e| e.to_string())?
             .map_err(|e| format!("the game is removed, but not its prefix: {e}"))?;
+        // The name went with the folder.
+        let _ = library
+            .lock()?
+            .set_prefix_name(&prefix.to_string_lossy(), None);
         applog::info(format!("Removed {id} with its prefix {}", prefix.display()));
     } else {
         applog::info(format!("Removed {id}"));
@@ -1796,6 +1820,9 @@ struct InstallRequest {
     runner_kind: String,
     runner_path: String,
     prefix_path: Option<String>,
+    /// What to call the prefix created for the installation (only when `prefix_path` is absent).
+    #[serde(default)]
+    prefix_name: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -1851,7 +1878,12 @@ async fn start_install(app: AppHandle, request: InstallRequest) -> Result<Instal
             prefixes::check_usable(Path::new(&existing), kind)?;
             PathBuf::from(existing)
         }
-        None => app_dir(&app)?.join("prefixes").join(&key),
+        None => {
+            let created = app_dir(&app)?.join("prefixes").join(&key);
+            let library = app.state::<Library>();
+            name_new_prefix(&*library.lock()?, &created, request.prefix_name.as_deref())?;
+            created
+        }
     };
     let drive_c = wine::effective_prefix(kind, &prefix).join("drive_c");
     let before = installer::scan_programs(&drive_c);
@@ -1963,7 +1995,31 @@ async fn cancel_install(app: AppHandle, install_id: String) -> Result<(), String
 async fn list_prefixes(app: AppHandle) -> Result<Vec<prefixes::PrefixInfo>, String> {
     let lutra = app_dir(&app)?.join("prefixes");
     let roots = steam::steam_roots(&home_dir()?);
-    Ok(prefixes::list(&lutra, &roots))
+    let mut found = prefixes::list(&lutra, &roots);
+    let library = app.state::<Library>();
+    let db = library.lock()?;
+    let mut games = db.prefix_games().map_err(|e| e.to_string())?;
+    let mut names = db.prefix_names().map_err(|e| e.to_string())?;
+    for prefix in &mut found {
+        prefix.games = games.remove(&prefix.path).unwrap_or_default();
+        prefix.custom_name = names.remove(&prefix.path);
+    }
+    Ok(found)
+}
+
+/// Gives a Wine prefix a name of the user's own; an empty name goes back to the automatic one.
+// @rpc
+async fn rename_prefix(app: AppHandle, path: String, name: String) -> Result<(), String> {
+    let name = prefixes::clean_name(&name)?;
+    let library = app.state::<Library>();
+    let db = library.lock()?;
+    db.set_prefix_name(&path, name.as_deref())
+        .map_err(|e| e.to_string())?;
+    applog::info(match &name {
+        Some(name) => format!("Prefix {path} is now called {name}"),
+        None => format!("Prefix {path} goes back to its automatic name"),
+    });
+    Ok(())
 }
 
 /// Tells whether a folder can be the prefix of a game run by `runner_kind`, and why not.
@@ -2171,15 +2227,15 @@ async fn save_steamgriddb_key(library: State<'_, Library>, key: String) -> Resul
     Ok(true)
 }
 
-/// Returns the bytes of a downloaded artwork file. Only files inside the artwork folder are readable.
+/// The folder holding the downloaded artwork. The shell serves the files inside it to the
+/// interface (`lutra://art/`), and nothing outside.
 // @rpc
-async fn read_artwork(app: AppHandle, path: String) -> Result<Vec<u8>, String> {
-    let images = fs::canonicalize(app_dir(&app)?.join("images")).map_err(|e| e.to_string())?;
-    let file = fs::canonicalize(&path).map_err(|e| e.to_string())?;
-    if !file.starts_with(&images) {
-        return Err("not an artwork file".into());
-    }
-    fs::read(file).map_err(|e| e.to_string())
+async fn artwork_root(app: AppHandle) -> Result<String, String> {
+    let images = app_dir(&app)?.join("images");
+    fs::create_dir_all(&images).map_err(|e| e.to_string())?;
+    fs::canonicalize(images)
+        .map(|path| path.to_string_lossy().into_owned())
+        .map_err(|e| e.to_string())
 }
 
 /// Downloads artwork in the background. Progress and results come back as events.
@@ -2927,6 +2983,22 @@ struct ControllerView {
     #[serde(flatten)]
     info: ControllerInfo,
     battery: Option<controller::battery::Battery>,
+}
+
+/// Gives Lutra the permission controllers need (see `access.rs`). The system asks for the
+/// administrator's password; resolves once it is done, rejects with a short code otherwise.
+// @rpc
+async fn setup_controller_access(
+    app: AppHandle,
+    service: State<'_, ControllerService>,
+) -> Result<(), String> {
+    host::async_runtime::spawn_blocking(access::grant)
+        .await
+        .map_err(|e| e.to_string())??;
+    // Controllers that were connected before get their virtual device now, no need to replug them.
+    service.refresh();
+    let _ = app.emit("controllers-changed", ());
+    Ok(())
 }
 
 // @rpc

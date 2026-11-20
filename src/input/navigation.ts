@@ -95,16 +95,24 @@ function moveFocus(direction: Direction): void {
   }
 
   const from = current.getBoundingClientRect();
-  let best: HTMLElement | null = null;
-  let bestScore = Infinity;
-  for (const item of items) {
-    if (item === current) continue;
-    const s = score(direction, from, item.getBoundingClientRect());
-    if (s < bestScore) {
-      best = item;
-      bestScore = s;
+  const nearest = (candidates: HTMLElement[]) => {
+    let found: HTMLElement | null = null;
+    let foundScore = Infinity;
+    for (const item of candidates) {
+      if (item === current) continue;
+      const s = score(direction, from, item.getBoundingClientRect());
+      if (s < foundScore) {
+        found = item;
+        foundScore = s;
+      }
     }
-  }
+    return found;
+  };
+  // Up and down first look inside the list the selection is in, even for what is scrolled out of
+  // view (a row of filters above the grid): otherwise the chrome above the list, which is nearer
+  // on screen, would be reached first and what scrolled away could only be found by scrolling.
+  const scroller = direction === "up" || direction === "down" ? scrollParent(current) : null;
+  const best = (scroller && nearest(items.filter((item) => scroller.contains(item)))) || nearest(items);
   const reduceMotion = document.documentElement.dataset.motion === "reduced";
   const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
   if (!best) {

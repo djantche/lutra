@@ -32,7 +32,7 @@ export function ControllersView() {
         <p>{t("controllers.subtitle")}</p>
       </header>
 
-      {status && <ControllerNotice status={status} />}
+      {status && <ControllerNotice status={status} onFixed={refresh} />}
 
       {status && selected && profile && (
         <div className={styles.page}>

@@ -1,0 +1,101 @@
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--color-text-subtle);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: color var(--duration-base) var(--ease-out);
+
+  // A line between two steps.
+  &:not(:last-child)::after {
+    content: "";
+    flex: 1;
+    min-width: var(--space-3);
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-border);
+    transition: background var(--duration-base) var(--ease-out);
+  }
+
+  &.done::after {
+    background: var(--color-accent);
+  }
+}
+
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  font-size: 0.8rem;
+  transition:
+    background var(--duration-base) var(--ease-out),
+    border-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current {
+  color: var(--color-text);
+
+  .badge {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-contrast);
+    box-shadow: 0 0 0 0.25em var(--color-accent-soft);
+  }
+}
+
+.done {
+  color: var(--color-text-muted);
+
+  .badge {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+}
+
+// On a narrow window only the current step keeps its name.
+@container (max-width: 640px) {
+  .todo .label,
+  .done .label {
+    display: none;
+  }
+}
+
+.stepper {
+  container-type: inline-size;
+}
+
+.bar {
+  display: flex;
+}

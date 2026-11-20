@@ -73,6 +73,8 @@
   margin: 0;
   padding: 0.35em;
   overflow-y: auto;
+  // The list's scrolling stays in the list, never chained to the page under it.
+  overscroll-behavior: contain;
   border: 1px solid var(--color-border-strong);
   border-radius: 1em;
   background: var(--color-bg-elevated);

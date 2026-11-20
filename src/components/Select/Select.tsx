@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type WheelEvent } from "react";
 import { createPortal } from "react-dom";
 import { useInputAction } from "../../input/useInputAction";
 import { cx } from "../../lib/cx";
@@ -41,11 +41,15 @@ export function Select<T extends string>({
   const [active, setActive] = useState(0);
   const [place, setPlace] = useState<CSSProperties>({});
   const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  // The pointer hovering an option makes it active without moving the list under the wheel.
+  const pointerActive = useRef(false);
 
   const selected = options.findIndex((option) => option.value === value);
   const optionId = (index: number) => `${id}-${index}`;
 
   const show = () => {
+    pointerActive.current = false;
     setActive(selected >= 0 ? selected : nextEnabled(-1, 1));
     setOpen(true);
   };
@@ -92,25 +96,54 @@ export function Select<T extends string>({
     };
     update();
     window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
+    // The list's own scrolling must not re-place it (that would bring the active option back).
+    const onScroll = (event: Event) => {
+      if (!(event.target instanceof Node && list.current?.contains(event.target))) update();
+    };
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
+  // Keeps the active option in view when the keyboard or the pad moves it, by scrolling the list
+  // only (`scrollIntoView` would scroll the page behind as well).
   useEffect(() => {
-    if (open) document.getElementById(optionId(active))?.scrollIntoView({ block: "nearest" });
-  });
+    if (!open || pointerActive.current) return;
+    const box = list.current;
+    const option = document.getElementById(optionId(active));
+    if (!box || !option) return;
+    if (option.offsetTop < box.scrollTop) box.scrollTop = option.offsetTop - 4;
+    else if (option.offsetTop + option.offsetHeight > box.scrollTop + box.clientHeight)
+      box.scrollTop = option.offsetTop + option.offsetHeight - box.clientHeight + 4;
+  }, [open, active]);
+
+  // The wheel over the backdrop scrolls the page under it, which the backdrop would otherwise stop.
+  const forwardWheel = (event: WheelEvent<HTMLDivElement>) => {
+    for (const element of document.elementsFromPoint(event.clientX, event.clientY)) {
+      if (element === event.currentTarget || !(element instanceof HTMLElement)) continue;
+      for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+        const overflow = getComputedStyle(node).overflowY;
+        if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight) {
+          node.scrollBy({ top: event.deltaY });
+          return;
+        }
+      }
+      return;
+    }
+  };
 
   // With a controller: up/down move in the open list, confirm picks, back closes.
   useInputAction(
     (action) => {
       switch (action) {
         case "up":
+          pointerActive.current = false;
           setActive((index) => nextEnabled(index, -1));
           return true;
         case "down":
+          pointerActive.current = false;
           setActive((index) => nextEnabled(index, 1));
           return true;
         case "confirm":
@@ -127,6 +160,7 @@ export function Select<T extends string>({
   const onKeyDown = (event: KeyboardEvent) => {
     const move = (index: number) => {
       event.preventDefault();
+      pointerActive.current = false;
       setActive(index);
     };
 
@@ -190,6 +224,7 @@ export function Select<T extends string>({
             {/* Takes the click that closes the list, so it never reaches what is underneath. */}
             <div
               className={styles.backdrop}
+              onWheel={forwardWheel}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -200,7 +235,7 @@ export function Select<T extends string>({
                 setOpen(false);
               }}
             />
-        <ul id={`${id}-list`} role="listbox" className={styles.list} style={place}>
+        <ul ref={list} id={`${id}-list`} role="listbox" className={styles.list} style={place}>
           {options.map((option, index) => (
             <li
               key={option.value}
@@ -211,7 +246,11 @@ export function Select<T extends string>({
               className={cx(styles.option, index === active && !option.disabled && styles.active)}
               // Keeps the focus on the trigger so the keyboard keeps working.
               onPointerDown={(event) => event.preventDefault()}
-              onPointerMove={() => !option.disabled && setActive(index)}
+              onPointerMove={() => {
+                if (option.disabled || index === active) return;
+                pointerActive.current = true;
+                setActive(index);
+              }}
               onClick={(event) => {
                 // Inside a <label>, the click would be forwarded to the trigger and reopen the list.
                 event.preventDefault();

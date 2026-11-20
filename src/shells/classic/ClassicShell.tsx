@@ -8,7 +8,7 @@ import { ContextMenuHost } from "../../components/ContextMenu/ContextMenuHost";
 import { ToastHost } from "../../components/Toast/ToastHost";
 import { usePageMenu } from "../../hooks/useGameMenu";
 import { useLibraryStore } from "../../state/library";
-import { AddGameDialog } from "./AddGameDialog";
+import { AddGameDialog } from "./addgame/AddGameDialog";
 import { GameConfigDialog } from "./config/GameConfigDialog";
 import { GamePage } from "./GamePage";
 import { HomePage } from "./HomePage";

@@ -31,6 +31,8 @@ let overlayWindow = null;
 let tray = null;
 let quitting = false;
 let hiddenForGame = false;
+/** Whether the interface is in Big Picture (it tells the shell when it asks for fullscreen). */
+let bigPicture = false;
 let trayLabels = { open: "Lutra", bigPicture: "Big Picture", quit: "Quit" };
 let trayInfo = { available: false, closeToTray: false, startInTray: false };
 let trayKnown = null; // resolves once the backend has told us about the notification area
@@ -55,7 +57,11 @@ function backendPath() {
 function startBackend() {
   // The backend reads the options of the command line too (`--big-picture`).
   const flags = process.argv.slice(1).filter((arg) => arg === "--big-picture");
-  backend = spawn(backendPath(), flags, { stdio: ["pipe", "pipe", "inherit"] });
+  // A development session (Vite server) keeps its own data folder, apart from the real one's.
+  const env = { ...process.env };
+  if (DEV_URL) env.LUTRA_PROFILE = "dev";
+  else delete env.LUTRA_PROFILE;
+  backend = spawn(backendPath(), flags, { stdio: ["pipe", "pipe", "inherit"], env });
   backend.on("error", (error) => fail(`The backend could not start: ${error.message}`));
   backend.on("exit", (code) => {
     if (quitting) return;
@@ -94,9 +100,30 @@ function onBackendLine(line) {
   if (!resolve) return;
   pending.delete(message.id);
   if (message.err !== undefined) return resolve({ err: message.err });
-  const ok = message.ok;
-  // Binary results (artwork) come as base64.
-  resolve({ ok: ok && typeof ok === "object" && "$bytes" in ok ? Buffer.from(ok.$bytes, "base64") : ok });
+  resolve({ ok: message.ok });
+}
+
+// ---------------------------------------------------------------- artwork
+
+let artworkRoot = null;
+
+/**
+ * `lutra://art/?f=<file>&v=<version>`: a downloaded image, read from the disk by the browser
+ * itself, so covers load in parallel, are decoded natively and can be cached. The version only
+ * changes the address when the image is replaced. Nothing outside the artwork folder is served.
+ */
+async function serveArtwork(request) {
+  try {
+    artworkRoot ??= (await call("artwork_root")).ok;
+    const file = fs.realpathSync(new URL(request.url).searchParams.get("f") ?? "");
+    if (!artworkRoot || !file.startsWith(artworkRoot + path.sep)) return new Response("Forbidden", { status: 403 });
+    const reply = await net.fetch(pathToFileURL(file).toString());
+    const headers = new Headers(reply.headers);
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+    return new Response(reply.body, { status: reply.status, headers });
+  } catch {
+    return new Response("Not found", { status: 404 });
+  }
 }
 
 // ---------------------------------------------------------------- events
@@ -124,6 +151,13 @@ function onEvent(event, payload) {
 /** Controller actions go to the overlay when it is open, else to Lutra when it is in use. */
 function routeAction(action) {
   if (overlayWindow) return overlayWindow.webContents.send("ev:ui-action", action);
+  // A Lutra window that is not the one in use (a game is in front of it, or it is out of sight)
+  // is never driven by the pad: only the Guide button (PlayStation, Xbox... button) brings it
+  // back, so a game's controller never moves the menus behind it.
+  if (action === "menu" && mainWindow && mainWindow.isVisible() && !mainWindow.isMinimized() && !mainWindow.isFocused()) {
+    showMain();
+    return;
+  }
   // The Guide button while Lutra is out of sight (in the notification area, or minimized) and no
   // game runs: Lutra comes back, in Big Picture. (During a game the backend opens the overlay.)
   if (action === "menu" && mainWindow && (!mainWindow.isVisible() || mainWindow.isMinimized())) {
@@ -137,15 +171,18 @@ function routeAction(action) {
     mainWindow.webContents.send("ev:ui-action", action);
     return;
   }
-  if (mainWindow && mainWindow.isFocused()) {
+  if (mainWindow && mainWindow.isVisible() && !mainWindow.isMinimized() && mainWindow.isFocused()) {
     mainWindow.webContents.send("ev:ui-action", action);
   }
 }
 
-/** A game started or ended: the window steps aside while games run, and comes back after. */
+/**
+ * A game started or ended: in Big Picture the window steps aside while games run, and comes back
+ * after. The desktop mode stays where it is: it is a window among others.
+ */
 function onGame({ anyRunning, hide }) {
   if (anyRunning) {
-    if (hide && mainWindow && mainWindow.isVisible()) {
+    if (hide && bigPicture && mainWindow && mainWindow.isVisible()) {
       mainWindow.hide();
       hiddenForGame = true;
     }
@@ -288,6 +325,8 @@ ipcMain.handle("window", (event, operation, value) => {
     case "close":
       return window.close();
     case "setFullscreen":
+      // The interface asks for fullscreen exactly when it enters Big Picture.
+      if (window === mainWindow) bigPicture = Boolean(value);
       return window.setFullScreen(Boolean(value));
     case "toTray":
       // Out of sight, in the notification area when there is one (the Guide button brings it
@@ -334,6 +373,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     protocol.handle("lutra", (request) => {
+      if (new URL(request.url).hostname === "art") return serveArtwork(request);
       const requested = decodeURIComponent(new URL(request.url).pathname);
       const file = path.normalize(path.join(DIST, requested === "/" ? "/index.html" : requested));
       if (!file.startsWith(DIST)) return new Response("Forbidden", { status: 403 });

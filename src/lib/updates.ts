@@ -10,14 +10,14 @@ export interface UpdateInfo {
   notes: string;
   page: string;
   published: string;
-  /** Lutra can install it itself (an AppImage with a published checksum). */
+  /** Lutra can install it itself: an AppImage that replaces itself, or the deb package through apt. */
   canInstall: boolean;
   size: number;
 }
 
 /** One `update-install` event. */
 export interface UpdateInstallEvent {
-  state: "download" | "verify" | "replace" | "done" | "failed" | "cancelled";
+  state: "download" | "verify" | "replace" | "install" | "done" | "failed" | "cancelled";
   received?: number;
   total?: number;
   /** The installed version when done, why it failed otherwise. */

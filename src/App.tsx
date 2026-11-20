@@ -10,11 +10,15 @@ import { RunnerInstallEffects } from "./state/RunnerInstallEffects";
 import { BatteryAlerts } from "./state/BatteryAlerts";
 import { UpdateEffects } from "./state/UpdateEffects";
 import { LibraryEffects } from "./state/LibraryEffects";
+import { ControllerAccessPrompt } from "./components/ControllerAccess/ControllerAccessPrompt";
+import { UpdateScreen } from "./components/UpdateScreen/UpdateScreen";
+import { useUpdates } from "./state/updates";
 import { PowerDialog } from "./components/PowerDialog/PowerDialog";
 import { UiProvider, useUi } from "./state/ui";
 
 function Shell() {
   const { mode, setMode, toggleMode, powerMenuOpen, setPowerMenuOpen } = useUi();
+  const updatePrompt = useUpdates((state) => state.promptOpen && state.info?.available === true);
 
   useKeyboardInput();
 
@@ -33,7 +37,12 @@ function Shell() {
 
   // The controller driver sends the same actions as the keyboard while no game runs.
   useEffect(() => {
-    const stop = onControllerAction((action) => emitAction(action as InputAction));
+    // Not while another window (a game) is in front: only the Guide button, handled by the shell,
+    // brings Lutra back, and the power menu it opens when held.
+    const stop = onControllerAction((action) => {
+      if (action !== "powerMenu" && !document.hasFocus()) return;
+      emitAction(action as InputAction);
+    });
     return () => void stop.then((unlisten) => unlisten());
   }, []);
   useInputAction((action) => {
@@ -57,6 +66,8 @@ function Shell() {
     <>
       {mode === "bigpicture" ? <BigPictureShell /> : <ClassicShell />}
       {powerMenuOpen && <PowerDialog />}
+      {updatePrompt && <UpdateScreen />}
+      <ControllerAccessPrompt />
     </>
   );
 }

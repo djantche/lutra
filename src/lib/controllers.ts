@@ -373,6 +373,14 @@ export const powerTarget = (): Promise<PowerTarget | null> =>
     ? invoke<PowerTarget | null>("controller_power_target")
     : Promise.resolve({ id: MOCK_CONTROLLER.id, name: MOCK_CONTROLLER.name, wired: false });
 
+/**
+ * Gives Lutra the permission controllers need (virtual devices). The system asks for the
+ * administrator's password. Rejects with a short code: `cancelled`, `no_authentication`,
+ * `no_pkexec`, `not_applied`, or `exit N`.
+ */
+export const setupControllerAccess = (): Promise<void> =>
+  hasBackend() ? invoke<void>("setup_controller_access") : Promise.resolve();
+
 /** Ends the controller's Bluetooth link for real. Rejects with `wired` on a cable, or Bluetooth's own message. */
 export const powerOffController = (id?: string): Promise<void> =>
   hasBackend() ? invoke<void>("power_off_controller", { id: id ?? null }) : Promise.resolve();

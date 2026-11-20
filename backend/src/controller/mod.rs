@@ -286,6 +286,12 @@ impl ControllerService {
         }
     }
 
+    /// Makes the controllers outside games take up their virtual device again, e.g. after the
+    /// system gave Lutra the permission to create one.
+    pub fn refresh(&self) {
+        self.shared.rebuild_outside_games();
+    }
+
     pub fn system(&self) -> bool {
         self.shared.system.load(Ordering::SeqCst)
     }

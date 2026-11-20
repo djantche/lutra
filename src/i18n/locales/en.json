@@ -6,7 +6,8 @@
     "hide": "Hide",
     "cancel": "Cancel",
     "remove": "Remove",
-    "reset": "Reset"
+    "reset": "Reset",
+    "save": "Save"
   },
   "nav": {
     "home": "Home",
@@ -153,13 +154,13 @@
     "trayClose": "Closing the window keeps Lutra running",
     "trayCloseHint": "Lutra stays in the notification area; its icon reopens or quits it.",
     "trayGames": "Step aside during games",
-    "trayGamesHint": "The window hides when a game starts and comes back when it ends.",
+    "trayGamesHint": "In Big Picture, the window hides when a game starts and comes back when it ends. The desktop mode stays where it is.",
     "trayStart": "Start minimized",
     "trayStartHint": "Lutra starts in the notification area without opening its window.",
     "trayMissing": "No notification area",
     "trayMissingHint": "Your desktop does not show one: Lutra's window is never hidden, so it stays reachable.",
     "sounds": "Interface sounds",
-    "soundsHint": "Short sounds when you move through menus, confirm, go back or switch a setting.",
+    "soundsHint": "Short sounds in Big Picture when you move through menus, confirm, go back or switch a setting.",
     "theme": "Theme",
     "themeHint": "Light, dark, or the same as your system.",
     "themeSystem": "System",
@@ -205,12 +206,55 @@
     "prefixNew": "New",
     "prefixExisting": "Existing",
     "kind": "Type of game",
-    "kindWindows": "Windows",
-    "kindLinux": "Linux",
+    "kindWindows": "Windows game",
+    "kindLinux": "Linux game",
     "linuxHint": "A Linux program: a binary, an AppImage or a script.",
     "optimized": "Optimized for this machine automatically (graphics card, synchronisation, GameMode). You can fine-tune it in the game's settings.",
-    "kindInstall": "Install",
-    "folderInstead": "Got a whole folder of games?"
+    "kindInstall": "Install a game",
+    "folderInstead": "Got a whole folder of games?",
+    "kindWindowsHint": "A Windows program (.exe) run with Wine or Proton.",
+    "kindLinuxHint": "A Linux program: a binary, an AppImage or a script.",
+    "kindInstallHint": "Run the game's setup program; Lutra then finds what it installed.",
+    "runnerProton": "Recommended for most recent games.",
+    "runnerWine": "For older games, or when Proton does not suit.",
+    "runnerDefault": "Default",
+    "makeDefault": "Use it by default",
+    "makeDefaultHint": "{{name}} is chosen first for the next games you add.",
+    "defaultFailed": "Could not save the default launcher:",
+    "next": "Next",
+    "finish": "Finish",
+    "steps": {
+      "source": {
+        "label": "Game",
+        "title": "Which game?",
+        "hint": "Pick the kind of game and its program. Lutra does the rest."
+      },
+      "details": {
+        "label": "Details",
+        "title": "Name and details",
+        "hint": "Lutra looks the game up for you: choose the right match to fill everything in, or type it yourself."
+      },
+      "launcher": {
+        "label": "Launcher",
+        "title": "How should it run?",
+        "hint": "Pick what runs the game, and where its Windows files live (its prefix)."
+      },
+      "install": {
+        "label": "Install",
+        "title": "Installing…",
+        "hint": "The installer is open in its own window.",
+        "doneTitle": "Which program starts the game?",
+        "doneHint": "The installer is done. Pick the game's own program."
+      },
+      "artwork": {
+        "label": "Images",
+        "title": "Cover, banner and logo",
+        "hint": "The game is in your library. Lutra already looked for its images: pick others from SteamGridDB, or use your own."
+      }
+    },
+    "prefixName": "Prefix name",
+    "prefixNameHint": "Shown in the list of prefixes, so you can tell which games live in it. You can rename it later.",
+    "backFailed": "Could not go back:"
   },
   "errors": {
     "launch": "Could not start {{title}}:",
@@ -393,7 +437,7 @@
       "other": "Connected"
     },
     "noUinput": "Lutra cannot create virtual controllers",
-    "noUinputHint": "Your system does not let applications create input devices. Run this once in a terminal, then reconnect your controller:",
+    "noUinputHint": "Your system does not let applications create input devices yet. Lutra can allow it for you: the system asks for your password once, and nothing else is needed.",
     "none": "No controller connected",
     "noneHint": "Plug a controller in or pair it over Bluetooth: it appears here on its own.",
     "emulating": "Playing as a {{output}} controller",
@@ -534,7 +578,7 @@
     "system": "Drive controllers outside games",
     "systemHint": "Like Steam: applications and games launched outside Lutra see a corrected controller (dead zones, drift recentring, remapped buttons). Lutra steps aside while Steam is open.",
     "noUhid": "Games will show Xbox buttons for the PlayStation 4 controller",
-    "noUhidHint": "For games to treat the virtual PS4 controller as a real one (PlayStation buttons), Lutra must be able to create HID devices. Run this once in a terminal:",
+    "noUhidHint": "For games to treat the virtual PS4 controller as a real one (PlayStation buttons), Lutra must be able to create HID devices. Lutra can allow it for you: the system asks for your password once.",
     "remapOpen": "Remap buttons",
     "remapCount_one": "{{count}} button changed",
     "remapCount_other": "{{count}} buttons changed",
@@ -559,6 +603,19 @@
       "lowTitle": "Controller battery low",
       "criticalTitle": "Controller battery very low",
       "alert": "{{name}} is at {{percent}} %. Plug it in soon."
+    },
+    "access": {
+      "title": "Set up your controller",
+      "hint": "Lutra needs your system's permission, once, to hand your controller to games the way Steam does (virtual controllers, remapping, PlayStation buttons). The system asks for your password; nothing else changes.",
+      "button": "Set up controllers",
+      "waiting": "Waiting for the system…",
+      "later": "Not now",
+      "error": {
+        "no_pkexec": "This system has no polkit (pkexec) to ask for a password. Install polkit, then try again.",
+        "no_authentication": "The password could not be asked or was refused. Try again.",
+        "not_applied": "The permission was given but is not active yet. Unplug and plug the controller back, or log out and in, then try again.",
+        "other": "Could not set controllers up ({{reason}})."
+      }
     }
   },
   "details": {
@@ -591,7 +648,19 @@
     "origin": {
       "lutra": "Lutra",
       "steam": "Steam"
-    }
+    },
+    "unused": "Unused prefix ({{code}})",
+    "noGames": "No game uses it yet.",
+    "rename": "Rename this prefix",
+    "renameError": "Could not rename the prefix:",
+    "nameTitle": "Name this prefix",
+    "nameHint": "Pick a name that tells you what is in it. Left empty, it is called after the games that use it.",
+    "nameLabel": "Name",
+    "nameCount": "{{count}} / {{max}}",
+    "useAutomatic": "Use the automatic name",
+    "usedBy": "Used by",
+    "more_one": "+ {{count}} more",
+    "more_other": "+ {{count}} more"
   },
   "perf": {
     "recommended": "Recommended",
@@ -806,10 +875,8 @@
     "openPage": "Release page",
     "skip": "Skip this version",
     "unskip": "Remind me again",
-    "manualHint": "This copy of Lutra is not an AppImage that can replace itself (a package or a build from source): get the new version from the release page.",
+    "manualHint": "This copy of Lutra cannot update itself (it is neither an AppImage nor the Lutra package, for instance a build from source): get the new version from the release page.",
     "downloading": "Downloading",
-    "verify": "Checking the download…",
-    "replace": "Putting it in place…",
     "cancel": "Cancel",
     "cancelError": "Could not stop the download:",
     "installed": "Version {{version}} is ready.",
@@ -824,6 +891,23 @@
     "availableTitle": "Update available.",
     "availableBody": "Lutra {{version}} can be installed from Settings → About.",
     "major": "Only major versions",
-    "majorHint": "Skips the smaller releases: only a new major version is announced (1.0, 2.0…, and each 0.x until 1.0). Settings → About still shows every update."
+    "majorHint": "Skips the smaller releases: only a new major version is announced (1.0, 2.0…, and each 0.x until 1.0). Settings → About still shows every update.",
+    "stage": {
+      "verify": "Checking the download…",
+      "replace": "Putting it in place…",
+      "install": "Installing: the system asks for your password…"
+    },
+    "screen": {
+      "title": "Lutra {{version}} is ready",
+      "body": "You have {{current}}. Updating takes a moment, and Lutra opens again by itself.",
+      "manual": "You have {{current}}. This copy of Lutra cannot update itself: get the new version from the release page.",
+      "later": "Later",
+      "now": "Update now",
+      "laterHint": "Later keeps this version in Settings → About until a newer one is out.",
+      "restarting": "Restarting Lutra…"
+    }
+  },
+  "stepper": {
+    "progress": "Step {{current}} of {{total}}"
   }
 }

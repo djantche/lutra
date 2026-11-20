@@ -6,7 +6,8 @@
     "hide": "Masquer",
     "cancel": "Annuler",
     "remove": "Retirer",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "save": "Enregistrer"
   },
   "nav": {
     "home": "Accueil",
@@ -153,13 +154,13 @@
     "trayClose": "Fermer la fenêtre garde Lutra ouvert",
     "trayCloseHint": "Lutra reste dans la zone de notification ; son icône le rouvre ou le quitte.",
     "trayGames": "Se réduire pendant les parties",
-    "trayGamesHint": "La fenêtre se cache au lancement d'un jeu et revient quand il se termine.",
+    "trayGamesHint": "En Big Picture, la fenêtre se cache au lancement d'un jeu et revient quand il se termine. Le mode bureau reste en place.",
     "trayStart": "Démarrer réduit",
     "trayStartHint": "Lutra démarre dans la zone de notification, sans ouvrir sa fenêtre.",
     "trayMissing": "Pas de zone de notification",
     "trayMissingHint": "Ton bureau n'en affiche pas : la fenêtre de Lutra n'est jamais cachée, pour rester accessible.",
     "sounds": "Sons de l'interface",
-    "soundsHint": "De courts sons quand on se déplace dans les menus, qu'on confirme, qu'on revient en arrière ou qu'on change un réglage.",
+    "soundsHint": "De courts sons en Big Picture quand on se déplace dans les menus, qu'on confirme, qu'on revient en arrière ou qu'on change un réglage.",
     "theme": "Thème",
     "themeHint": "Clair, sombre, ou le même que celui de votre système.",
     "themeSystem": "Système",
@@ -205,12 +206,55 @@
     "prefixNew": "Nouveau",
     "prefixExisting": "Existant",
     "kind": "Type de jeu",
-    "kindWindows": "Windows",
-    "kindLinux": "Linux",
+    "kindWindows": "Jeu Windows",
+    "kindLinux": "Jeu Linux",
     "linuxHint": "Un programme Linux : un binaire, un AppImage ou un script.",
     "optimized": "Optimisé automatiquement pour cette machine (carte graphique, synchronisation, GameMode). Tu peux affiner dans les réglages du jeu.",
-    "kindInstall": "Installer",
-    "folderInstead": "Tu as tout un dossier de jeux ?"
+    "kindInstall": "Installer un jeu",
+    "folderInstead": "Tu as tout un dossier de jeux ?",
+    "kindWindowsHint": "Un programme Windows (.exe) lancé avec Wine ou Proton.",
+    "kindLinuxHint": "Un programme Linux : un binaire, un AppImage ou un script.",
+    "kindInstallHint": "Lance le programme d'installation du jeu ; Lutra retrouve ensuite ce qu'il a installé.",
+    "runnerProton": "Recommandé pour la plupart des jeux récents.",
+    "runnerWine": "Pour les jeux plus anciens, ou quand Proton ne convient pas.",
+    "runnerDefault": "Par défaut",
+    "makeDefault": "L'utiliser par défaut",
+    "makeDefaultHint": "{{name}} sera proposé en premier pour les prochains jeux ajoutés.",
+    "defaultFailed": "Impossible d'enregistrer le lanceur par défaut :",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "steps": {
+      "source": {
+        "label": "Jeu",
+        "title": "Quel jeu ?",
+        "hint": "Choisissez le type de jeu et son programme. Lutra fait le reste."
+      },
+      "details": {
+        "label": "Infos",
+        "title": "Nom et informations",
+        "hint": "Lutra cherche le jeu pour vous : choisissez la bonne correspondance pour tout remplir, ou saisissez-le vous-même."
+      },
+      "launcher": {
+        "label": "Lanceur",
+        "title": "Comment le lancer ?",
+        "hint": "Choisissez ce qui fait tourner le jeu, et où vivent ses fichiers Windows (son préfixe)."
+      },
+      "install": {
+        "label": "Installation",
+        "title": "Installation…",
+        "hint": "Le programme d'installation est ouvert dans sa propre fenêtre.",
+        "doneTitle": "Quel programme lance le jeu ?",
+        "doneHint": "L'installation est terminée. Choisissez le programme du jeu."
+      },
+      "artwork": {
+        "label": "Images",
+        "title": "Jaquette, bannière et logo",
+        "hint": "Le jeu est dans votre bibliothèque. Lutra a déjà cherché ses images : choisissez-en d'autres sur SteamGridDB, ou utilisez les vôtres."
+      }
+    },
+    "prefixName": "Nom du préfixe",
+    "prefixNameHint": "Affiché dans la liste des préfixes, pour savoir quels jeux y vivent. Vous pourrez le renommer plus tard.",
+    "backFailed": "Impossible de revenir en arrière :"
   },
   "errors": {
     "launch": "Impossible de lancer {{title}} :",
@@ -393,7 +437,7 @@
       "other": "Connectée"
     },
     "noUinput": "Lutra ne peut pas créer de manettes virtuelles",
-    "noUinputHint": "Ton système n'autorise pas les applications à créer des périphériques d'entrée. Lance ceci une fois dans un terminal, puis reconnecte ta manette :",
+    "noUinputHint": "Votre système ne laisse pas encore les applications créer des périphériques d'entrée. Lutra peut l'autoriser pour vous : le système demande votre mot de passe une seule fois, rien d'autre n'est nécessaire.",
     "none": "Aucune manette connectée",
     "noneHint": "Branche une manette ou associe-la en Bluetooth : elle apparaît ici toute seule.",
     "emulating": "En jeu comme manette {{output}}",
@@ -534,7 +578,7 @@
     "system": "Piloter les manettes en dehors des jeux",
     "systemHint": "Comme Steam : les applications et les jeux lancés hors de Lutra voient une manette corrigée (zones mortes, recentrage du drift, boutons remappés). Lutra s'efface quand Steam est ouvert.",
     "noUhid": "Les jeux afficheront les touches Xbox pour la manette PlayStation 4",
-    "noUhidHint": "Pour que les jeux reconnaissent la manette PS4 virtuelle comme une vraie (touches PlayStation), Lutra doit pouvoir créer des périphériques HID. Lance ceci une fois dans un terminal :",
+    "noUhidHint": "Pour que les jeux prennent la manette PS4 virtuelle pour une vraie (boutons PlayStation), Lutra doit pouvoir créer des périphériques HID. Lutra peut l'autoriser pour vous : le système demande votre mot de passe une seule fois.",
     "remapOpen": "Remapper les boutons",
     "remapCount_one": "{{count}} bouton modifié",
     "remapCount_other": "{{count}} boutons modifiés",
@@ -559,6 +603,19 @@
       "lowTitle": "Batterie de la manette faible",
       "criticalTitle": "Batterie de la manette très faible",
       "alert": "{{name}} est à {{percent}} %. Pense à la brancher bientôt."
+    },
+    "access": {
+      "title": "Configurer votre manette",
+      "hint": "Lutra a besoin, une seule fois, de l'autorisation de votre système pour donner votre manette aux jeux comme le fait Steam (manettes virtuelles, remappage, boutons PlayStation). Le système demande votre mot de passe ; rien d'autre ne change.",
+      "button": "Configurer les manettes",
+      "waiting": "En attente du système…",
+      "later": "Pas maintenant",
+      "error": {
+        "no_pkexec": "Ce système n'a pas polkit (pkexec) pour demander un mot de passe. Installez polkit, puis réessayez.",
+        "no_authentication": "Le mot de passe n'a pas pu être demandé ou a été refusé. Réessayez.",
+        "not_applied": "L'autorisation est donnée mais pas encore active. Débranchez puis rebranchez la manette, ou fermez et rouvrez la session, puis réessayez.",
+        "other": "Impossible de configurer les manettes ({{reason}})."
+      }
     }
   },
   "details": {
@@ -591,7 +648,19 @@
     "origin": {
       "lutra": "Lutra",
       "steam": "Steam"
-    }
+    },
+    "unused": "Préfixe inutilisé ({{code}})",
+    "noGames": "Aucun jeu ne l'utilise pour l'instant.",
+    "rename": "Renommer ce préfixe",
+    "renameError": "Impossible de renommer le préfixe :",
+    "nameTitle": "Nommer ce préfixe",
+    "nameHint": "Choisissez un nom qui dit ce qu'il contient. Laissé vide, il porte le nom des jeux qui l'utilisent.",
+    "nameLabel": "Nom",
+    "nameCount": "{{count}} / {{max}}",
+    "useAutomatic": "Revenir au nom automatique",
+    "usedBy": "Utilisé par",
+    "more_one": "+ {{count}} autre",
+    "more_other": "+ {{count}} autres"
   },
   "perf": {
     "recommended": "Recommandé",
@@ -806,10 +875,8 @@
     "openPage": "Page de la version",
     "skip": "Ignorer cette version",
     "unskip": "Me le rappeler",
-    "manualHint": "Cette copie de Lutra n'est pas un AppImage capable de se remplacer (paquet ou compilation depuis les sources) : récupérez la nouvelle version sur la page de la release.",
+    "manualHint": "Cette copie de Lutra ne peut pas se mettre à jour toute seule (ni un AppImage ni le paquet Lutra, par exemple une compilation depuis les sources) : récupérez la nouvelle version sur la page de la release.",
     "downloading": "Téléchargement",
-    "verify": "Vérification du fichier…",
-    "replace": "Mise en place…",
     "cancel": "Annuler",
     "cancelError": "Impossible d'arrêter le téléchargement :",
     "installed": "La version {{version}} est prête.",
@@ -824,6 +891,23 @@
     "availableTitle": "Mise à jour disponible.",
     "availableBody": "Lutra {{version}} peut être installé depuis Paramètres → À propos.",
     "major": "Versions majeures uniquement",
-    "majorHint": "Ignore les petites versions : seule une nouvelle version majeure est annoncée (1.0, 2.0… et chaque 0.x avant la 1.0). Paramètres → À propos montre toujours toutes les mises à jour."
+    "majorHint": "Ignore les petites versions : seule une nouvelle version majeure est annoncée (1.0, 2.0… et chaque 0.x avant la 1.0). Paramètres → À propos montre toujours toutes les mises à jour.",
+    "stage": {
+      "verify": "Vérification du fichier…",
+      "replace": "Mise en place…",
+      "install": "Installation : le système demande votre mot de passe…"
+    },
+    "screen": {
+      "title": "Lutra {{version}} est prêt",
+      "body": "Vous avez la version {{current}}. La mise à jour prend un instant, et Lutra se rouvre tout seul.",
+      "manual": "Vous avez la version {{current}}. Cette copie de Lutra ne peut pas se mettre à jour seule : récupérez la nouvelle version sur la page de la publication.",
+      "later": "Plus tard",
+      "now": "Mettre à jour",
+      "laterHint": "« Plus tard » garde cette version dans Réglages → À propos jusqu'à la sortie d'une plus récente.",
+      "restarting": "Redémarrage de Lutra…"
+    }
+  },
+  "stepper": {
+    "progress": "Étape {{current}} sur {{total}}"
   }
 }

@@ -4,6 +4,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-20
+
+### Added
+
+- **Adding a game is now a step-by-step flow** with a numbered header and a progress bar: the game (Windows, Linux or an installer, as big choices), its name and details, its launcher (runners as cards, the default one marked, and a switch to make the chosen one the default) with its prefix, and finally its cover, banner and logo (picked from SteamGridDB or your own files). A new prefix is named at that step, after the game by default. You can go back from any step, even the last one (the game is taken out of the library again and added once more when you move on).
+- **Controllers are set up in one click, with no command to type**: when a controller is connected and the system does not let Lutra create virtual controllers, a dialog (and the Controllers page) offers to set it up. The system asks for the password once; Lutra writes the udev rules, makes the `uinput` and `uhid` modules load at boot, loads them now, and the connected controllers are taken over without being replugged.
+- **Wine prefixes have real names**: the list shows the games that live in each one instead of a code, a card under it lists them, and you can give a prefix a name of your own (or go back to the automatic one).
+- **A full-screen page announces a new release when Lutra starts**: what changed, then Later or Update now (download, checks and an automatic restart).
+
+### Fixed
+
+- **Big Picture selects the first game when it opens** (home shelf and library), even when the library or the grid is not drawn yet.
+- **Up from the first row of the library reaches the filters above it**, even when they are scrolled out of view, instead of jumping to the search button.
+- **Covers no longer reload at every refresh, nor flash the generated art first**: images are loaded straight from the disk by the browser (they no longer travel through the backend as base64), a game that has an image never shows the generated scene, and the library is painted at once from the last run instead of waiting for the backend.
+- **Dropdown lists scroll properly**: scrolling inside a list no longer snaps back to the selected option, hovering an option no longer moves the list, and the wheel over the dimmed page still scrolls the page.
+
+### Changed
+
+- **Lutra's data now lives in `~/.local/share/lutra`** (it was `dev.lutra.app`), and a development session (`pnpm dev:electron`) has its own, `lutra-dev`, so it never touches the real library, prefixes and settings. Copy the old folder to the new one to keep your data (paths inside the database and the prefixes must be rewritten).
+- **Interface sounds only play in Big Picture** (and in the in-game overlay), no longer in the desktop mode.
+- **The desktop mode no longer steps aside when a game starts**; only Big Picture hides the window.
+- **A Lutra window that is not in front is no longer driven by the controller**: only the Guide button brings it back.
+- **Big Picture's intro can no longer be interrupted**: the mouse, keyboard and controller are ignored until it ends.
+- **Updates now install themselves from the deb package too**, not only from an AppImage: Lutra downloads the release's `.deb` with a progress bar, checks its SHA-256, and installs it with `apt-get` through polkit (the system asks for the password). Only a build from source, or a package Lutra does not manage, is still sent to the release page.
+
 ## [0.6.1] - 2026-11-14
 
 ### Added

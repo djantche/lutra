@@ -17,14 +17,13 @@ import { useToastStore } from "./toasts";
 import { useUpdates } from "./updates";
 
 const DAY = 24 * 60 * 60 * 1000;
-// Not at the very start: the library and the window come first.
-const FIRST_CHECK_DELAY = 20_000;
 const RECHECK_EVERY = 6 * 60 * 60 * 1000;
 
 /**
  * Keeps the update state alive for the whole session: follows a download's events, looks for a
- * new version when Lutra starts and about once a day, and announces each new version once (a
- * message in the app and a system notification, which also reaches the tray).
+ * new version as soon as Lutra starts (a full-screen page when there is one) and about once a
+ * day after that, announcing each new version once (a message in the app and a system
+ * notification, which also reaches the tray).
  */
 export function UpdateEffects() {
   const { t } = useTranslation();
@@ -42,16 +41,25 @@ export function UpdateEffects() {
   }, []);
 
   useEffect(() => {
-    const maybeCheck = async () => {
+    const maybeCheck = async (atStart: boolean) => {
       // The browser preview has no releases to look at.
       if (!hasBackend() || !autoCheck()) return;
       const last = lastChecked();
-      if (last !== null && Date.now() - last < DAY) return;
+      if (!atStart && last !== null && Date.now() - last < DAY) return;
       const info = await useUpdates.getState().check();
       if (!info?.available || !notifyUpdates()) return;
       // Smaller releases wait in Settings > About until the user looks.
       if (majorOnly() && !isMajorUpdate(info.current, info.latest)) return;
-      if (skippedVersion() === info.latest || notifiedVersion() === info.latest) return;
+      if (skippedVersion() === info.latest) return;
+      // At start, a new release gets a full-screen page of its own, each time Lutra opens until
+      // the user answers "later".
+      if (atStart) {
+        setNotifiedVersion(info.latest);
+        useUpdates.getState().openPrompt();
+        playSound("open");
+        return;
+      }
+      if (notifiedVersion() === info.latest) return;
       setNotifiedVersion(info.latest);
       const title = t("updates.availableTitle");
       const body = t("updates.availableBody", { version: info.latest });
@@ -63,12 +71,9 @@ export function UpdateEffects() {
         // The message in the app is enough where system notifications are not available.
       }
     };
-    const first = window.setTimeout(() => void maybeCheck(), FIRST_CHECK_DELAY);
-    const again = window.setInterval(() => void maybeCheck(), RECHECK_EVERY);
-    return () => {
-      window.clearTimeout(first);
-      window.clearInterval(again);
-    };
+    void maybeCheck(true);
+    const again = window.setInterval(() => void maybeCheck(false), RECHECK_EVERY);
+    return () => window.clearInterval(again);
   }, [t]);
 
   return null;

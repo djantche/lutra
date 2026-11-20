@@ -81,6 +81,26 @@ pub struct PrefixInfo {
     /// `None` for a folder where nothing ran yet.
     pub kind: Option<RunnerKind>,
     pub arch: Option<&'static str>,
+    /// What the user called it, if they did.
+    pub custom_name: Option<String>,
+    /// Titles of the games of the library that use it.
+    pub games: Vec<String>,
+}
+
+/// The longest name a prefix can be given.
+pub const MAX_NAME: usize = 60;
+
+/// A name as the user typed it: trimmed, spaces collapsed. `None` when nothing is left (the
+/// prefix then goes back to its automatic name).
+pub fn clean_name(raw: &str) -> Result<Option<String>, String> {
+    let name = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+    if name.is_empty() {
+        return Ok(None);
+    }
+    if name.chars().count() > MAX_NAME {
+        return Err(format!("a name is at most {MAX_NAME} characters"));
+    }
+    Ok(Some(name))
 }
 
 fn steam_game_name(steamapps: &Path, app_id: &str) -> Option<String> {
@@ -99,6 +119,8 @@ fn describe(path: PathBuf, name: String, origin: Origin) -> PrefixInfo {
         kind: classify(&path),
         arch: architecture(&path),
         path: path.to_string_lossy().into_owned(),
+        custom_name: None,
+        games: Vec::new(),
     }
 }
 
@@ -142,6 +164,17 @@ pub fn list(lutra_prefixes: &Path, steam_roots: &[PathBuf]) -> Vec<PrefixInfo> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_name_is_trimmed_and_an_empty_one_means_automatic() {
+        assert_eq!(
+            clean_name("  My   Souls\tgames "),
+            Ok(Some("My Souls games".to_string()))
+        );
+        assert_eq!(clean_name("   "), Ok(None));
+        assert!(clean_name(&"x".repeat(MAX_NAME + 1)).is_err());
+        assert!(clean_name(&"x".repeat(MAX_NAME)).is_ok());
+    }
 
     fn wine_prefix(path: &Path, arch: &str) {
         fs::create_dir_all(path).unwrap();

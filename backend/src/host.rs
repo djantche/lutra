@@ -45,7 +45,7 @@ impl AppHandle {
         }))
     }
 
-    /// Where Lutra keeps its data (`~/.local/share/dev.lutra.app`).
+    /// Where Lutra keeps its data (`~/.local/share/lutra`, or `lutra-dev` in a development session).
     pub fn data_dir(&self) -> PathBuf {
         self.0.data_dir.clone()
     }

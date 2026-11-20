@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { checkPrefix, listPrefixes, pickFolder, type PrefixInfo, type Runner } from "../../lib/backend";
+import { gamesLine, prefixTitle } from "../../lib/prefixes";
+import { PrefixCard } from "../PrefixCard/PrefixCard";
+import { PrefixNameDialog } from "../PrefixNameDialog/PrefixNameDialog";
 import { Select, type SelectOption } from "../Select/Select";
 import styles from "./PrefixPicker.module.scss";
 
@@ -27,12 +30,14 @@ export function PrefixPicker({ runnerKind, value, onChange, allowNew = false, ar
   const { t } = useTranslation();
   const [known, setKnown] = useState<PrefixInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [naming, setNaming] = useState(false);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     listPrefixes()
       .then(setKnown)
       .catch(() => setKnown([]));
   }, []);
+  useEffect(reload, [reload]);
 
   // A prefix the runner cannot use never stays selected: fall back to a new one.
   useEffect(() => {
@@ -47,11 +52,17 @@ export function PrefixPicker({ runnerKind, value, onChange, allowNew = false, ar
       const incompatible = prefix.kind !== null && prefix.kind !== runnerKind;
       list.push({
         value: prefix.path,
-        label: prefix.name,
+        label: prefixTitle(prefix, t),
         disabled: incompatible,
         hint: incompatible
           ? t("prefix.incompatible", { made: t(`prefix.kind.${prefix.kind}`), runner: t(`prefix.kind.${runnerKind}`) })
-          : [t(`prefix.origin.${prefix.origin}`), prefix.kind && t(`prefix.kind.${prefix.kind}`), prefix.arch === "win32" ? "32-bit" : null]
+          : [
+              // A named prefix keeps saying which games it holds.
+              prefix.customName && prefix.games.length > 0 ? gamesLine(prefix.games, t) : null,
+              t(`prefix.origin.${prefix.origin}`),
+              prefix.kind && t(`prefix.kind.${prefix.kind}`),
+              prefix.arch === "win32" ? "32-bit" : null,
+            ]
               .filter(Boolean)
               .join(" · "),
       });
@@ -63,6 +74,8 @@ export function PrefixPicker({ runnerKind, value, onChange, allowNew = false, ar
     list.push({ value: BROWSE, label: t("prefix.browse"), hint: t("prefix.browseHint") });
     return list;
   }, [known, runnerKind, value, allowNew, t]);
+
+  const current = value === NEW_PREFIX ? undefined : known.find((prefix) => prefix.path === value);
 
   const choose = (next: string) => {
     setError(null);
@@ -84,7 +97,9 @@ export function PrefixPicker({ runnerKind, value, onChange, allowNew = false, ar
   return (
     <div className={styles.picker}>
       <Select ariaLabel={ariaLabel} value={value} options={options} onChange={choose} />
+      {current && <PrefixCard prefix={current} onRename={() => setNaming(true)} />}
       {error && <p className={styles.error}>{error}</p>}
+      {naming && current && <PrefixNameDialog prefix={current} onClose={() => setNaming(false)} onSaved={reload} />}
     </div>
   );
 }
