@@ -4,6 +4,8 @@
 
 interface PickOptions {
   directory?: boolean;
+  /** The folder the dialog opens in, when it exists. */
+  defaultPath?: string;
   filters?: { name: string; extensions: string[] }[];
 }
 

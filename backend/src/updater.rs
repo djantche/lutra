@@ -438,9 +438,9 @@ mod tests {
 
     fn release(assets: &[(&str, Option<&str>)]) -> Release {
         Release {
-            tag_name: "v0.7.0".into(),
+            tag_name: "v99.0.0".into(),
             body: Some("notes".into()),
-            html_url: "https://github.com/djantche/lutra/releases/tag/v0.7.0".into(),
+            html_url: "https://github.com/djantche/lutra/releases/tag/v99.0.0".into(),
             published_at: "2026-11-20T10:00:00Z".into(),
             assets: assets
                 .iter()
@@ -473,15 +473,15 @@ mod tests {
         } else {
             "x86_64"
         };
-        let appimage = format!("Lutra_0.7.0_{arch}.AppImage");
+        let appimage = format!("Lutra_99.0.0_{arch}.AppImage");
         let good = release(&[
-            ("Lutra_0.7.0_amd64.deb", Some("sha256:aa")),
+            ("Lutra_99.0.0_amd64.deb", Some("sha256:aa")),
             (appimage.as_str(), Some("sha256:bb")),
         ]);
         let from_appimage = Method::AppImage(PathBuf::from("/home/x/Lutra.AppImage"));
         let info = describe(&good, Some(&from_appimage));
         assert!(info.available && info.can_install);
-        assert_eq!(info.latest, "0.7.0");
+        assert_eq!(info.latest, "99.0.0");
 
         // A deb install takes the deb, not the AppImage.
         assert!(describe(&good, Some(&Method::Deb)).can_install);
@@ -493,7 +493,7 @@ mod tests {
         let unchecked = release(&[(appimage.as_str(), None)]);
         assert!(!describe(&unchecked, Some(&from_appimage)).can_install);
         // No AppImage for this machine.
-        let only_deb = release(&[("Lutra_0.7.0_amd64.deb", Some("sha256:aa"))]);
+        let only_deb = release(&[("Lutra_99.0.0_amd64.deb", Some("sha256:aa"))]);
         assert!(!describe(&only_deb, Some(&from_appimage)).can_install);
     }
 

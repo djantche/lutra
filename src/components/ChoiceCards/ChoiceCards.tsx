@@ -19,6 +19,8 @@ interface ChoiceCardsProps<T extends string> {
   ariaLabel: string;
   /** `grid` for a few big choices side by side, `list` for a column of rows. */
   layout?: "grid" | "list";
+  /** With four choices, `grid` makes two rows of two instead of three and a lonely one. */
+  wide?: boolean;
   /** The selected card is the one to focus when its screen opens. */
   autofocus?: boolean;
 }
@@ -30,10 +32,11 @@ export function ChoiceCards<T extends string>({
   onChange,
   ariaLabel,
   layout = "grid",
+  wide = false,
   autofocus = false,
 }: ChoiceCardsProps<T>) {
   return (
-    <div className={cx(styles.cards, styles[layout])} role="radiogroup" aria-label={ariaLabel}>
+    <div className={cx(styles.cards, styles[layout], wide && styles.wide)} role="radiogroup" aria-label={ariaLabel}>
       {options.map((option) => {
         const selected = option.value === value;
         return (

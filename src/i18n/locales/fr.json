@@ -250,11 +250,67 @@
         "label": "Images",
         "title": "Jaquette, bannière et logo",
         "hint": "Le jeu est dans votre bibliothèque. Lutra a déjà cherché ses images : choisissez-en d'autres sur SteamGridDB, ou utilisez les vôtres."
+      },
+      "review": {
+        "label": "Récapitulatif",
+        "title": "Prêt à ajouter",
+        "hint": "Vérifie ce que Lutra va ajouter. Tout se modifie en un clic."
+      },
+      "import": {
+        "label": "Import",
+        "title": "Récupère tes jeux",
+        "hint": "Lutra a trouvé ces jeux dans tes autres lanceurs. Rien n'y est déplacé ni modifié."
       }
     },
     "prefixName": "Nom du préfixe",
     "prefixNameHint": "Affiché dans la liste des préfixes, pour savoir quels jeux y vivent. Vous pourrez le renommer plus tard.",
-    "backFailed": "Impossible de revenir en arrière :"
+    "backFailed": "Impossible de revenir en arrière :",
+    "kindImport": "Importer depuis un autre lanceur",
+    "kindImportHint": "Récupère les jeux déjà configurés dans Lutris, Heroic ou Bottles.",
+    "finishAndPlay": "Terminer et jouer",
+    "review": {
+      "edit": "Modifier : {{what}}",
+      "change": "Modifier",
+      "game": "Jeu",
+      "installedProgram": "Programme installé",
+      "launcher": "Lanceur",
+      "native": "Se lance directement, sans Wine",
+      "installPrefix": "Le préfixe de l'installation",
+      "newPrefix": "Nouveau préfixe « {{name}} »",
+      "settings": "Réglages choisis pour cette machine",
+      "settingsHint": "Appliqués automatiquement. Tu pourras les ajuster dans les réglages du jeu.",
+      "features": {
+        "gpu": "Carte graphique dédiée",
+        "tweaks": "Optimisations du pilote"
+      }
+    },
+    "import": {
+      "searching": "Recherche dans Lutris, Heroic et Bottles…",
+      "none": "Aucun jeu trouvé. Lutra cherche dans Lutris, Heroic et Bottles, y compris leurs versions Flatpak.",
+      "selected": "{{count}} sur {{total}} sélectionné(s)",
+      "selectAll": "Tout sélectionner",
+      "selectNone": "Tout désélectionner",
+      "already": "Déjà présent",
+      "missing": "Programme introuvable",
+      "keepsPrefix": "Garde son préfixe",
+      "fallback": "Lanceur pour les autres",
+      "fallbackHint": "Utilisé pour les jeux dont le Wine ou le Proton d'origine n'est pas installé ici.",
+      "action_one": "Importer {{count}} jeu",
+      "action_other": "Importer {{count}} jeux",
+      "importing": "Import…",
+      "done_one": "{{count}} jeu importé.",
+      "done_other": "{{count}} jeux importés.",
+      "skipped_one": "{{count}} ignoré.",
+      "skipped_other": "{{count}} ignorés.",
+      "nothing": "Impossible d'importer {{title}} : {{reason}}",
+      "nothingPicked": "Rien à importer.",
+      "failed": "Impossible de lire les autres lanceurs :",
+      "sources": {
+        "lutris": "Lutris",
+        "heroic": "Heroic",
+        "bottles": "Bottles"
+      }
+    }
   },
   "errors": {
     "launch": "Impossible de lancer {{title}} :",

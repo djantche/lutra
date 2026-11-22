@@ -16,6 +16,7 @@ import { useGameLookup } from "../../../hooks/useGameLookup";
 import {
   cancelInstall,
   defaultRunner,
+  listImportable,
   listRunners,
   onInstallFinished,
   pickLinuxProgram,
@@ -23,26 +24,29 @@ import {
   setDefaultRunner,
   startInstall,
   type GameHit,
+  type Importable,
   type InstallFinished,
   type Runner,
 } from "../../../lib/backend";
 import { onRunnersChanged } from "../../../lib/runners";
 import { useLibraryStore } from "../../../state/library";
-import { reportError } from "../../../state/toasts";
+import { reportError, useToastStore } from "../../../state/toasts";
 import { ArtworkStep } from "./ArtworkStep";
 import { DetailsStep } from "./DetailsStep";
 import { InstallRunStep } from "./InstallRunStep";
+import { ImportStep, isImportable } from "./ImportStep";
 import { LauncherStep } from "./LauncherStep";
+import { ReviewStep } from "./ReviewStep";
+import type { Step } from "./steps";
 import { SourceStep, type Kind } from "./SourceStep";
 import styles from "./AddGame.module.scss";
 
-type Step = "source" | "details" | "launcher" | "install" | "artwork";
-
 /** The steps of each kind of game. The game is added when leaving the one before the images. */
 const FLOWS: Record<Kind, Step[]> = {
-  windows: ["source", "details", "launcher", "artwork"],
-  linux: ["source", "details", "artwork"],
-  install: ["source", "launcher", "install", "details", "artwork"],
+  windows: ["source", "details", "launcher", "review", "artwork"],
+  linux: ["source", "details", "review", "artwork"],
+  install: ["source", "launcher", "install", "details", "review", "artwork"],
+  import: ["source", "import"],
 };
 
 /** "C:\Games\Foo Bar\foo_bar.exe" -> "foo_bar". */
@@ -64,6 +68,8 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
   const { t } = useTranslation();
   const addGame = useLibraryStore((state) => state.addGame);
   const removeGame = useLibraryStore((state) => state.removeGame);
+  const importGames = useLibraryStore((state) => state.importGames);
+  const launchGame = useLibraryStore((state) => state.launchGame);
 
   const [kind, setKind] = useState<Kind>("windows");
   const [step, setStep] = useState<Step>("source");
@@ -79,6 +85,11 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
   const [prefixPath, setPrefixPath] = useState(NEW_PREFIX);
   const [prefixName, setPrefixName] = useState("");
   const [prefixNameEdited, setPrefixNameEdited] = useState(false);
+  // Importing: what the other launchers know, and the part of it the user keeps.
+  const [importable, setImportable] = useState<Importable[] | null>(null);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Set when the user left the review to change something: "Next" then comes straight back to it.
+  const [returning, setReturning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Installing: the installer runs, then the program it installed is chosen.
@@ -117,6 +128,19 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
     return () => void stop.then((unlisten) => unlisten());
   }, [install]);
 
+  useEffect(() => {
+    if (kind !== "import" || step !== "import" || importable !== null) return;
+    listImportable()
+      .then((found) => {
+        setImportable(found);
+        setPicked(new Set(found.filter(isImportable).map((game) => game.key)));
+      })
+      .catch((reason) => {
+        setImportable([]);
+        reportError(t("addGame.import.failed"), reason);
+      });
+  }, [kind, step, importable, t]);
+
   // GameDB is searched by what the user calls the game, only while they are on that step.
   const lookup = useGameLookup(step === "details" ? title : "");
 
@@ -131,12 +155,16 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
   // A new prefix is called after the game until the user says otherwise.
   const newPrefixName = (prefixNameEdited ? prefixName : title).trim() || fileStem(exePath);
 
+  const importNeedsRunner = importable?.some((game) => picked.has(game.key) && !game.native) ?? false;
+
   const canNext: Record<Step, boolean> = {
-    source: exePath !== "",
+    source: kind === "import" || exePath !== "",
     details: title.trim() !== "" && dateValid,
     launcher: runner !== undefined,
     install: installResult !== null && installExe !== "",
+    review: runner !== undefined || kind === "linux",
     artwork: true,
+    import: picked.size > 0 && (!importNeedsRunner || runner !== undefined),
   };
 
   const browse = () => {
@@ -196,6 +224,25 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
       .catch(failed);
   };
 
+  const runImport = () => {
+    setBusy(true);
+    setError(null);
+    importGames([...picked], runnerPath)
+      .then((report) => {
+        const notify = useToastStore.getState().notify;
+        if (report.added.length > 0) {
+          const skipped = report.skipped.length > 0 ? ` ${t("addGame.import.skipped", { count: report.skipped.length })}` : "";
+          notify("info", `${t("addGame.import.done", { count: report.added.length })}${skipped}`);
+          onClose();
+        } else {
+          const first = report.skipped[0];
+          setError(first ? t("addGame.import.nothing", { title: first.title, reason: first.reason }) : t("addGame.import.nothingPicked"));
+          setBusy(false);
+        }
+      })
+      .catch(failed);
+  };
+
   const startInstaller = () => {
     if (!runner) return;
     setBusy(true);
@@ -228,6 +275,11 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
     }
     if (step === "source" && kind === "install" && title === "") setTitle(fileStem(exePath));
     if (step === "launcher" && kind === "install") return startInstaller();
+    if (step === "import") return runImport();
+    if (returning && step !== "review") {
+      setReturning(false);
+      return setStep("review");
+    }
     if (addsHere) return create();
     setStep(flow[index + 1]);
   };
@@ -239,6 +291,7 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
 
   const back = () => {
     if (index === 0 || busy) return;
+    setReturning(false);
     if (step === "artwork" && addedId) {
       // The game is already in the library: take it out again so that it is added once, with
       // whatever the user changes. Nothing else exists yet (the prefix is made at the first launch).
@@ -274,20 +327,36 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
     if (addedId) onAdded(addedId);
   };
 
+  const editFromReview = (target: Step) => {
+    setReturning(true);
+    setStep(target);
+  };
+
+  const finishAndPlay = () => {
+    onClose();
+    if (!addedId) return;
+    onAdded(addedId);
+    launchGame(addedId);
+  };
+
   const labels: Record<Step, string> = {
     source: t("addGame.steps.source.label"),
     details: t("addGame.steps.details.label"),
     launcher: t("addGame.steps.launcher.label"),
     install: t("addGame.steps.install.label"),
+    review: t("addGame.steps.review.label"),
     artwork: t("addGame.steps.artwork.label"),
+    import: t("addGame.steps.import.label"),
   };
 
   const primary =
     step === "artwork"
       ? t("addGame.finish")
-      : step === "launcher" && kind === "install"
-        ? t("install.start")
-        : addsHere
+      : step === "import"
+        ? t("addGame.import.action", { count: picked.size })
+        : step === "launcher" && kind === "install"
+          ? t("install.start")
+          : addsHere
           ? t("addGame.add")
           : t("addGame.next");
 
@@ -310,9 +379,14 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
               {t("common.back")}
             </Button>
           )}
+          {step === "artwork" && (
+            <Button variant="secondary" icon="play" disabled={!added || busy} onClick={finishAndPlay}>
+              {t("addGame.finishAndPlay")}
+            </Button>
+          )}
           <Button variant="primary" disabled={!canNext[step] || busy} onClick={step === "artwork" ? finish : next}>
             {busy && <Spinner />}
-            {busy && addsHere ? t("addGame.adding") : primary}
+            {busy && (addsHere || step === "import") ? (step === "import" ? t("addGame.import.importing") : t("addGame.adding")) : primary}
           </Button>
         </>
       }
@@ -357,7 +431,31 @@ export function AddGameDialog({ onClose, onAdded }: AddGameDialogProps) {
             />
           )}
           {step === "install" && <InstallRunStep finished={installResult} exePath={installExe} onExe={setInstallExe} />}
+          {step === "review" && (
+            <ReviewStep
+              kind={kind}
+              title={title.trim()}
+              developer={details.developer}
+              releaseDate={details.releaseDate}
+              program={kind === "install" ? installExe : exePath}
+              runner={runner}
+              isDefaultRunner={runner !== undefined && runner.path === preferred}
+              prefixPath={prefixPath}
+              newPrefixName={newPrefixName}
+              onEdit={editFromReview}
+            />
+          )}
           {step === "artwork" && <ArtworkStep game={added} />}
+          {step === "import" && (
+            <ImportStep
+              games={importable}
+              selected={picked}
+              onSelected={setPicked}
+              runners={runners}
+              runnerPath={runnerPath}
+              onRunner={setRunnerPath}
+            />
+          )}
 
           {error && <p className={styles.error}>{error}</p>}
         </div>

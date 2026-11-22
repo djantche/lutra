@@ -101,6 +101,8 @@ export interface InstallFinished {
   success: boolean;
   message: string | null;
   candidates: InstallCandidate[];
+  /** Where a file picker should open: the game's install folder, else the prefix's `drive_c`. */
+  browseDir: string;
 }
 
 export interface NewGame {
@@ -266,9 +268,9 @@ export const listRunners = (): Promise<Runner[]> =>
   hasBackend() ? invoke<Runner[]>("list_runners") : Promise.resolve(MOCK_RUNNERS);
 
 /** Opens the native file picker. Resolves to null if cancelled. */
-export async function pickProgram(): Promise<string | null> {
+export async function pickProgram(defaultPath?: string): Promise<string | null> {
   if (!hasBackend()) return "/mock/Games/Demo Game/demo.exe";
-  return pickPath({ filters: [{ name: "Windows", extensions: ["exe", "bat"] }] });
+  return pickPath({ defaultPath, filters: [{ name: "Windows", extensions: ["exe", "bat"] }] });
 }
 
 /** Opens the native file picker for a Linux program (binary, AppImage or script): no filter. */
@@ -385,6 +387,48 @@ export function addGame(game: NewGame): Promise<Game> {
     exePath: game.exePath,
     runnerKind: game.runnerKind === "native" ? undefined : game.runnerKind,
   });
+}
+
+/** The launchers whose games can be imported. */
+export type ImportSource = "lutris" | "heroic" | "bottles";
+
+/** A game another launcher already knows. */
+export interface Importable {
+  key: string;
+  from: ImportSource;
+  title: string;
+  exePath: string;
+  /** The Wine prefix it used there, kept when the chosen runner can work with it. */
+  prefixPath: string | null;
+  runnerHint: string | null;
+  native: boolean;
+  args: string;
+  workingDir: string | null;
+  /** Its program is not where that launcher says it is. */
+  missing: boolean;
+  already: boolean;
+}
+
+export interface ImportReport {
+  added: Game[];
+  skipped: { title: string; reason: string }[];
+}
+
+const MOCK_IMPORTABLE: Importable[] = [
+  { key: "lutris:1", from: "lutris", title: "Hades", exePath: "/mock/Games/Hades/Hades.exe", prefixPath: "/mock/pfx/hades", runnerHint: "GE-Proton9-27", native: false, args: "", workingDir: null, missing: false, already: false },
+  { key: "lutris:2", from: "lutris", title: "Celeste", exePath: "/mock/Games/Celeste/Celeste", prefixPath: null, runnerHint: null, native: true, args: "", workingDir: null, missing: false, already: true },
+  { key: "heroic:abc", from: "heroic", title: "Sifu", exePath: "/mock/Games/Sifu/Sifu.exe", prefixPath: null, runnerHint: null, native: false, args: "", workingDir: null, missing: true, already: false },
+  { key: "bottles:Gaming:p1", from: "bottles", title: "Hollow Knight", exePath: "/mock/Games/HK/hk.exe", prefixPath: "/mock/bottles/Gaming", runnerHint: "soda-9.0-1", native: false, args: "", workingDir: null, missing: false, already: false },
+];
+
+/** What Lutris, Heroic and Bottles have set up on this machine. */
+export const listImportable = (): Promise<Importable[]> =>
+  hasBackend() ? invoke<Importable[]>("list_importable") : Promise.resolve(MOCK_IMPORTABLE);
+
+/** Imports the chosen games; `fallbackRunner` runs the ones whose own runner is not installed here. */
+export function importGames(keys: string[], fallbackRunner: string): Promise<ImportReport> {
+  if (hasBackend()) return invoke<ImportReport>("import_games", { keys, fallbackRunner });
+  return Promise.resolve({ added: [], skipped: [] });
 }
 
 const MOCK_HITS: GameHit[] = [
@@ -685,6 +729,7 @@ export const onInstallFinished = (callback: (event: InstallFinished) => void): P
         prefixPath: "/mock/Prefixes/new",
         success: true,
         message: null,
+        browseDir: "/mock/Prefixes/new/drive_c",
         candidates: [
           { path: "/mock/Prefixes/new/drive_c/Games/Demo/demo.exe", shown: "Games/Demo/demo.exe", size: 48_000_000, score: 250 },
           { path: "/mock/Prefixes/new/drive_c/Games/Demo/editor.exe", shown: "Games/Demo/editor.exe", size: 9_000_000, score: 9 },

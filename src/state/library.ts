@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   addGame as addGameBackend,
   hasBackend,
+  importGames as importGamesBackend,
   importImages,
   initialGames,
   launchGameBackend,
@@ -12,6 +13,7 @@ import {
   setFavorite,
   stopGameBackend,
   type ImageProgress,
+  type ImportReport,
   type LaunchProgress,
   type NewGame,
 } from "../lib/backend";
@@ -68,6 +70,8 @@ interface LibraryState {
   refreshArtwork: (id: string) => void;
   rescan: () => void;
   addGame: (input: NewGame) => Promise<Game>;
+  /** Brings games over from other launchers, then looks for their images. */
+  importGames: (keys: string[], fallbackRunner: string) => Promise<ImportReport>;
   removeGame: (id: string, everything?: boolean) => Promise<void>;
 }
 
@@ -186,6 +190,13 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     get().upsertGame(game);
     fetchArtwork();
     return game;
+  },
+
+  importGames: async (keys, fallbackRunner) => {
+    const report = await importGamesBackend(keys, fallbackRunner);
+    get().upsertGames(report.added);
+    if (report.added.length > 0) fetchArtwork();
+    return report;
   },
 
   removeGame: async (id, everything = false) => {

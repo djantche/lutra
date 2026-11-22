@@ -122,6 +122,59 @@ pub fn scan_programs(drive_c: &Path) -> HashSet<PathBuf> {
     found
 }
 
+/// The folders an installer is likely to have made: the top of `drive_c` and what sits directly
+/// in each `Program Files` folder, apart from what Wine fills in itself.
+pub fn install_folders(drive_c: &Path) -> HashSet<PathBuf> {
+    let mut found = HashSet::new();
+    let subfolders = |dir: &Path| -> Vec<PathBuf> {
+        fs::read_dir(dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+            .filter(|entry| {
+                let name = entry.file_name().to_string_lossy().to_lowercase();
+                !NOISE_DIRS.contains(&name.as_str())
+            })
+            .map(|entry| entry.path())
+            .collect()
+    };
+    for top in subfolders(drive_c) {
+        let name = top
+            .file_name()
+            .map(|name| name.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        if name.starts_with("program files") {
+            found.extend(subfolders(&top));
+        } else if name != "users" && name != "programdata" {
+            found.insert(top);
+        }
+    }
+    found
+}
+
+/// Where a file picker should open once an installer closed: the folder the best candidate sits
+/// in, else a folder the installer created, else `drive_c` itself.
+pub fn browse_dir(
+    candidates: &[Candidate],
+    before: &HashSet<PathBuf>,
+    after: &HashSet<PathBuf>,
+    drive_c: &Path,
+) -> PathBuf {
+    if let Some(folder) = candidates
+        .first()
+        .and_then(|best| Path::new(&best.path).parent())
+    {
+        return folder.to_path_buf();
+    }
+    let mut created: Vec<&PathBuf> = after.difference(before).collect();
+    created.sort();
+    created
+        .first()
+        .map(|path| (*path).clone())
+        .unwrap_or_else(|| drive_c.to_path_buf())
+}
+
 fn is_noise(path: &Path) -> bool {
     let stem = compact(
         &path
@@ -187,6 +240,40 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(&path, vec![0u8; bytes]).unwrap();
         path
+    }
+
+    #[test]
+    fn the_picker_opens_where_the_game_went() {
+        let root = tempfile::tempdir().unwrap();
+        let drive_c = root.path().join("drive_c");
+        fs::create_dir_all(drive_c.join("Program Files/Old")).unwrap();
+        let before = install_folders(&drive_c);
+        // A program was found: its folder.
+        let game = write(&drive_c, "Games/Demo/demo.exe", 10);
+        let after = install_folders(&drive_c);
+        let found = candidates(
+            &scan_programs(&drive_c),
+            &scan_programs(&drive_c),
+            &drive_c,
+            "",
+        );
+        assert!(found.is_empty());
+        assert_eq!(
+            browse_dir(&found, &before, &after, &drive_c),
+            drive_c.join("Games")
+        );
+        let best = Candidate {
+            path: game.to_string_lossy().into_owned(),
+            shown: String::new(),
+            size: 10,
+            score: 1,
+        };
+        assert_eq!(
+            browse_dir(&[best], &before, &after, &drive_c),
+            drive_c.join("Games/Demo")
+        );
+        // Nothing new at all: the drive itself.
+        assert_eq!(browse_dir(&[], &after, &after, &drive_c), drive_c);
     }
 
     #[test]

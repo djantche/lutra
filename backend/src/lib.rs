@@ -10,6 +10,7 @@ mod gamedb;
 mod hardware;
 pub mod host;
 mod hyprland;
+mod importers;
 mod installer;
 mod prefixes;
 mod rpc;
@@ -442,6 +443,11 @@ async fn add_game(
     library: State<'_, Library>,
     game: NewGame,
 ) -> Result<Game, String> {
+    add_new_game(&app, &library, game)
+}
+
+/// Puts a program in the library: checks it, settles its prefix and its options, saves it.
+fn add_new_game(app: &AppHandle, library: &Library, game: NewGame) -> Result<Game, String> {
     let exe = Path::new(&game.exe_path);
     if !exe.is_file() {
         return Err(format!("not a file: {}", game.exe_path));
@@ -470,7 +476,7 @@ async fn add_game(
             existing
         }
         (_, None) => {
-            let created = app_dir(&app)?.join("prefixes").join(&key);
+            let created = app_dir(app)?.join("prefixes").join(&key);
             name_new_prefix(&*library.lock()?, &created, game.prefix_name.as_deref())?;
             created.to_string_lossy().into_owned()
         }
@@ -500,6 +506,163 @@ async fn add_game(
     db.get(&id)
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "game was not saved".to_string())
+}
+
+/// Games other launchers (Lutris, Heroic, Bottles) already know, so they can be imported.
+// @rpc
+async fn list_importable(
+    library: State<'_, Library>,
+) -> Result<Vec<importers::Importable>, String> {
+    let mut found = importers::discover(&home_dir()?);
+    let db = library.lock()?;
+    for game in &mut found {
+        let (_, id) = manual_identity(game.native, &game.exe_path);
+        game.already = db.get(&id).map_err(|e| e.to_string())?.is_some();
+    }
+    Ok(found)
+}
+
+/// The source and id a program gets in the library, from where it is.
+fn manual_identity(native: bool, exe_path: &str) -> (&'static str, String) {
+    let key = format!("{:08x}", stable_hash(exe_path));
+    if native {
+        ("native", format!("native:{key}"))
+    } else {
+        ("wine", format!("wine:{key}"))
+    }
+}
+
+#[derive(Serialize)]
+struct ImportSkipped {
+    title: String,
+    reason: String,
+}
+
+#[derive(Serialize)]
+struct ImportReport {
+    added: Vec<Game>,
+    skipped: Vec<ImportSkipped>,
+}
+
+/// Imports the chosen games (by their `list_importable` key). Each one keeps its program, its
+/// arguments and, when it can work with the runner, its prefix; the runner is the one with the
+/// same name as in the other launcher if it is installed here, otherwise `fallback_runner`.
+// @rpc
+async fn import_games(
+    app: AppHandle,
+    library: State<'_, Library>,
+    keys: Vec<String>,
+    fallback_runner: String,
+) -> Result<ImportReport, String> {
+    let installed = wine::detect_runners(&steam::steam_roots(&home_dir()?), Some(&app.data_dir()));
+    let fallback = installed
+        .iter()
+        .find(|runner| runner.path == Path::new(&fallback_runner))
+        .cloned();
+    let candidates = importers::discover(&home_dir()?);
+
+    let mut report = ImportReport {
+        added: Vec::new(),
+        skipped: Vec::new(),
+    };
+    for key in keys {
+        let Some(found) = candidates.iter().find(|game| game.key == key) else {
+            continue;
+        };
+        let skip = |reason: &str| ImportSkipped {
+            title: found.title.clone(),
+            reason: reason.to_string(),
+        };
+        if found.missing {
+            report
+                .skipped
+                .push(skip("its program is not where it used to be"));
+            continue;
+        }
+        let (_, id) = manual_identity(found.native, &found.exe_path);
+        if library
+            .lock()?
+            .get(&id)
+            .map_err(|e| e.to_string())?
+            .is_some()
+        {
+            report.skipped.push(skip("already in the library"));
+            continue;
+        }
+
+        // The same runner as in the other launcher; failing that one of the kind that made its
+        // prefix (a Proton prefix cannot be used by Wine); failing that, the one chosen by the user.
+        let made_by = found
+            .prefix_path
+            .as_deref()
+            .and_then(|path| prefixes::classify(Path::new(path)));
+        let runner = installed
+            .iter()
+            .find(|runner| {
+                found.runner_hint.as_deref().is_some_and(|hint| {
+                    importers::runner_matches(hint, &runner.label)
+                        || importers::runner_matches(hint, &runner.path.to_string_lossy())
+                })
+            })
+            .or_else(|| {
+                let wanted = made_by?;
+                fallback
+                    .as_ref()
+                    .filter(|runner| runner.kind == wanted)
+                    .or_else(|| installed.iter().find(|runner| runner.kind == wanted))
+            })
+            .or(fallback.as_ref());
+        let (kind, runner_path) = match (found.native, runner) {
+            (true, _) => (RunnerKind::Native, String::new()),
+            (false, Some(runner)) => (runner.kind, runner.path.to_string_lossy().into_owned()),
+            (false, None) => {
+                report
+                    .skipped
+                    .push(skip("no Wine or Proton runner to run it with"));
+                continue;
+            }
+        };
+
+        // The other launcher's prefix is kept when it is a real one this runner can use;
+        // otherwise the game gets a prefix of its own, named after it.
+        let prefix = found.prefix_path.clone().filter(|path| {
+            kind != RunnerKind::Native
+                && prefixes::classify(Path::new(path)).is_some()
+                && prefixes::check_usable(Path::new(path), kind).is_ok()
+        });
+        let mut config = wine::recommended_config(
+            &hardware_now(),
+            kind,
+            wine::find_in_path("gamemoderun").is_some(),
+        );
+        config.args = found.args.clone();
+        config.working_dir = found.working_dir.clone();
+
+        let added = add_new_game(
+            &app,
+            &library,
+            NewGame {
+                title: found.title.clone(),
+                exe_path: found.exe_path.clone(),
+                runner_kind: kind.as_str().to_string(),
+                runner_path,
+                prefix_path: prefix,
+                prefix_name: Some(found.title.clone()),
+                meta: None,
+                config: Some(config),
+            },
+        );
+        match added {
+            Ok(game) => report.added.push(game),
+            Err(reason) => report.skipped.push(skip(&reason)),
+        }
+    }
+    applog::info(format!(
+        "Imported {} game(s), skipped {}",
+        report.added.len(),
+        report.skipped.len()
+    ));
+    Ok(report)
 }
 
 /// Gives the prefix about to be created the name the user typed for it, if they typed one.
@@ -835,6 +998,7 @@ fn spawn_process(
     prefix: &Path,
     spec: &LaunchSpec,
 ) -> Result<Child, String> {
+    hardware::ensure_nvidia_nodes();
     let logs = app_dir(app)?.join("logs");
     fs::create_dir_all(&logs).map_err(|e| e.to_string())?;
     let mut log = File::create(rotate_log(&logs, log_name)).map_err(|e| e.to_string())?;
@@ -1842,6 +2006,9 @@ struct InstallFinished {
     /// The last lines of the installer's log, when it failed.
     message: Option<String>,
     candidates: Vec<installer::Candidate>,
+    /// Where a file picker should open: the folder the game was installed in when it is known,
+    /// else the prefix's `drive_c`.
+    browse_dir: String,
 }
 
 /// Runs a game's setup program in a prefix and, once it closes, reports the programs it installed.
@@ -1887,6 +2054,7 @@ async fn start_install(app: AppHandle, request: InstallRequest) -> Result<Instal
     };
     let drive_c = wine::effective_prefix(kind, &prefix).join("drive_c");
     let before = installer::scan_programs(&drive_c);
+    let folders_before = installer::install_folders(&drive_c);
 
     let settings = WineSettings {
         id: install_id.clone(),
@@ -1943,6 +2111,18 @@ async fn start_install(app: AppHandle, request: InstallRequest) -> Result<Instal
             .remove(&id);
         let after = installer::scan_programs(&drive_c);
         let candidates = installer::candidates(&before, &after, &drive_c, &title);
+        let browse_dir = installer::browse_dir(
+            &candidates,
+            &folders_before,
+            &installer::install_folders(&drive_c),
+            &drive_c,
+        );
+        // `drive_c` may not exist (an installer that never ran): the prefix is the next best place.
+        let browse_dir = if browse_dir.is_dir() {
+            browse_dir
+        } else {
+            PathBuf::from(&prefix_text)
+        };
         let success = status.is_ok_and(|status| status.success());
         applog::info(format!(
             "Installer of {title} closed ({}), {} new program(s)",
@@ -1961,6 +2141,7 @@ async fn start_install(app: AppHandle, request: InstallRequest) -> Result<Instal
                 success,
                 message,
                 candidates,
+                browse_dir: browse_dir.to_string_lossy().into_owned(),
             },
         );
     });

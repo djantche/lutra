@@ -71,7 +71,7 @@ export function InstallRunStep({ finished, exePath, onExe }: InstallRunStepProps
             value={exePath}
             placeholder={t("addGame.browse")}
             onPick={() =>
-              pickProgram()
+              pickProgram(finished.browseDir)
                 .then((picked) => picked && onExe(picked))
                 .catch((error) => reportError(t("errors.pick"), error))
             }

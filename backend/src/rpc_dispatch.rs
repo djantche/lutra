@@ -90,6 +90,19 @@ pub(crate) fn dispatch(
             host::async_runtime::block_on(add_game(app.clone(), app.state::<Library>(), game))
                 .and_then(rpc::to_value)
         }
+        "list_importable" => host::async_runtime::block_on(list_importable(app.state::<Library>()))
+            .and_then(rpc::to_value),
+        "import_games" => {
+            let keys: Vec<String> = rpc::arg(args, "keys")?;
+            let fallback_runner: String = rpc::arg(args, "fallbackRunner")?;
+            host::async_runtime::block_on(import_games(
+                app.clone(),
+                app.state::<Library>(),
+                keys,
+                fallback_runner,
+            ))
+            .and_then(rpc::to_value)
+        }
         "removable_prefix_of" => {
             let id: String = rpc::arg(args, "id")?;
             host::async_runtime::block_on(removable_prefix_of(

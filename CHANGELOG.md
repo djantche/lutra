@@ -4,6 +4,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-22
+
+### Added
+
+- **Import your games from Lutris, Heroic and Bottles**: a new choice in "Add a game" lists what those launchers (Flatpak versions too) already know: pick the games to bring over. Each keeps its program, its arguments and, when it can work with the runner, its Wine prefix; the runner is the same one as before if it is installed here. Nothing is changed in the other launchers.
+- **A review step before a game is added**: game, program, launcher, prefix and the options chosen for this machine, each with a "Change" button that jumps to the right step and comes back.
+- **"Finish and play"** at the end of the add-a-game flow opens the game and launches it at once.
+
+### Changed
+
+- **The file picker opens where the game was installed** after running an installer (the folder of the program Lutra found, else a folder the installer created, else the prefix's `drive_c`), instead of the dialog's default folder.
+
+### Fixed
+
+- **The first Windows game launched after a boot no longer shows a white window on NVIDIA**: `/dev/nvidia-modeset` does not exist after a boot and nothing inside umu's / Proton's container can create it, so the swapchain failed (`vr -13`). Lutra now asks `nvidia-modprobe` from the host when a device file is missing, and warns in its log if the tool is not installed.
+- The update check test no longer depends on the version being built.
+
 ## [0.7.0] - 2026-11-20
 
 ### Added

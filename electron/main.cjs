@@ -343,6 +343,9 @@ ipcMain.handle("pick", async (event, options = {}) => {
   const result = await dialog.showOpenDialog(window ?? undefined, {
     properties: [options.directory ? "openDirectory" : "openFile"],
     filters: options.filters,
+    // Only a folder that exists: the dialog would fall back to its own default otherwise.
+    defaultPath:
+      typeof options.defaultPath === "string" && fs.existsSync(options.defaultPath) ? options.defaultPath : undefined,
   });
   return result.canceled ? null : (result.filePaths[0] ?? null);
 });

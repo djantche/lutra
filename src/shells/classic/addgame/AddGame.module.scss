@@ -22,6 +22,7 @@
 }
 
 .sectionTitle {
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 0.82rem;
   font-weight: 600;
@@ -187,4 +188,180 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.88rem;
+}
+
+// ---- the review step
+
+.review {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.reviewRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.reviewIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+}
+
+.reviewText {
+  flex: 1;
+  min-width: 0;
+
+  small {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+  }
+
+  strong {
+    display: block;
+    overflow: hidden;
+    font-size: 0.95rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.reviewDetail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.chipWarn {
+  background: rgb(229 72 77 / 0.12);
+  color: #e5484d;
+}
+
+// ---- the import step
+
+.importBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+
+.importList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.importRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-align: left;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
+
+  &:focus-visible,
+  :global([data-input="nav"]) &:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}
+
+.importOn {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.importBox {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-contrast);
+  transition: background var(--duration-fast) var(--ease-out);
+
+  .importOn & {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+}
+
+.importText {
+  flex: 1;
+  min-width: 0;
+
+  strong,
+  small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: var(--color-text-subtle);
+    font-size: 0.78rem;
+  }
 }

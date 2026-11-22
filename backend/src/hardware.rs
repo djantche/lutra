@@ -226,6 +226,71 @@ pub fn gpu_env(hardware: &Hardware, gpu: &Gpu) -> Vec<(String, String)> {
     env
 }
 
+/// The device files NVIDIA's driver needs to present a game's frames.
+const NVIDIA_NODES: [&str; 4] = [
+    "/dev/nvidiactl",
+    "/dev/nvidia0",
+    "/dev/nvidia-uvm",
+    "/dev/nvidia-modeset",
+];
+
+/// The NVIDIA files in [`NVIDIA_NODES`] that do not exist yet (`None` without the driver).
+fn missing_nvidia_nodes(
+    driver_dir: &Path,
+    exists: impl Fn(&str) -> bool,
+) -> Option<Vec<&'static str>> {
+    if !driver_dir.is_dir() {
+        return None;
+    }
+    Some(
+        NVIDIA_NODES
+            .into_iter()
+            .filter(|node| !exists(node))
+            .collect(),
+    )
+}
+
+/// Makes sure NVIDIA's device files exist before a game starts.
+///
+/// After a boot nothing has created `/dev/nvidia-modeset` (the udev rule the driver ships only
+/// asks for the control, GPU and UVM nodes): the driver's libraries create it on first use by
+/// running `nvidia-modprobe`, which is setuid. A game started by umu or Proton lives in a
+/// container where setuid does nothing, so the node never appears there, Vulkan cannot create
+/// the swapchain (`Failed to create swapchain, vr -13`) and the window stays white until
+/// something outside the container (a native Vulkan or OpenGL program) has made the file.
+/// Asking for them here, from the host, makes the first launch after a boot behave like the rest.
+pub fn ensure_nvidia_nodes() {
+    let Some(missing) = missing_nvidia_nodes(Path::new("/proc/driver/nvidia"), |node| {
+        Path::new(node).exists()
+    }) else {
+        return;
+    };
+    if missing.is_empty() {
+        return;
+    }
+    let Some(tool) = crate::wine::find_in_path("nvidia-modprobe") else {
+        crate::applog::warn(format!(
+            "NVIDIA's {} is missing and nvidia-modprobe is not installed: a Windows game may show a white screen",
+            missing.join(", ")
+        ));
+        return;
+    };
+    let result =
+        crate::wine::host_env(std::process::Command::new(tool).args(["-c0", "-m", "-u"])).output();
+    match result {
+        Ok(output) if output.status.success() => crate::applog::info(format!(
+            "Created NVIDIA's {} before the launch",
+            missing.join(", ")
+        )),
+        Ok(output) => crate::applog::warn(format!(
+            "nvidia-modprobe could not create {}: {}",
+            missing.join(", "),
+            String::from_utf8_lossy(&output.stderr).trim()
+        )),
+        Err(error) => crate::applog::warn(format!("could not run nvidia-modprobe: {error}")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,5 +395,20 @@ mod tests {
             "GeForce GTX 1060 Mobile"
         );
         assert_eq!(tidy_name("Plain"), "Plain");
+    }
+
+    #[test]
+    fn nvidia_nodes_are_only_asked_for_when_the_driver_is_loaded_and_some_are_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(
+            missing_nvidia_nodes(&dir.path().join("none"), |_| false),
+            None
+        );
+        let after_boot = |node: &str| node != "/dev/nvidia-modeset";
+        assert_eq!(
+            missing_nvidia_nodes(dir.path(), after_boot),
+            Some(vec!["/dev/nvidia-modeset"])
+        );
+        assert_eq!(missing_nvidia_nodes(dir.path(), |_| true), Some(vec![]));
     }
 }

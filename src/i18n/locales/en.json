@@ -250,11 +250,67 @@
         "label": "Images",
         "title": "Cover, banner and logo",
         "hint": "The game is in your library. Lutra already looked for its images: pick others from SteamGridDB, or use your own."
+      },
+      "review": {
+        "label": "Review",
+        "title": "Ready to add",
+        "hint": "Check what Lutra is about to add. Change anything with one click."
+      },
+      "import": {
+        "label": "Import",
+        "title": "Bring your games over",
+        "hint": "Lutra found these in your other launchers. Nothing is moved or changed there."
       }
     },
     "prefixName": "Prefix name",
     "prefixNameHint": "Shown in the list of prefixes, so you can tell which games live in it. You can rename it later.",
-    "backFailed": "Could not go back:"
+    "backFailed": "Could not go back:",
+    "kindImport": "Import from another launcher",
+    "kindImportHint": "Bring over the games you already set up in Lutris, Heroic or Bottles.",
+    "finishAndPlay": "Finish and play",
+    "review": {
+      "edit": "Change {{what}}",
+      "change": "Change",
+      "game": "Game",
+      "installedProgram": "Installed program",
+      "launcher": "Launcher",
+      "native": "Runs directly, no Wine needed",
+      "installPrefix": "The prefix of the installation",
+      "newPrefix": "New prefix “{{name}}”",
+      "settings": "Settings chosen for this machine",
+      "settingsHint": "Applied automatically. You can fine-tune them in the game's settings.",
+      "features": {
+        "gpu": "Dedicated GPU",
+        "tweaks": "Driver tweaks"
+      }
+    },
+    "import": {
+      "searching": "Looking in Lutris, Heroic and Bottles…",
+      "none": "No game found. Lutra looks in Lutris, Heroic and Bottles, including their Flatpak versions.",
+      "selected": "{{count}} of {{total}} selected",
+      "selectAll": "Select all",
+      "selectNone": "Select none",
+      "already": "Already here",
+      "missing": "Program not found",
+      "keepsPrefix": "Keeps its prefix",
+      "fallback": "Launcher for the others",
+      "fallbackHint": "Used for games whose own Wine or Proton is not installed here.",
+      "action_one": "Import {{count}} game",
+      "action_other": "Import {{count}} games",
+      "importing": "Importing…",
+      "done_one": "{{count}} game imported.",
+      "done_other": "{{count}} games imported.",
+      "skipped_one": "{{count}} skipped.",
+      "skipped_other": "{{count}} skipped.",
+      "nothing": "Could not import {{title}}: {{reason}}",
+      "nothingPicked": "Nothing to import.",
+      "failed": "Could not read the other launchers:",
+      "sources": {
+        "lutris": "Lutris",
+        "heroic": "Heroic",
+        "bottles": "Bottles"
+      }
+    }
   },
   "errors": {
     "launch": "Could not start {{title}}:",

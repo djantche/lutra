@@ -4,7 +4,7 @@ import { FilePicker } from "../../../components/FilePicker/FilePicker";
 import { FormField } from "../../../components/FormField/FormField";
 import { StepHeading } from "./StepHeading";
 
-export type Kind = "windows" | "linux" | "install";
+export type Kind = "windows" | "linux" | "install" | "import";
 
 interface SourceStepProps {
   kind: Kind;
@@ -25,21 +25,25 @@ export function SourceStep({ kind, onKind, exePath, onBrowse }: SourceStepProps)
       <ChoiceCards
         ariaLabel={t("addGame.kind")}
         autofocus
+        wide
         value={kind}
         onChange={onKind}
         options={[
           { value: "windows", icon: "monitor", title: t("addGame.kindWindows"), description: t("addGame.kindWindowsHint") },
           { value: "linux", icon: "terminal", title: t("addGame.kindLinux"), description: t("addGame.kindLinuxHint") },
           { value: "install", icon: "download", title: t("addGame.kindInstall"), description: t("addGame.kindInstallHint") },
+          { value: "import", icon: "refresh", title: t("addGame.kindImport"), description: t("addGame.kindImportHint") },
         ]}
       />
 
-      <FormField
-        label={installing ? t("install.installer") : t("addGame.program")}
-        hint={kind === "linux" ? t("addGame.linuxHint") : installing ? t("install.installerHint") : undefined}
-      >
-        <FilePicker value={exePath} placeholder={t("addGame.browse")} onPick={onBrowse} />
-      </FormField>
+      {kind !== "import" && (
+        <FormField
+          label={installing ? t("install.installer") : t("addGame.program")}
+          hint={kind === "linux" ? t("addGame.linuxHint") : installing ? t("install.installerHint") : undefined}
+        >
+          <FilePicker value={exePath} placeholder={t("addGame.browse")} onPick={onBrowse} />
+        </FormField>
+      )}
     </>
   );
 }
